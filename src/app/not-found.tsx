@@ -1,0 +1,1 @@
+import Link from 'next/link';export default function NotFound(){return <div className="container section"><h1>Page not found.</h1><p>We couldn't find that page. Explore local services or return to the JiTap homepage.</p><Link className="button" href="/">Go home</Link></div>}
