@@ -1,0 +1,1 @@
+export function track(name:string,properties:Record<string,unknown>={}){if(typeof window!=='undefined')window.dispatchEvent(new CustomEvent('jitap:analytics',{detail:{name,properties,time:new Date().toISOString()}}));}
