@@ -17,10 +17,11 @@ function fingerprint(value: string) {
 }
 function configured() {
   const url = process.env.SUPABASE_URL?.trim().replace(/\/$/, '');
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  const key = process.env.SUPABASE_ANON_KEY?.trim();
+  const token = process.env.INTAKE_RPC_TOKEN?.trim();
   const salt = process.env.INTAKE_HASH_SECRET?.trim();
-  return url && url.startsWith('https://') && key && salt && salt.length >= 32
-    ? { url, key, salt } : null;
+  return url && url.startsWith('https://') && key && token && token.length === 64 && salt && salt.length >= 32
+    ? { url, key, token, salt } : null;
 }
 function allowedOrigin(req: NextRequest) {
   const origin = req.headers.get('origin');
@@ -37,7 +38,7 @@ function allowedOrigin(req: NextRequest) {
 }
 
 /**
- * Stores validated website enquiries in Supabase PostgreSQL via a service-role-only
+ * Stores validated website enquiries in Supabase PostgreSQL via a server-token-authenticated
  * RPC. No direct public database writes, no demo success, no pretend dispatch.
  */
 export async function POST(req: NextRequest, { params }: { params: Promise<{kind: string}> }) {
@@ -73,7 +74,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{kind
   const requestKey = fingerprint(JSON.stringify({ kind, data, clientHash, fiveMinuteWindow }));
 
   try {
-    const result = await fetch(`${cfg.url}/rest/v1/rpc/submit_website_intake`, {
+    const result = await fetch(`${cfg.url}/rest/v1/rpc/submit_website_intake_authorized`, {
       method: 'POST',
       headers: {
         apikey: cfg.key,
@@ -87,7 +88,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{kind
         p_kind: kind,
         p_payload: data,
         p_source_hash: clientHash,
-        p_request_key: requestKey
+        p_request_key: requestKey,
+        p_token: cfg.token
       })
     });
 
