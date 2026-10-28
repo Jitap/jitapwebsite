@@ -10,7 +10,7 @@ export const categories:Category[]=[
 {slug:'general-repairs',name:'General Repairs',summary:'Everyday fixes and maintenance',description:'Not sure which specialist? Explain the problem and JiTap can assess a suitable service category.',jobs:['Door handles','Small fixes','Fixture repairs','General maintenance'],tips:['Describe what stopped working.','Indicate timing and access constraints.'],icon:Wrench},
 {slug:'other-services',name:'Other Services',summary:'Tell us what you need',description:'JiTap is exploring additional services based on coverage and customer needs.',jobs:['Describe your job','Clarify location','Select preferred timing'],tips:['Be specific about the desired outcome.'],icon:MoreHorizontal}
 ];
-export const areas=['Bamburi','Nyali'];
+export const areas=['Bamburi','Nyali','Mtwapa','Tudor','Changamwe','Likoni'];
 export const journeys={customer:[['ASK','Describe what you need and where.'],['MATCH','JiTap assesses the service and supported pilot coverage.'],['BUZZ','A selected provider can respond; the request progresses when a connection is confirmed.']],provider:[['GET READY','Apply, share skills and select areas.'],['MATCH','Receive suitable opportunities when the supported pilot is active.'],['BUZZ','Respond and coordinate arrival and progress when assigned.']]};
 export type Guide={slug:string;title:string;description:string;date:string;author:string;sections:{heading:string;paragraph:string}[];category:string};
 export const guides:Guide[]=[
