@@ -10,24 +10,27 @@ import {
 } from 'lucide-react';
 import {areas, inferService} from '@/lib/data';
 import {track} from '@/lib/analytics';
+import {asset,photoUrl} from '@/lib/visual-assets';
 
 const services = [
-  {slug:'plumbing',name:'Plumbing',detail:'Leaks, taps, pipes and drainage',icon:Droplets},
-  {slug:'electrical',name:'Electrical',detail:'Sockets, wiring and electrical faults',icon:Zap},
-  {slug:'cleaning',name:'Cleaning',detail:'Home and workspace cleaning',icon:Sparkles},
-  {slug:'painting',name:'Painting',detail:'Walls, interiors and finishing',icon:PaintRoller},
-  {slug:'carpentry',name:'Carpentry',detail:'Furniture, doors and cabinetry',icon:Hammer},
-  {slug:'appliance-repair',name:'Appliance Repair',detail:'Fridges, washers and home appliances',icon:WashingMachine},
-  {slug:'general-repairs',name:'General Repairs',detail:'Everyday fixes and maintenance',icon:Wrench},
-  {slug:'other-services',name:'Other Services',detail:'Tell us what you need',icon:MoreHorizontal}
+  {slug:'plumbing',name:'Plumbing',detail:'Leaks, taps, pipes and drainage',icon:Droplets,photo:asset.plumber},
+  {slug:'electrical',name:'Electrical',detail:'Sockets, wiring and electrical faults',icon:Zap,photo:asset.electrical},
+  {slug:'cleaning',name:'Cleaning',detail:'Home and workspace cleaning',icon:Sparkles,photo:asset.cleaning},
+  {slug:'painting',name:'Painting',detail:'Walls, interiors and finishing',icon:PaintRoller,photo:asset.painting},
+  {slug:'carpentry',name:'Carpentry',detail:'Furniture, doors and cabinetry',icon:Hammer,photo:asset.carpentry},
+  {slug:'appliance-repair',name:'Appliance Repair',detail:'Fridges, washers and home appliances',icon:WashingMachine,photo:asset.appliance},
+  {slug:'general-repairs',name:'General Repairs',detail:'Everyday fixes and maintenance',icon:Wrench,photo:asset.carpentry},
+  {slug:'other-services',name:'Other Services',detail:'Tell us what you need',icon:MoreHorizontal,photo:asset.coast}
 ];
 const tasks = [
-  {title:'Furniture Assembly',slug:'carpentry',prompt:'I need help assembling furniture'},
-  {title:'TV Mounting',slug:'general-repairs',prompt:'I need help mounting a TV'},
-  {title:'Tap & Leak Repairs',slug:'plumbing',prompt:'My sink tap is leaking'},
-  {title:'Electrical Installations',slug:'electrical',prompt:'I need an electrician to check my wiring'},
-  {title:'House Cleaning',slug:'cleaning',prompt:'I need a house cleaning service'},
-  {title:'Interior Painting',slug:'painting',prompt:'I need a painter for interior walls'}
+  {title:'Furniture Assembly',slug:'carpentry',prompt:'I need help assembling furniture',photo:asset.carpentry},
+  {title:'TV Mounting',slug:'general-repairs',prompt:'I need help mounting a TV',photo:asset.carpentry},
+  {title:'Tap & Leak Repairs',slug:'plumbing',prompt:'My sink tap is leaking',photo:asset.plumber},
+  {title:'Electrical Installations',slug:'electrical',prompt:'I need an electrician to check my wiring',photo:asset.electrical},
+  {title:'House Cleaning',slug:'cleaning',prompt:'I need a house cleaning service',photo:asset.cleaning},
+  {title:'Interior Painting',slug:'painting',prompt:'I need a painter for interior walls',photo:asset.painting},
+  {title:'Appliance Diagnostics',slug:'appliance-repair',prompt:'I need a washing machine repaired',photo:asset.appliance},
+  {title:'Cabinet & Door Repairs',slug:'carpentry',prompt:'My wooden kitchen cabinet needs fixing',photo:asset.carpentry}
 ];
 const steps = [
   {label:'ASK',copy:'Tell us what you need and choose your location.',icon:MessageCircleMore},
@@ -71,7 +74,7 @@ export function MarketplaceHome(){
          </div>
        </div>
        <div className="ref-hero-picture" role="img" aria-label="JiTap mascot with an illustrated Mombasa fundi against a coastal neighbourhood backdrop">
-         <div className="ref-hero-person" aria-hidden="true"/>
+         <div className="ref-hero-person"><img className="ref-artisan-photo" src={photoUrl(asset.carpentry,1150)} alt="Illustrative photo of an African carpenter working in his workshop" fetchPriority="high"/><img className="ref-mascot-front" src="/images/mascot.webp" alt="JiTap's waving robot mascot" fetchPriority="high"/></div>
          <div className="ref-hero-local-badge"><span className="ref-signal">◎</span><span><strong>Local skills.</strong><small>Real people, close to home.</small></span></div>
          <div className="ref-hero-coverage"><MapPin size={16}/><span>Bamburi & Nyali pilot</span></div>
        </div>
@@ -83,7 +86,7 @@ export function MarketplaceHome(){
      <div className="ref-heading"><div><span className="ref-eyebrow"><span className="ref-dot"/> EVERYDAY SERVICES</span><h2 id="ref-categories-title">What do you need help with?</h2></div><Link href="/services" className="ref-all-link">View all services <ArrowRight size={16}/></Link></div>
      <div className="ref-category-grid">
        {services.map((service,index)=><Link key={service.slug} href={'/services/'+service.slug} className="ref-category-card">
-         <div className="ref-category-photo" style={{backgroundPosition: index*100/7+'% center'}} aria-hidden="true"></div>
+         <div className="ref-category-photo"><img src={photoUrl(service.photo,850)} srcSet={photoUrl(service.photo,450,82)+' 450w, '+photoUrl(service.photo,850,85)+' 850w'} sizes="(max-width:600px) 50vw, (max-width:1000px) 25vw, 13vw" loading="lazy" decoding="async" alt={service.name+' service illustration'}/><span className="ref-category-icon"><service.icon size={20}/></span></div>
          <div className="ref-category-info"><strong>{service.name}</strong><p>{service.detail}</p></div>
        </Link>)}
      </div>
@@ -91,15 +94,15 @@ export function MarketplaceHome(){
 
    <section className="container ref-section ref-tasks" aria-labelledby="ref-tasks-title">
      <div className="ref-heading"><div><span className="ref-eyebrow"><span className="ref-dot"/> SERVICES IN MOMBASA</span><h2 id="ref-tasks-title">Popular service requests</h2></div>
-       <div className="ref-carousel-controls"><button aria-label="Previous service cards" disabled={taskPage===0} onClick={()=>setTaskPage(0)}><ChevronLeft size={18}/></button><button aria-label="Next service cards" disabled={taskPage===1} onClick={()=>setTaskPage(1)}><ChevronRight size={18}/></button></div>
+       <div className="ref-carousel-controls"><button aria-label="Previous service cards" disabled={taskPage===0} onClick={()=>setTaskPage(n=>Math.max(0,n-1))}><ChevronLeft size={18}/></button><button aria-label="Next service cards" disabled={taskPage>=tasks.length-6} onClick={()=>setTaskPage(n=>Math.min(tasks.length-6,n+1))}><ChevronRight size={18}/></button></div>
      </div>
      <div className="ref-task-grid">
-       {tasks.slice(taskPage===0?0:3,taskPage===0?6:6).map(task=>{const index=tasks.indexOf(task);return <button className="ref-task-card" type="button" key={task.title} onClick={()=>openRequest(task.prompt,task.slug)}>
-         <span className="ref-task-photo" style={{backgroundPosition:index*100/5+'% center'}} aria-hidden="true"/>
+       {tasks.slice(taskPage,taskPage+6).map(task=>{const index=tasks.indexOf(task);return <button className="ref-task-card" type="button" key={task.title} onClick={()=>openRequest(task.prompt,task.slug)}>
+         <span className="ref-task-photo"><img src={photoUrl(task.photo,1050)} srcSet={photoUrl(task.photo,550,80)+' 550w, '+photoUrl(task.photo,1050,85)+' 1050w'} sizes="(max-width:600px) 50vw, (max-width:1000px) 33vw, 18vw" loading="lazy" decoding="async" alt={task.title+' service illustration'}/></span>
          <span className="ref-task-caption"><span><strong>{task.title}</strong><small>Describe your job for a quote</small></span><ArrowUpRight size={17}/></span>
        </button>})}
      </div>
-     <p className="ref-caveat">Illustrative imagery from JiTap's Mombasa design concept. Actual service availability and quotes depend on provider responses. No confirmed bookings or prices are implied.</p>
+     <p className="ref-caveat">Illustrative service photographs; people pictured are not presented as JiTap-verified providers. Actual service availability and quotes depend on provider responses. No confirmed bookings or prices are implied.</p>
    </section>
 
    <section className="ref-process" aria-labelledby="ref-process-title"><div className="container ref-process-layout">
@@ -120,7 +123,7 @@ export function MarketplaceHome(){
    </section>
 
    <section className="ref-provider-callout" aria-labelledby="ref-provider-title"><div className="container ref-provider-layout">
-     <div className="ref-provider-portrait" role="img" aria-label="Illustrated JiTap Mombasa service provider"/>
+     <div className="ref-provider-portrait"><img src={photoUrl(asset.carpentry,640)} alt="Illustrative portrait of an African carpenter at work" loading="lazy" decoding="async"/></div>
      <div className="ref-provider-copy"><h2 id="ref-provider-title">Are you a skilled fundi or service provider?</h2><p>Join JiTap and connect your professional skills with service requests as we grow our local Mombasa network.</p></div>
      <Link className="ref-provider-button" href="/providers/apply">Become a Provider <ArrowRight size={17}/></Link>
    </div></section>
