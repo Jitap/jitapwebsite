@@ -1,74 +1,115 @@
 'use client';
-import {useState,type FormEvent} from 'react';
+
+import {useState, type FormEvent} from 'react';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
-import {Search,MapPin,ArrowRight,ArrowUpRight,Droplets,Zap,Sparkles,PaintRoller,Hammer,Refrigerator,Wrench,MoreHorizontal,CheckCircle2,MessageCircleMore,Clock3,ShieldCheck,UsersRound,ChevronRight,House,LifeBuoy,SlidersHorizontal} from 'lucide-react';
-import {categories,areas,inferService} from '@/lib/data';
+import {
+ ArrowRight, ArrowUpRight, CheckCheck, ChevronLeft, ChevronRight,
+ Clock3, Droplets, Hammer, House, Laptop, MapPin, MessageCircle,
+ PaintRoller, Search, ShieldCheck, Sparkles, UsersRound, WashingMachine,
+ Wrench, Zap
+} from 'lucide-react';
+import {areas,inferService} from '@/lib/data';
 import {track} from '@/lib/analytics';
 
-const chips=[
-  {label:'Plumbing',slug:'plumbing',icon:Droplets},
-  {label:'Electrical',slug:'electrical',icon:Zap},
-  {label:'Cleaning',slug:'cleaning',icon:Sparkles},
-  {label:'Painting',slug:'painting',icon:PaintRoller},
-  {label:'Carpentry',slug:'carpentry',icon:Hammer},
-  {label:'Appliance repair',slug:'appliance-repair',icon:Refrigerator},
-  {label:'Home repairs',slug:'general-repairs',icon:Wrench},
-  {label:'More',slug:'other-services',icon:MoreHorizontal}
+const photo=(id:number,w=600)=>'https://images.pexels.com/photos/'+id+'/pexels-photo-'+id+'.jpeg?auto=compress&cs=tinysrgb&w='+w;
+const services=[
+ {slug:'plumbing',title:'Plumbing',desc:'Leaks, taps & pipes',icon:Droplets,photo:photo(16509869)},
+ {slug:'electrical',title:'Electrical',desc:'Sockets, lights & wiring',icon:Zap,photo:photo(5691590)},
+ {slug:'cleaning',title:'Cleaning',desc:'Home & workspace',icon:Sparkles,photo:photo(9462746)},
+ {slug:'painting',title:'Painting',desc:'Walls & finishing',icon:PaintRoller,photo:photo(7218579)},
+ {slug:'carpentry',title:'Carpentry',desc:'Furniture & doors',icon:Hammer,photo:photo(6790817)},
+ {slug:'appliance-repair',title:'Appliance repair',desc:'Fridges, washers & more',icon:WashingMachine,photo:photo(34734504)},
+ {slug:'general-repairs',title:'General repairs',desc:'Everyday fixes',icon:Wrench,photo:photo(3855334)},
+ {slug:'other-services',title:'Other services',desc:'Tell us your need',icon:Laptop,photo:photo(33531806)}
 ] as const;
-const examples:Record<string,string[]>={
-  plumbing:['Leaking tap or sink','Blocked drain','Pipe repair','Bathroom fittings'],
-  electrical:['Broken socket','Lighting installation','Power fault','Electrical inspection'],
-  cleaning:['House cleaning','Move-in cleaning','Deep cleaning','Office cleaning'],
-  painting:['Interior walls','Exterior painting','Touch-up work','Surface preparation'],
-  carpentry:['Door repairs','Furniture assembly','Cabinet fitting','Woodwork'],
-  'appliance-repair':['Fridge repair','Washing machine','Cooker servicing','Diagnosis'],
-  'general-repairs':['Home maintenance','Fixture repair','Door handles','Small repairs'],
-  'other-services':['Computer & IT help','General assistance','Describe your task','Not sure what category?']
-};
-const featureCards=[
-  {slug:'plumbing',title:'Plumbing help',subtitle:'Leaking taps, sinks & pipes',icon:Droplets,skin:'mint',tag:'Home essentials'},
-  {slug:'electrical',title:'Electrical help',subtitle:'Lights, sockets & faults',icon:Zap,skin:'butter',tag:'Home essentials'},
-  {slug:'cleaning',title:'Home cleaning',subtitle:'Freshen up your space',icon:Sparkles,skin:'lavender',tag:'Everyday living'},
-  {slug:'carpentry',title:'Furniture & carpentry',subtitle:'Doors, cabinets & repairs',icon:Hammer,skin:'peach',tag:'Home projects'},
-  {slug:'painting',title:'Painting',subtitle:'Walls, finishes & touch-ups',icon:PaintRoller,skin:'sky',tag:'Home projects'},
-  {slug:'appliance-repair',title:'Appliance repair',subtitle:'Fridges, washers & more',icon:Refrigerator,skin:'rose',tag:'Home essentials'}
+const popular=[
+ {slug:'carpentry',title:'Furniture assembly',detail:'Beds, cabinets & flat-pack items',photo:photo(6790817,850),query:'I need help assembling furniture'},
+ {slug:'general-repairs',title:'TV & shelf mounting',detail:'Safe installation at home',photo:photo(3855334,850),query:'I need help mounting a television'},
+ {slug:'plumbing',title:'Tap & leak repairs',detail:'Sinks, taps & water leaks',photo:photo(16509869,850),query:'My kitchen tap is leaking'},
+ {slug:'electrical',title:'Electrical installations',detail:'Sockets, lighting & faults',photo:photo(5691590,850),query:'I need an electrician for a faulty socket'},
+ {slug:'cleaning',title:'House cleaning',detail:'Keep your space feeling fresh',photo:photo(9462746,850),query:'I need a house cleaning service'},
+ {slug:'painting',title:'Interior painting',detail:'A fresh finish for your room',photo:photo(7218579,850),query:'I need a painter for my interior walls'}
+] as const;
+const steps=[
+ {name:'ASK',detail:'Tell us what you need, in your own words.',icon:MessageCircle},
+ {name:'MATCH',detail:'JiTap checks the service category and pilot coverage.',icon:UsersRound},
+ {name:'BUZZ',detail:'Eligible providers can respond when matching is active.',icon:CheckCheck}
 ] as const;
 
 export function MarketplaceHome(){
  const router=useRouter();
  const [query,setQuery]=useState('');
  const [area,setArea]=useState('Bamburi');
- const [active,setActive]=useState('plumbing');
- const selected=categories.find(c=>c.slug===active)||categories[0];
- function find(e:FormEvent){e.preventDefault();const description=query.trim();if(!description)return;track('service_search_submitted',{query:description,area});const slug=inferService(description)||'other-services';router.push('/request?category='+encodeURIComponent(slug)+'&description='+encodeURIComponent(description)+'&area='+encodeURIComponent(area));}
- const prompt=(q:string)=>{setQuery(q);const slug=inferService(q)||active;router.push('/request?category='+encodeURIComponent(slug)+'&description='+encodeURIComponent(q)+'&area='+encodeURIComponent(area));};
- return <>
-  <section className="market-hero">
-   <div className="container market-hero-shell">
-    <div className="market-intro">
-     <span className="market-locale"><MapPin size={15}/> Your neighbourhood, your people. <b>Mombasa pilot</b></span>
-     <h1>Local help for<br/><em>everyday life.</em></h1>
-     <p>Need something fixed, cleaned or sorted? Tell JiTap what you need. We'll help you take the next step towards finding skilled help nearby.</p>
-     <form className="market-search" onSubmit={find} role="search">
-      <label className="market-search-input"><Search size={22} aria-hidden="true"/><input aria-label="What do you need help with?" placeholder="What do you need help with?" value={query} onChange={e=>setQuery(e.target.value)} required/></label>
-      <label className="market-search-place"><MapPin size={18} aria-hidden="true"/><select value={area} onChange={e=>setArea(e.target.value)} aria-label="Your area">{areas.map(x=><option key={x}>{x}</option>)}</select></label>
-      <button className="market-find" type="submit">Find help <ArrowRight size={19}/></button>
-     </form>
-     <div className="market-try"><span>Popular:</span><button onClick={()=>prompt('My sink is leaking')}>Leaking sink</button><button onClick={()=>prompt('I need house cleaning')}>House cleaning</button><button onClick={()=>prompt('Repair my electrical socket')}>Socket repair</button></div>
-    </div>
-    <div className="market-hero-visual"><div className="market-coast" aria-hidden="true"/><div className="market-hero-circle"/><img src="/images/mascot.webp" alt="JiTap mascot ready to help" className="market-mascot"/><div className="market-floating market-floating-top"><span className="market-small-icon">📍</span><span>Starting in <strong>Bamburi & Nyali</strong></span></div><div className="market-floating market-floating-bottom"><span className="market-small-icon green">✓</span><span><strong>ASK • MATCH • BUZZ</strong><small>Simple steps to local help</small></span></div></div>
-   </div>
-  </section>
-  <section className="market-categories container" aria-labelledby="market-browse">
-   <div className="market-section-top"><div><span className="market-kicker">EXPLORE SERVICES</span><h2 id="market-browse">What can we help with?</h2></div><Link href="/services" className="market-all-link">View all services <ArrowUpRight size={18}/></Link></div>
-   <div className="market-icon-grid">{chips.map(c=><button className={'market-cat'+(active===c.slug?' selected':'')} key={c.slug} onClick={()=>setActive(c.slug)} aria-pressed={active===c.slug}><span className="market-icon-wrap"><c.icon size={25} strokeWidth={1.8}/></span><span>{c.label}</span></button>)}</div>
-   <div className="market-category-discover"><div className="market-category-copy"><span className="market-tag">EXPLORE {selected.name.toUpperCase()}</span><h3>{selected.name} made easier.</h3><p>{selected.summary}. Explore common requests and tell us what needs doing in your neighbourhood.</p><Link href={'/services/'+selected.slug} className="market-text-arrow">Explore {selected.name} <ArrowRight size={18}/></Link></div><div className="market-category-pills">{(examples[active]||examples.plumbing).map(t=><button key={t} onClick={()=>prompt(t)}>{t}<ArrowUpRight size={15}/></button>)}</div></div>
-  </section>
-  <section className="market-popular"><div className="container"><div className="market-section-top"><div><span className="market-kicker">POPULAR RIGHT NOW</span><h2>Help with the things that matter.</h2><p>Everyday jobs, big and small. Choose a category to get started.</p></div><Link href="/services" className="market-all-link">All categories <ArrowUpRight size={18}/></Link></div><div className="market-projects">{featureCards.map(c=><Link className={'market-project '+c.skin} href={'/services/'+c.slug} key={c.slug}><span className="market-project-tag">{c.tag}</span><span className="market-project-illustration"><c.icon strokeWidth={1.4}/></span><div className="market-project-foot"><div><strong>{c.title}</strong><small>{c.subtitle}</small></div><span className="market-project-arrow"><ArrowUpRight size={20}/></span></div></Link>)}</div><p className="market-small-note">JiTap's provider network is being built in Bamburi and Nyali. Service availability and prices are not guaranteed or shown until verified.</p></div></section>
-  <section className="market-how container"><div className="market-how-head"><span className="market-kicker">HOW JITAP WORKS</span><h2>One less thing to worry about.</h2><p>From “I need help” to the next step—without chasing endless referrals.</p></div><div className="market-how-grid"><div className="market-step"><span className="market-step-num">01</span><div className="market-step-icon"><MessageCircleMore size={30}/></div><h3>ASK</h3><p>Describe your service need, in your own words, and tell us your area.</p></div><div className="market-step"><span className="market-step-num">02</span><div className="market-step-icon"><SlidersHorizontal size={30}/></div><h3>MATCH</h3><p>JiTap identifies the right category and checks supported neighbourhood coverage.</p></div><div className="market-step"><span className="market-step-num">03</span><div className="market-step-icon"><CheckCircle2 size={30}/></div><h3>BUZZ</h3><p>As the provider network goes live, suitable fundis can respond and coordinate jobs.</p></div></div><div className="market-center-action"><Link className="market-cta" href="/how-it-works">See how JiTap works <ArrowRight size={18}/></Link></div></section>
-  <section className="market-neighborhood"><div className="container market-neighborhood-inner"><div className="market-neighborhood-copy"><span className="market-kicker">ROOTED IN MOMBASA</span><h2>Good help starts<br/>close to home.</h2><p>We're starting with Bamburi and Nyali, working to make local skills easier to discover and everyday service requests simpler to coordinate.</p><div className="market-area-tags"><span><MapPin size={16}/> Bamburi</span><span><MapPin size={16}/> Nyali</span></div><Link href="/request" className="market-cta market-cta-light">Tell us what you need <ArrowRight size={18}/></Link></div><div className="market-neighborhood-art"><img src="/images/coast.webp" alt="Mombasa coastal neighbourhood illustration"/><div className="market-neighborhood-caption"><House size={19}/> Built for our neighbourhoods</div></div></div></section>
-  <section className="market-provider-cta container"><div className="market-provider-icon"><UsersRound size={32}/></div><div><span className="market-kicker">FOR LOCAL SERVICE PROVIDERS</span><h2>Your skills. More opportunities.</h2><p>Are you a fundi, technician or service professional? Join JiTap's growing Mombasa provider network.</p></div><Link href="/providers/apply" className="market-cta">Become a provider <ArrowRight size={18}/></Link></section>
-  <section className="market-bottom"><div className="container market-bottom-inner"><div><span className="market-kicker">READY TO GET STARTED?</span><h2>That thing on your to-do list?<br/>Tell JiTap.</h2></div><Link href="/request" className="market-cta market-cta-light">Find local help <ArrowRight size={18}/></Link></div></section>
- </>;
+ const [currentPage,setCurrentPage]=useState(0);
+ function go(description:string,category?:string){
+   const text=description.trim();
+   if(!text)return;
+   const slug=category||inferService(text)||'other-services';
+   track('service_search_submitted',{query:text,area,category:slug});
+   router.push('/request?category='+encodeURIComponent(slug)+'&description='+encodeURIComponent(text)+'&area='+encodeURIComponent(area));
+ }
+ function search(e:FormEvent<HTMLFormElement>){e.preventDefault();go(query)}
+ return <div className="jhome">
+   <section className="jh-hero" aria-labelledby="jh-hero-title">
+     <div className="jh-hero-bg" aria-hidden="true"/>
+     <div className="container jh-hero-inner">
+       <div className="jh-hero-content">
+         <span className="jh-kicker"><span className="jh-dot"/> LOCAL HELP, MADE SIMPLE — MOMBASA PILOT</span>
+         <h1 id="jh-hero-title">Find local help<br/>in <span>Mombasa.</span></h1>
+         <p className="jh-intro-copy">From a leaking tap to a room that needs a fresh coat, JiTap makes it easier to describe what you need and connect with local service opportunities.</p>
+         <div className="jh-hero-tagline">ASK <b>•</b> MATCH <b>•</b> BUZZ</div>
+         <form className="jh-search" onSubmit={search} role="search" aria-label="Find a local service">
+           <label className="jh-search-task"><Search size={23} aria-hidden="true"/><input aria-label="Describe the service you need" required placeholder="What do you need help with?" value={query} onChange={e=>setQuery(e.target.value)}/></label>
+           <label className="jh-search-area"><MapPin size={19} aria-hidden="true"/><select value={area} onChange={e=>setArea(e.target.value)} aria-label="Select service area">{areas.map(a=><option value={a} key={a}>{a}</option>)}</select></label>
+           <button className="jh-search-submit" type="submit">Find help <ArrowRight size={19}/></button>
+         </form>
+         <div className="jh-quick"><strong>Popular requests:</strong>{[{text:'Plumbing',slug:'plumbing',query:'My tap needs repair'},{text:'Electrical',slug:'electrical',query:'I need an electrician'},{text:'House cleaning',slug:'cleaning',query:'I need house cleaning'},{text:'TV mounting',slug:'general-repairs',query:'Help me mount a TV'},{text:'Painting',slug:'painting',query:'I need interior painting'}].map(x=><button type="button" key={x.text} onClick={()=>go(x.query,x.slug)}>{x.text}</button>)}</div>
+       </div>
+       <div className="jh-hero-scene" aria-label="JiTap mascot with an illustration of local service work">
+         <div className="jh-halo" aria-hidden="true"/>
+         <div className="jh-pro-photo"><img src={photo(4173284,850)} alt="Illustrative photograph of a skilled artisan at work" loading="eager"/></div>
+         <img className="jh-mascot" src="/images/mascot.webp" alt="JiTap friendly waving robot mascot" fetchPriority="high"/>
+         <div className="jh-float jh-float-a"><span className="jh-floating-symbol">✦</span><span><strong>Local skills.</strong><small>Closer to home.</small></span></div>
+         <div className="jh-float jh-float-b"><span className="jh-floating-symbol green"><MapPin size={16}/></span><span><strong>Bamburi & Nyali</strong><small>Initial pilot areas</small></span></div>
+       </div>
+     </div>
+     <div className="jh-wave" aria-hidden="true"/>
+   </section>
+
+   <section className="container jh-section jh-categories" aria-labelledby="jh-cat-title">
+     <div className="jh-section-heading">
+       <div><span className="jh-kicker"><span className="jh-dot"/> EVERYDAY SERVICES</span><h2 id="jh-cat-title">What do you need help with?</h2></div>
+       <Link href="/services" className="jh-view-all">View all services <ArrowRight size={18}/></Link>
+     </div>
+     <div className="jh-categories-grid">{services.map(s=><Link href={'/services/'+s.slug} className="jh-category-card" key={s.slug}><div className="jh-category-image"><img src={s.photo} alt="" loading="lazy"/><span className="jh-category-icon"><s.icon size={22}/></span></div><div className="jh-category-body"><strong>{s.title}</strong><small>{s.desc}</small></div></Link>)}</div>
+   </section>
+
+   <section className="jh-section jh-project-section" aria-labelledby="jh-popular-title"><div className="container">
+     <div className="jh-section-heading"><div><span className="jh-kicker"><span className="jh-dot"/> COMMON LOCAL TASKS</span><h2 id="jh-popular-title">Services to make life easier.</h2></div><div className="jh-carousel-controls" aria-label="Browse service cards"><button onClick={()=>{setCurrentPage(0);document.getElementById("jh-project-list")?.scrollTo({left:0,behavior:"smooth"})}} disabled={currentPage===0} aria-label="Previous services"><ChevronLeft size={19}/></button><button onClick={()=>{setCurrentPage(1);document.getElementById("jh-project-list")?.scrollTo({left:1000,behavior:"smooth"})}} disabled={currentPage===1} aria-label="Next services"><ChevronRight size={19}/></button></div></div>
+     <div className="jh-project-grid" id="jh-project-list">{popular.map(p=><button className="jh-project-card" type="button" key={p.title} onClick={()=>go(p.query,p.slug)}><div className="jh-project-image"><img src={p.photo} alt="" loading="lazy"/></div><div className="jh-project-info"><div><strong>{p.title}</strong><small>{p.detail}</small></div><ArrowUpRight size={21}/></div></button>)}</div>
+     <p className="jh-caption">Illustrative service photography. Provider availability, qualifications, job quotes and pricing are confirmed individually as the JiTap pilot develops.</p>
+   </div></section>
+
+   <section className="jh-steps-band" aria-labelledby="jh-how-title"><div className="container jh-steps-inner">
+     <div className="jh-steps-title"><span className="jh-kicker"><span className="jh-dot"/> HOW JITAP WORKS</span><h2 id="jh-how-title">Get help in<br/>3 simple steps.</h2></div>
+     <div className="jh-steps-list">{steps.map((s,i)=><div className="jh-step" key={s.name}><span className="jh-step-count">{i+1}</span><s.icon className="jh-step-icon" size={31} strokeWidth={1.8}/><div><strong>{s.name}</strong><p>{s.detail}</p></div>{i<2&&<ArrowRight size={19} className="jh-step-arrow" aria-hidden="true"/>}</div>)}</div>
+     <img className="jh-steps-mascot" src="/images/mascot.webp" alt="" loading="lazy"/>
+   </div></section>
+
+   <section className="container jh-community" aria-labelledby="jh-community-title">
+     <div className="jh-section-heading"><div><span className="jh-kicker"><span className="jh-dot"/> ROOTED IN MOMBASA</span><h2 id="jh-community-title">Neighbourhoods built on skills.</h2><p>JiTap is developing a local service network where community knowledge meets easier discovery.</p></div></div>
+     <div className="jh-community-grid">
+       <div className="jh-community-tile"><span className="jh-community-icon"><House size={25}/></span><h3>Help starts nearby</h3><p>Beginning with Bamburi and Nyali, so requests stay grounded in real neighbourhood coverage.</p></div>
+       <div className="jh-community-tile"><span className="jh-community-icon"><ShieldCheck size={25}/></span><h3>Clearer next steps</h3><p>Understand what has been requested, what is being reviewed, and when a connection is confirmed.</p></div>
+       <div className="jh-community-tile"><span className="jh-community-icon"><Clock3 size={25}/></span><h3>Your time matters</h3><p>Describe a job once instead of repeating the same explanation across scattered contacts.</p></div>
+     </div>
+   </section>
+
+   <section className="jh-provider-banner" aria-labelledby="jh-provider-title"><div className="container jh-provider-inner">
+     <div className="jh-provider-picture"><img src={photo(4173284,650)} alt="Illustrative photograph of a local artisan" loading="lazy"/></div>
+     <div className="jh-provider-content"><span className="jh-kicker"><span className="jh-dot"/> FOR OUR LOCAL FUNDIS</span><h2 id="jh-provider-title">Are you a skilled fundi or service provider?</h2><p>Introduce your skills, choose your service areas, and apply to join JiTap's growing Mombasa provider network.</p></div>
+     <Link className="jh-provider-button" href="/providers/apply">Become a Provider <ArrowRight size={18}/></Link>
+   </div></section>
+ </div>;
 }
