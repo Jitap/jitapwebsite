@@ -14,19 +14,19 @@ import {track} from '@/lib/analytics';
 
 const photo=(id:number,w=600)=>'https://images.pexels.com/photos/'+id+'/pexels-photo-'+id+'.jpeg?auto=compress&cs=tinysrgb&w='+w;
 const services=[
- {slug:'plumbing',title:'Plumbing',desc:'Leaks, taps & pipes',icon:Droplets,photo:photo(1584622650111)},
+ {slug:'plumbing',title:'Plumbing',desc:'Leaks, taps & pipes',icon:Droplets,photo:photo(16509869)},
  {slug:'electrical',title:'Electrical',desc:'Sockets, lights & wiring',icon:Zap,photo:photo(5691590)},
  {slug:'cleaning',title:'Cleaning',desc:'Home & workspace',icon:Sparkles,photo:photo(9462746)},
  {slug:'painting',title:'Painting',desc:'Walls & finishing',icon:PaintRoller,photo:photo(7218579)},
  {slug:'carpentry',title:'Carpentry',desc:'Furniture & doors',icon:Hammer,photo:photo(6790817)},
- {slug:'appliance-repair',title:'Appliance repair',desc:'Fridges, washers & more',icon:WashingMachine,photo:photo(4792528)},
+ {slug:'appliance-repair',title:'Appliance repair',desc:'Fridges, washers & more',icon:WashingMachine,photo:photo(34734504)},
  {slug:'general-repairs',title:'General repairs',desc:'Everyday fixes',icon:Wrench,photo:photo(3855334)},
- {slug:'other-services',title:'Other services',desc:'Tell us your need',icon:Laptop,photo:photo(4145190)}
+ {slug:'other-services',title:'Other services',desc:'Tell us your need',icon:Laptop,photo:photo(33531806)}
 ] as const;
 const popular=[
  {slug:'carpentry',title:'Furniture assembly',detail:'Beds, cabinets & flat-pack items',photo:photo(6790817,850),query:'I need help assembling furniture'},
  {slug:'general-repairs',title:'TV & shelf mounting',detail:'Safe installation at home',photo:photo(3855334,850),query:'I need help mounting a television'},
- {slug:'plumbing',title:'Tap & leak repairs',detail:'Sinks, taps & water leaks',photo:photo(1584622650111,850),query:'My kitchen tap is leaking'},
+ {slug:'plumbing',title:'Tap & leak repairs',detail:'Sinks, taps & water leaks',photo:photo(16509869,850),query:'My kitchen tap is leaking'},
  {slug:'electrical',title:'Electrical installations',detail:'Sockets, lighting & faults',photo:photo(5691590,850),query:'I need an electrician for a faulty socket'},
  {slug:'cleaning',title:'House cleaning',detail:'Keep your space feeling fresh',photo:photo(9462746,850),query:'I need a house cleaning service'},
  {slug:'painting',title:'Interior painting',detail:'A fresh finish for your room',photo:photo(7218579,850),query:'I need a painter for my interior walls'}
