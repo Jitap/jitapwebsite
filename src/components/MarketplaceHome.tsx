@@ -1,115 +1,128 @@
 'use client';
-
 import {useState, type FormEvent} from 'react';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
 import {
- ArrowRight, ArrowUpRight, CheckCheck, ChevronLeft, ChevronRight,
- Clock3, Droplets, Hammer, House, Laptop, MapPin, MessageCircle,
- PaintRoller, Search, ShieldCheck, Sparkles, UsersRound, WashingMachine,
- Wrench, Zap
+  Search, MapPin, ArrowRight, ArrowUpRight, ChevronLeft, ChevronRight,
+  Droplets, Zap, Sparkles, PaintRoller, Hammer, WashingMachine,
+  Wrench, MoreHorizontal, MessageCircleMore, UsersRound, CheckCircle2,
+  HeartHandshake, Clock3, ShieldCheck
 } from 'lucide-react';
-import {areas,inferService} from '@/lib/data';
+import {areas, inferService} from '@/lib/data';
 import {track} from '@/lib/analytics';
 
-const photo=(id:number,w=600)=>'https://images.pexels.com/photos/'+id+'/pexels-photo-'+id+'.jpeg?auto=compress&cs=tinysrgb&w='+w;
-const services=[
- {slug:'plumbing',title:'Plumbing',desc:'Leaks, taps & pipes',icon:Droplets,photo:photo(16509869)},
- {slug:'electrical',title:'Electrical',desc:'Sockets, lights & wiring',icon:Zap,photo:photo(5691590)},
- {slug:'cleaning',title:'Cleaning',desc:'Home & workspace',icon:Sparkles,photo:photo(9462746)},
- {slug:'painting',title:'Painting',desc:'Walls & finishing',icon:PaintRoller,photo:photo(7218579)},
- {slug:'carpentry',title:'Carpentry',desc:'Furniture & doors',icon:Hammer,photo:photo(6790817)},
- {slug:'appliance-repair',title:'Appliance repair',desc:'Fridges, washers & more',icon:WashingMachine,photo:photo(34734504)},
- {slug:'general-repairs',title:'General repairs',desc:'Everyday fixes',icon:Wrench,photo:photo(3855334)},
- {slug:'other-services',title:'Other services',desc:'Tell us your need',icon:Laptop,photo:photo(33531806)}
-] as const;
-const popular=[
- {slug:'carpentry',title:'Furniture assembly',detail:'Beds, cabinets & flat-pack items',photo:photo(6790817,850),query:'I need help assembling furniture'},
- {slug:'general-repairs',title:'TV & shelf mounting',detail:'Safe installation at home',photo:photo(3855334,850),query:'I need help mounting a television'},
- {slug:'plumbing',title:'Tap & leak repairs',detail:'Sinks, taps & water leaks',photo:photo(16509869,850),query:'My kitchen tap is leaking'},
- {slug:'electrical',title:'Electrical installations',detail:'Sockets, lighting & faults',photo:photo(5691590,850),query:'I need an electrician for a faulty socket'},
- {slug:'cleaning',title:'House cleaning',detail:'Keep your space feeling fresh',photo:photo(9462746,850),query:'I need a house cleaning service'},
- {slug:'painting',title:'Interior painting',detail:'A fresh finish for your room',photo:photo(7218579,850),query:'I need a painter for my interior walls'}
-] as const;
-const steps=[
- {name:'ASK',detail:'Tell us what you need, in your own words.',icon:MessageCircle},
- {name:'MATCH',detail:'JiTap checks the service category and pilot coverage.',icon:UsersRound},
- {name:'BUZZ',detail:'Eligible providers can respond when matching is active.',icon:CheckCheck}
-] as const;
-
+const services = [
+  {slug:'plumbing',name:'Plumbing',detail:'Leaks, taps, pipes and drainage',icon:Droplets},
+  {slug:'electrical',name:'Electrical',detail:'Sockets, wiring and electrical faults',icon:Zap},
+  {slug:'cleaning',name:'Cleaning',detail:'Home and workspace cleaning',icon:Sparkles},
+  {slug:'painting',name:'Painting',detail:'Walls, interiors and finishing',icon:PaintRoller},
+  {slug:'carpentry',name:'Carpentry',detail:'Furniture, doors and cabinetry',icon:Hammer},
+  {slug:'appliance-repair',name:'Appliance Repair',detail:'Fridges, washers and home appliances',icon:WashingMachine},
+  {slug:'general-repairs',name:'General Repairs',detail:'Everyday fixes and maintenance',icon:Wrench},
+  {slug:'other-services',name:'Other Services',detail:'Tell us what you need',icon:MoreHorizontal}
+];
+const tasks = [
+  {title:'Furniture Assembly',slug:'carpentry',prompt:'I need help assembling furniture'},
+  {title:'TV Mounting',slug:'general-repairs',prompt:'I need help mounting a TV'},
+  {title:'Tap & Leak Repairs',slug:'plumbing',prompt:'My sink tap is leaking'},
+  {title:'Electrical Installations',slug:'electrical',prompt:'I need an electrician to check my wiring'},
+  {title:'House Cleaning',slug:'cleaning',prompt:'I need a house cleaning service'},
+  {title:'Interior Painting',slug:'painting',prompt:'I need a painter for interior walls'}
+];
+const steps = [
+  {label:'ASK',copy:'Tell us what you need and choose your location.',icon:MessageCircleMore},
+  {label:'MATCH',copy:'JiTap checks service fit and supported pilot coverage.',icon:UsersRound},
+  {label:'BUZZ',copy:'An eligible provider can respond when matching is available.',icon:CheckCircle2}
+];
 export function MarketplaceHome(){
  const router=useRouter();
- const [query,setQuery]=useState('');
+ const [description,setDescription]=useState('');
  const [area,setArea]=useState('Bamburi');
- const [currentPage,setCurrentPage]=useState(0);
- function go(description:string,category?:string){
-   const text=description.trim();
-   if(!text)return;
-   const slug=category||inferService(text)||'other-services';
-   track('service_search_submitted',{query:text,area,category:slug});
+ const [taskPage,setTaskPage]=useState(0);
+
+ function openRequest(query:string,category?:string){
+   const text=query.trim();
+   if(!text) return;
+   const slug=category || inferService(text) || 'other-services';
+   track('service_search_submitted',{query:text,area,category:slug,source:'homepage'});
    router.push('/request?category='+encodeURIComponent(slug)+'&description='+encodeURIComponent(text)+'&area='+encodeURIComponent(area));
  }
- function search(e:FormEvent<HTMLFormElement>){e.preventDefault();go(query)}
- return <div className="jhome">
-   <section className="jh-hero" aria-labelledby="jh-hero-title">
-     <div className="jh-hero-bg" aria-hidden="true"/>
-     <div className="container jh-hero-inner">
-       <div className="jh-hero-content">
-         <span className="jh-kicker"><span className="jh-dot"/> LOCAL HELP, MADE SIMPLE — MOMBASA PILOT</span>
-         <h1 id="jh-hero-title">Find local help<br/>in <span>Mombasa.</span></h1>
-         <p className="jh-intro-copy">From a leaking tap to a room that needs a fresh coat, JiTap makes it easier to describe what you need and connect with local service opportunities.</p>
-         <div className="jh-hero-tagline">ASK <b>•</b> MATCH <b>•</b> BUZZ</div>
-         <form className="jh-search" onSubmit={search} role="search" aria-label="Find a local service">
-           <label className="jh-search-task"><Search size={23} aria-hidden="true"/><input aria-label="Describe the service you need" required placeholder="What do you need help with?" value={query} onChange={e=>setQuery(e.target.value)}/></label>
-           <label className="jh-search-area"><MapPin size={19} aria-hidden="true"/><select value={area} onChange={e=>setArea(e.target.value)} aria-label="Select service area">{areas.map(a=><option value={a} key={a}>{a}</option>)}</select></label>
-           <button className="jh-search-submit" type="submit">Find help <ArrowRight size={19}/></button>
+ function submitSearch(event:FormEvent<HTMLFormElement>){event.preventDefault();openRequest(description)}
+ return <div className="ref-home">
+   <section className="ref-hero" aria-labelledby="ref-hero-title">
+     <div className="ref-coastal-wash" aria-hidden="true"/>
+     <div className="container ref-hero-grid">
+       <div className="ref-hero-copy">
+         <span className="ref-eyebrow"><span className="ref-dot"/> LOCAL HELP, MADE SIMPLE — MOMBASA PILOT</span>
+         <h1 id="ref-hero-title">Find local help<br/>in <span>Mombasa.</span><i className="ref-green-stroke" aria-hidden="true"/></h1>
+         <p>From plumbing and electrical work to cleaning and home repairs, tell JiTap what you need and take the next step towards local help.</p>
+         <div className="ref-tagline">ASK <b>•</b> MATCH <b>•</b> BUZZ</div>
+         <form className="ref-search" onSubmit={submitSearch} role="search" aria-label="Find help on JiTap">
+           <label className="ref-search-field"><Search size={21} aria-hidden="true"/><input required placeholder="What do you need help with?" aria-label="Describe what you need help with" value={description} onChange={e=>setDescription(e.target.value)}/></label>
+           <label className="ref-search-location"><MapPin size={18} aria-hidden="true"/><select aria-label="Your service area" value={area} onChange={e=>setArea(e.target.value)}>{areas.map(a=><option key={a}>{a}</option>)}</select></label>
+           <button className="ref-find-button" type="submit">Find Help <ArrowRight size={17}/></button>
          </form>
-         <div className="jh-quick"><strong>Popular requests:</strong>{[{text:'Plumbing',slug:'plumbing',query:'My tap needs repair'},{text:'Electrical',slug:'electrical',query:'I need an electrician'},{text:'House cleaning',slug:'cleaning',query:'I need house cleaning'},{text:'TV mounting',slug:'general-repairs',query:'Help me mount a TV'},{text:'Painting',slug:'painting',query:'I need interior painting'}].map(x=><button type="button" key={x.text} onClick={()=>go(x.query,x.slug)}>{x.text}</button>)}</div>
+         <div className="ref-popular-chips"><span>Popular:</span>
+           <button onClick={()=>openRequest('My sink is leaking','plumbing')}>Plumbing</button>
+           <button onClick={()=>openRequest('I need help with an electrical problem','electrical')}>Electrical</button>
+           <button onClick={()=>openRequest('I need my house cleaned','cleaning')}>House Cleaning</button>
+           <button onClick={()=>openRequest('I need help mounting a TV','general-repairs')}>TV Mounting</button>
+           <button onClick={()=>openRequest('I need a wall painted','painting')}>Painting</button>
+         </div>
        </div>
-       <div className="jh-hero-scene" aria-label="JiTap mascot with an illustration of local service work">
-         <div className="jh-halo" aria-hidden="true"/>
-         <div className="jh-pro-photo"><img src={photo(4173284,850)} alt="Illustrative photograph of a skilled artisan at work" loading="eager"/></div>
-         <img className="jh-mascot" src="/images/mascot.webp" alt="JiTap friendly waving robot mascot" fetchPriority="high"/>
-         <div className="jh-float jh-float-a"><span className="jh-floating-symbol">✦</span><span><strong>Local skills.</strong><small>Closer to home.</small></span></div>
-         <div className="jh-float jh-float-b"><span className="jh-floating-symbol green"><MapPin size={16}/></span><span><strong>Bamburi & Nyali</strong><small>Initial pilot areas</small></span></div>
+       <div className="ref-hero-picture" role="img" aria-label="JiTap mascot with an illustrated Mombasa fundi against a coastal neighbourhood backdrop">
+         <div className="ref-hero-person" aria-hidden="true"/>
+         <div className="ref-hero-local-badge"><span className="ref-signal">◎</span><span><strong>Local skills.</strong><small>Real people, close to home.</small></span></div>
+         <div className="ref-hero-coverage"><MapPin size={16}/><span>Bamburi & Nyali pilot</span></div>
        </div>
      </div>
-     <div className="jh-wave" aria-hidden="true"/>
+     <div className="ref-wave" aria-hidden="true"/>
    </section>
 
-   <section className="container jh-section jh-categories" aria-labelledby="jh-cat-title">
-     <div className="jh-section-heading">
-       <div><span className="jh-kicker"><span className="jh-dot"/> EVERYDAY SERVICES</span><h2 id="jh-cat-title">What do you need help with?</h2></div>
-       <Link href="/services" className="jh-view-all">View all services <ArrowRight size={18}/></Link>
+   <section className="container ref-section ref-categories" aria-labelledby="ref-categories-title">
+     <div className="ref-heading"><div><span className="ref-eyebrow"><span className="ref-dot"/> EVERYDAY SERVICES</span><h2 id="ref-categories-title">What do you need help with?</h2></div><Link href="/services" className="ref-all-link">View all services <ArrowRight size={16}/></Link></div>
+     <div className="ref-category-grid">
+       {services.map((service,index)=><Link key={service.slug} href={'/services/'+service.slug} className="ref-category-card">
+         <div className="ref-category-photo" style={{backgroundPosition: index*100/7+'% center'}} aria-hidden="true"></div>
+         <div className="ref-category-info"><strong>{service.name}</strong><p>{service.detail}</p></div>
+       </Link>)}
      </div>
-     <div className="jh-categories-grid">{services.map(s=><Link href={'/services/'+s.slug} className="jh-category-card" key={s.slug}><div className="jh-category-image"><img src={s.photo} alt="" loading="lazy"/><span className="jh-category-icon"><s.icon size={22}/></span></div><div className="jh-category-body"><strong>{s.title}</strong><small>{s.desc}</small></div></Link>)}</div>
    </section>
 
-   <section className="jh-section jh-project-section" aria-labelledby="jh-popular-title"><div className="container">
-     <div className="jh-section-heading"><div><span className="jh-kicker"><span className="jh-dot"/> COMMON LOCAL TASKS</span><h2 id="jh-popular-title">Services to make life easier.</h2></div><div className="jh-carousel-controls" aria-label="Browse service cards"><button onClick={()=>{setCurrentPage(0);document.getElementById("jh-project-list")?.scrollTo({left:0,behavior:"smooth"})}} disabled={currentPage===0} aria-label="Previous services"><ChevronLeft size={19}/></button><button onClick={()=>{setCurrentPage(1);document.getElementById("jh-project-list")?.scrollTo({left:1000,behavior:"smooth"})}} disabled={currentPage===1} aria-label="Next services"><ChevronRight size={19}/></button></div></div>
-     <div className="jh-project-grid" id="jh-project-list">{popular.map(p=><button className="jh-project-card" type="button" key={p.title} onClick={()=>go(p.query,p.slug)}><div className="jh-project-image"><img src={p.photo} alt="" loading="lazy"/></div><div className="jh-project-info"><div><strong>{p.title}</strong><small>{p.detail}</small></div><ArrowUpRight size={21}/></div></button>)}</div>
-     <p className="jh-caption">Illustrative service photography. Provider availability, qualifications, job quotes and pricing are confirmed individually as the JiTap pilot develops.</p>
+   <section className="container ref-section ref-tasks" aria-labelledby="ref-tasks-title">
+     <div className="ref-heading"><div><span className="ref-eyebrow"><span className="ref-dot"/> SERVICES IN MOMBASA</span><h2 id="ref-tasks-title">Popular service requests</h2></div>
+       <div className="ref-carousel-controls"><button aria-label="Previous service cards" disabled={taskPage===0} onClick={()=>setTaskPage(0)}><ChevronLeft size={18}/></button><button aria-label="Next service cards" disabled={taskPage===1} onClick={()=>setTaskPage(1)}><ChevronRight size={18}/></button></div>
+     </div>
+     <div className="ref-task-grid">
+       {tasks.slice(taskPage===0?0:3,taskPage===0?6:6).map(task=>{const index=tasks.indexOf(task);return <button className="ref-task-card" type="button" key={task.title} onClick={()=>openRequest(task.prompt,task.slug)}>
+         <span className="ref-task-photo" style={{backgroundPosition:index*100/5+'% center'}} aria-hidden="true"/>
+         <span className="ref-task-caption"><span><strong>{task.title}</strong><small>Describe your job for a quote</small></span><ArrowUpRight size={17}/></span>
+       </button>})}
+     </div>
+     <p className="ref-caveat">Illustrative imagery from JiTap's Mombasa design concept. Actual service availability and quotes depend on provider responses. No confirmed bookings or prices are implied.</p>
+   </section>
+
+   <section className="ref-process" aria-labelledby="ref-process-title"><div className="container ref-process-layout">
+     <div className="ref-process-header"><span className="ref-eyebrow"><span className="ref-dot"/> HOW JITAP WORKS</span><h2 id="ref-process-title">Get help in<br/>3 simple steps.</h2></div>
+     <div className="ref-process-steps">{steps.map((step,index)=><div key={step.label} className="ref-process-step">
+       <span className={'ref-step-number ref-step-'+index}>{index+1}</span><step.icon size={28}/><div><strong>{step.label}</strong><p>{step.copy}</p></div>{index<2&&<ArrowRight className="ref-step-arrow" size={16}/>}
+     </div>)}</div>
+     <img src="/images/mascot.webp" className="ref-process-mascot" alt="" loading="lazy"/>
    </div></section>
 
-   <section className="jh-steps-band" aria-labelledby="jh-how-title"><div className="container jh-steps-inner">
-     <div className="jh-steps-title"><span className="jh-kicker"><span className="jh-dot"/> HOW JITAP WORKS</span><h2 id="jh-how-title">Get help in<br/>3 simple steps.</h2></div>
-     <div className="jh-steps-list">{steps.map((s,i)=><div className="jh-step" key={s.name}><span className="jh-step-count">{i+1}</span><s.icon className="jh-step-icon" size={31} strokeWidth={1.8}/><div><strong>{s.name}</strong><p>{s.detail}</p></div>{i<2&&<ArrowRight size={19} className="jh-step-arrow" aria-hidden="true"/>}</div>)}</div>
-     <img className="jh-steps-mascot" src="/images/mascot.webp" alt="" loading="lazy"/>
-   </div></section>
-
-   <section className="container jh-community" aria-labelledby="jh-community-title">
-     <div className="jh-section-heading"><div><span className="jh-kicker"><span className="jh-dot"/> ROOTED IN MOMBASA</span><h2 id="jh-community-title">Neighbourhoods built on skills.</h2><p>JiTap is developing a local service network where community knowledge meets easier discovery.</p></div></div>
-     <div className="jh-community-grid">
-       <div className="jh-community-tile"><span className="jh-community-icon"><House size={25}/></span><h3>Help starts nearby</h3><p>Beginning with Bamburi and Nyali, so requests stay grounded in real neighbourhood coverage.</p></div>
-       <div className="jh-community-tile"><span className="jh-community-icon"><ShieldCheck size={25}/></span><h3>Clearer next steps</h3><p>Understand what has been requested, what is being reviewed, and when a connection is confirmed.</p></div>
-       <div className="jh-community-tile"><span className="jh-community-icon"><Clock3 size={25}/></span><h3>Your time matters</h3><p>Describe a job once instead of repeating the same explanation across scattered contacts.</p></div>
+   <section className="container ref-community" aria-labelledby="ref-community-title">
+     <div className="ref-community-heading"><span className="ref-eyebrow"><span className="ref-dot"/> BUILT FOR MOMBASA</span><h2 id="ref-community-title">Local skills. Stronger neighbourhoods.</h2><p>JiTap is building alongside the community, beginning in Bamburi and Nyali.</p></div>
+     <div className="ref-community-cards">
+       <div><HeartHandshake size={23}/><h3>People first</h3><p>Local providers deserve an easier way to make their skills discoverable.</p></div>
+       <div><Clock3 size={23}/><h3>Less chasing referrals</h3><p>Explain your service problem once, clearly, in everyday language.</p></div>
+       <div><ShieldCheck size={23}/><h3>Transparent progress</h3><p>A submitted request is not a booking until a provider connection is confirmed.</p></div>
      </div>
    </section>
 
-   <section className="jh-provider-banner" aria-labelledby="jh-provider-title"><div className="container jh-provider-inner">
-     <div className="jh-provider-picture"><img src={photo(4173284,650)} alt="Illustrative photograph of a local artisan" loading="lazy"/></div>
-     <div className="jh-provider-content"><span className="jh-kicker"><span className="jh-dot"/> FOR OUR LOCAL FUNDIS</span><h2 id="jh-provider-title">Are you a skilled fundi or service provider?</h2><p>Introduce your skills, choose your service areas, and apply to join JiTap's growing Mombasa provider network.</p></div>
-     <Link className="jh-provider-button" href="/providers/apply">Become a Provider <ArrowRight size={18}/></Link>
+   <section className="ref-provider-callout" aria-labelledby="ref-provider-title"><div className="container ref-provider-layout">
+     <div className="ref-provider-portrait" role="img" aria-label="Illustrated JiTap Mombasa service provider"/>
+     <div className="ref-provider-copy"><h2 id="ref-provider-title">Are you a skilled fundi or service provider?</h2><p>Join JiTap and connect your professional skills with service requests as we grow our local Mombasa network.</p></div>
+     <Link className="ref-provider-button" href="/providers/apply">Become a Provider <ArrowRight size={17}/></Link>
    </div></section>
  </div>;
 }
