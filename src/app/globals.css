@@ -338,3 +338,169 @@ body{color:#232c49}
  .jh-provider-button{grid-column:auto}
 }
 @media(prefers-reduced-motion:reduce){.jh-category-card,.jh-project-card,.jh-category-image img,.jh-project-image img{transition:none}}
+
+
+/* JiTap approved Mombasa reference — responsive components, not a screenshot. */
+.ref-home{overflow:hidden;background:#fff;color:#10205c;}
+.ref-home .container{max-width:1350px}
+.ref-home h2,.ref-home h3{color:#111c58}
+.ref-hero{position:relative;background:linear-gradient(180deg,#b4e6ff 0%,#ddf6ff 64%,#f6fcff 100%);isolation:isolate;overflow:hidden}
+.ref-coastal-wash{position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,#eefdffeb 0%,#f7ffffb8 35%,#e8f8ff42 67%,#d6f3ff22 100%),url('/images/coast.webp') center/cover no-repeat;opacity:.95}
+.ref-hero-grid{display:grid;grid-template-columns:54% 46%;min-height:366px;position:relative;align-items:center}
+.ref-hero-copy{position:relative;z-index:4;padding:34px 0 55px}
+.ref-eyebrow{display:flex;align-items:center;gap:7px;font-size:10px;color:#059e55;font-weight:900;letter-spacing:.095em;line-height:1.4}
+.ref-dot{display:inline-flex;background:#08bf68;border-radius:50%;width:8px;height:8px;flex:none}
+.ref-hero h1{font-size:clamp(45px,4.75vw,68px);font-weight:890;letter-spacing:-.06em;color:#111c58;line-height:1.03;margin:12px 0 9px}
+.ref-hero h1 span{color:#1379eb;display:inline-block}
+.ref-green-stroke{display:inline-block;width:73px;height:13px;border-top:6px solid #06bf63;border-radius:50%;margin-left:12px;transform:rotate(-9deg) translateY(-4px)}
+.ref-hero-copy>p{font-size:14px;max-width:580px;color:#4e6584;line-height:1.45;margin:0 0 10px}
+.ref-tagline{font-size:14px;letter-spacing:.22em;font-weight:950;color:#142469;margin-bottom:12px}
+.ref-tagline b{color:#00c853}
+.ref-search{display:flex;align-items:center;gap:3px;position:relative;z-index:5;max-width:715px;width:112%;min-height:59px;padding:6px;background:#fff;border:1px solid #dce9f2;border-radius:15px;box-shadow:0 9px 28px #264c811f}
+.ref-search-field{display:flex;align-items:center;gap:10px;flex:1;min-width:110px;padding-left:10px;color:#1178ee}
+.ref-search-field input{background:transparent;border:0;outline:0;width:100%;min-width:0;color:#1a2a63;font-size:13px;min-height:40px}
+.ref-search-field input::placeholder{color:#7386a5}
+.ref-search-location{display:flex;align-items:center;gap:8px;min-width:128px;max-width:148px;border-left:1px solid #dae7f3;padding:0 11px;color:#1778e3}
+.ref-search-location select{max-width:100%;background:transparent;border:0;outline:0;color:#1a2863;cursor:pointer;font-size:12px;font-weight:740}
+.ref-find-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:#181e7b;color:#fff;white-space:nowrap;border:none;border-radius:11px;font-size:13px;font-weight:870;min-height:46px;padding:0 18px}
+.ref-find-button:hover{background:#2a39b1}
+.ref-popular-chips{display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin-top:11px;max-width:750px}
+.ref-popular-chips span{font-size:11px;color:#435b79;margin-right:5px}
+.ref-popular-chips button{font-size:10px;color:#273d6a;background:#ffffffdc;border:1px solid #dce9f2;border-radius:99px;padding:6px 11px;line-height:1.2}
+.ref-popular-chips button:hover{background:#eaf9ff;border-color:#80b8ef}
+.ref-hero-picture{position:relative;align-self:stretch;background:transparent;min-width:0}
+.ref-hero-person{position:absolute;inset:4% 0 0 -8%;background-image:url('/images/mombasa-hero-reference.webp');background-repeat:no-repeat;background-position:50% 100%;background-size:contain;filter:drop-shadow(0 5px 18px #246b8c23);mask-image:linear-gradient(to right,transparent 0%,#000 6%,#000 94%,transparent 100%)}
+.ref-hero-local-badge{display:none} /* Phrase is already painted into the supplied artwork crop. */
+.ref-hero-coverage{position:absolute;z-index:3;bottom:53px;right:-9px;display:flex;align-items:center;gap:6px;padding:9px 11px;color:#123777;font-weight:800;font-size:10px;background:#ffffffec;border:1px solid #deebf4;border-radius:11px;box-shadow:0 5px 16px #1d608b18}
+.ref-hero-coverage svg{color:#05a959}
+.ref-wave{position:absolute;bottom:-59px;left:-5%;height:92px;width:110%;background:#fff;border-radius:48% 50% 0 0;z-index:2}
+.ref-section{padding-top:45px;padding-bottom:32px}
+.ref-categories{position:relative;z-index:3}
+.ref-heading{display:flex;justify-content:space-between;gap:16px;align-items:end;margin-bottom:17px}
+.ref-heading h2{font-size:clamp(26px,2.5vw,34px);line-height:1.15;letter-spacing:-.043em;font-weight:870;margin:6px 0 0}
+.ref-all-link{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:720;color:#1373df;white-space:nowrap}
+.ref-all-link:hover{text-decoration:underline}
+.ref-category-grid{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:12px}
+.ref-category-card{display:flex;flex-direction:column;min-width:0;overflow:hidden;border:1px solid #e4edf5;border-radius:12px;background:#fff;box-shadow:0 3px 10px #1e487011;transition:transform .2s,box-shadow .2s}
+.ref-category-card:hover{transform:translateY(-3px);box-shadow:0 10px 24px #1b568a1e}
+.ref-category-photo{height:66px;flex:none;background-image:url('/images/mombasa-services-reference.webp');background-repeat:no-repeat;background-size:800% 100%;background-color:#e9f7fb}
+.ref-category-info{padding:12px 12px 13px;min-height:69px}
+.ref-category-info strong{font-size:13px;font-weight:850;letter-spacing:-.022em;color:#101f60;line-height:1.25;display:block}
+.ref-category-info p{font-size:10.5px;color:#617697;line-height:1.42;margin:5px 0 0}
+.ref-tasks{padding-top:30px;padding-bottom:30px}
+.ref-carousel-controls{display:flex;gap:7px}
+.ref-carousel-controls button{width:33px;height:33px;background:#fff;color:#0e6ce0;border:1px solid #dce9f5;border-radius:50%;display:grid;place-items:center;cursor:pointer}
+.ref-carousel-controls button:disabled{opacity:.35;cursor:default}
+.ref-task-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+.ref-task-card{display:flex;flex-direction:column;min-width:0;padding:0;border:1px solid #e3eaf1;border-radius:10px;background:white;overflow:hidden;text-align:left;cursor:pointer;box-shadow:0 3px 11px #24446c12;transition:transform .2s,box-shadow .2s}
+.ref-task-card:hover{transform:translateY(-3px);box-shadow:0 10px 21px #24446c23}
+.ref-task-photo{display:block;height:93px;width:100%;background-image:url('/images/mombasa-tasks-reference.webp');background-repeat:no-repeat;background-size:600% 100%;background-color:#dbe9f0}
+.ref-task-caption{display:flex;justify-content:space-between;align-items:center;gap:7px;padding:12px;min-height:59px}
+.ref-task-caption strong{font-size:12px;color:#0d1e5a;line-height:1.28;font-weight:830;display:block}
+.ref-task-caption small{font-size:10px;line-height:1.4;margin-top:4px;display:block;color:#07825d}
+.ref-task-caption svg{flex:none;color:#105ed0}
+.ref-caveat{font-size:10px;line-height:1.4;margin:14px 0 0;color:#8290a5}
+.ref-process{background:linear-gradient(90deg,#eaf9ff,#f2fbff);border-top:1px solid #e0eef7;border-bottom:1px solid #e4f0f7}
+.ref-process-layout{min-height:135px;display:flex;align-items:center;gap:18px;position:relative;padding-top:17px;padding-bottom:17px}
+.ref-process-header{flex:0 0 210px}
+.ref-process-header h2{font-size:26px;line-height:1.03;letter-spacing:-.045em;margin:6px 0 0;font-weight:850}
+.ref-process-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:center;flex:1;gap:12px;padding-right:75px}
+.ref-process-step{display:flex;align-items:center;gap:8px;position:relative}
+.ref-step-number{width:42px;height:42px;display:grid;place-items:center;flex:none;border-radius:50%;background:#d7efff;color:#1673de;font-size:19px;font-weight:920}
+.ref-step-1{background:#d6f8e6;color:#00a75f}
+.ref-step-2{background:#dfe5ff;color:#2254de}
+.ref-process-step>svg:not(.ref-step-arrow){color:#135fdd;flex:none}
+.ref-process-step strong{font-size:12px;font-weight:900;color:#141e61}
+.ref-process-step p{font-size:10px;color:#61769a;line-height:1.32;margin:4px 0 0}
+.ref-step-arrow{position:absolute;right:-10px;color:#61a6e9}
+.ref-process-mascot{width:70px;height:100px;object-fit:contain;position:absolute;right:12px;bottom:0}
+.ref-community{padding-top:41px;padding-bottom:38px}
+.ref-community-heading h2{font-size:clamp(25px,2.5vw,34px);margin:6px 0 7px;letter-spacing:-.045em}
+.ref-community-heading p{font-size:13px;color:#607495;margin:0 0 22px}
+.ref-community-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.ref-community-cards>div{display:grid;grid-template-columns:36px auto;grid-template-rows:auto auto;column-gap:10px;align-items:center;border:1px solid #e5edf5;border-radius:12px;padding:17px;background:#fafcff}
+.ref-community-cards svg{color:#02a866;grid-row:1/3}
+.ref-community-cards h3{font-size:14px;margin:0;letter-spacing:-.02em}
+.ref-community-cards p{font-size:11px;color:#667997;line-height:1.45;margin:4px 0 0}
+.ref-provider-callout{background:linear-gradient(90deg,#d6fae8,#e9fcf4 62%,#e2f9ed);border-top:1px solid #c9f1df}
+.ref-provider-layout{display:flex;min-height:145px;align-items:center;gap:22px;position:relative}
+.ref-provider-portrait{flex:0 0 158px;width:158px;height:137px;align-self:flex-end;background-image:url('/images/mombasa-provider-reference.webp');background-position:center bottom;background-size:contain;background-repeat:no-repeat}
+.ref-provider-copy{flex:1;min-width:0}
+.ref-provider-copy h2{font-size:22px;letter-spacing:-.045em;margin:0 0 6px;font-weight:850}
+.ref-provider-copy p{font-size:12px;margin:0;color:#53728a;line-height:1.45}
+.ref-provider-button{display:inline-flex;align-items:center;gap:11px;background:#00865b;color:white;font-weight:830;font-size:13px;padding:14px 22px;border-radius:10px;white-space:nowrap}
+.ref-provider-button:hover{background:#036c4b}
+@media(max-width:1100px){
+ .ref-hero-grid{grid-template-columns:56% 44%}
+ .ref-hero h1{font-size:clamp(40px,5vw,57px)}
+ .ref-search{width:110%}
+ .ref-category-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+ .ref-task-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .ref-task-photo{height:114px}
+ .ref-process-header{flex-basis:160px}
+ .ref-process-steps{gap:5px;padding-right:65px}
+ .ref-process-step{gap:6px}
+ .ref-step-number{width:34px;height:34px;font-size:16px}
+ .ref-process-step>svg:not(.ref-step-arrow){width:21px}
+}
+@media(max-width:780px){
+ .ref-hero-grid{grid-template-columns:1fr}
+ .ref-hero-copy{padding:41px 0 16px}
+ .ref-hero h1{font-size:clamp(46px,7.7vw,65px)}
+ .ref-hero-copy>p{max-width:580px}
+ .ref-search{max-width:none;width:100%}
+ .ref-hero-picture{height:330px}
+ .ref-hero-person{inset:-10px 4% 0 4%;background-position:center bottom}
+ .ref-hero-coverage{right:7%;bottom:42px}
+ .ref-category-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+ .ref-task-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .ref-process-layout{display:block;padding-top:24px;padding-bottom:27px}
+ .ref-process-header{margin-bottom:22px}
+ .ref-process-header h2 br{display:none}
+ .ref-process-steps{padding-right:0}
+ .ref-process-mascot{display:none}
+ .ref-community-cards{grid-template-columns:1fr}
+ .ref-provider-layout{gap:14px}
+ .ref-provider-portrait{flex-basis:118px;width:118px;height:124px}
+ .ref-provider-copy h2{font-size:19px}
+ .ref-provider-button{padding:12px 14px;font-size:11px}
+}
+@media(max-width:540px){
+ .ref-hero-copy{padding:30px 0 14px}
+ .ref-eyebrow{font-size:9px;letter-spacing:.05em}
+ .ref-hero h1{font-size:43px}
+ .ref-green-stroke{width:42px;margin-left:6px}
+ .ref-hero-copy>p{font-size:13px}
+ .ref-tagline{font-size:11px}
+ .ref-search{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px}
+ .ref-search-field{grid-column:1/-1;padding:6px 9px;border-bottom:1px solid #e8f0f7}
+ .ref-search-location{border:0;min-width:140px;max-width:none}
+ .ref-find-button{font-size:12px;padding:0 14px;min-height:43px}
+ .ref-hero-picture{height:265px}
+ .ref-hero-person{inset:0 -4% 0 -4%}
+ .ref-hero-coverage{bottom:28px;right:2%;font-size:9px}
+ .ref-wave{height:57px;bottom:-42px}
+ .ref-section{padding-top:34px;padding-bottom:25px}
+ .ref-heading{align-items:flex-start;gap:8px}
+ .ref-heading h2{font-size:24px}
+ .ref-all-link{font-size:10px;align-self:end}
+ .ref-category-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ .ref-category-photo{height:84px}
+ .ref-category-info{min-height:58px;padding:10px}
+ .ref-category-info strong{font-size:12px}
+ .ref-task-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ .ref-task-photo{height:90px}
+ .ref-task-caption{padding:10px;min-height:58px}
+ .ref-task-caption strong{font-size:11px}
+ .ref-task-caption small{font-size:9px}
+ .ref-process-steps{grid-template-columns:1fr;gap:16px}
+ .ref-process-step{gap:12px}
+ .ref-step-arrow{display:none}
+ .ref-community{padding-top:33px;padding-bottom:30px}
+ .ref-provider-layout{display:grid;grid-template-columns:84px minmax(0,1fr);gap:8px;padding-top:20px;padding-bottom:17px}
+ .ref-provider-portrait{grid-row:1/3;align-self:end;width:84px;height:115px;min-width:0}
+ .ref-provider-copy h2{font-size:17px}
+ .ref-provider-copy p{font-size:10px}
+ .ref-provider-button{grid-column:2;justify-self:start;padding:10px 13px}
+}
+@media(prefers-reduced-motion:reduce){.ref-category-card,.ref-task-card{transition:none}}
