@@ -1,5 +1,5 @@
 'use client';
-import {useState, type FormEvent} from 'react';
+import {useEffect,useState, type FormEvent} from 'react';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
 import {
@@ -42,6 +42,7 @@ export function MarketplaceHome(){
  const [description,setDescription]=useState('');
  const [area,setArea]=useState('Bamburi');
  const [taskPage,setTaskPage]=useState(0);
+ useEffect(()=>{const sync=(event:Event)=>{const chosen=(event as CustomEvent<string>).detail;if(chosen==='Bamburi'||chosen==='Nyali')setArea(chosen)};try{const stored=window.localStorage.getItem('jitap:area');if(stored==='Bamburi'||stored==='Nyali')setArea(stored);}catch{}window.addEventListener('jitap:area',sync);return()=>window.removeEventListener('jitap:area',sync)},[]);
 
  function openRequest(query:string,category?:string){
    const text=query.trim();
@@ -127,5 +128,6 @@ export function MarketplaceHome(){
      <div className="ref-provider-copy"><h2 id="ref-provider-title">Are you a skilled fundi or service provider?</h2><p>Join JiTap and connect your professional skills with service requests as we grow our local Mombasa network.</p></div>
      <Link className="ref-provider-button" href="/providers/apply">Become a Provider <ArrowRight size={17}/></Link>
    </div></section>
+   <Link className="jh-help-widget" href="/contact" aria-label="Contact JiTap support">Need help? <ArrowRight size={16}/></Link>
  </div>;
 }
