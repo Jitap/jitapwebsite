@@ -84,6 +84,15 @@ await test('help link, category action and mobile menu',async()=>{
  await page.getByRole('navigation',{name:'Mobile navigation'}).getByRole('link',{name:'Find Services'}).click();
  await page.waitForURL('**/services');
 });
+await test('responsive widths 320, 360, 375, 414, 768, 1024 and 1440 avoid horizontal overflow',async()=>{
+ for(const width of [320,360,375,414,768,1024,1440]){
+   await page.setViewportSize({width,height:880});
+   await open();
+   const dims=await page.evaluate(()=>({viewport:window.innerWidth,document:document.documentElement.scrollWidth}));
+   assert.ok(dims.document<=dims.viewport+3,'Overflow at '+width+': '+JSON.stringify(dims));
+   if(width===320||width===768) await page.screenshot({path:'ui-test-results/viewport-'+width+'.png',fullPage:true});
+ }
+});
 await browser.close();
 console.log('\nUI TEST RESULT',JSON.stringify(result));
 if(result.failed.length)process.exit(1);
