@@ -1,0 +1,28 @@
+name: JiTap live intake E2E
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/intake-e2e.mjs'
+      - '.github/workflows/intake-e2e.yml'
+      - 'src/app/api/intake/**'
+      - 'src/lib/validators.ts'
+      - 'src/components/Interactive.tsx'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  live-intake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify deployed production API (synthetic QA records)
+        run: node scripts/intake-e2e.mjs
+        env:
+          JITAP_TEST_URL: https://www.jitap.app
