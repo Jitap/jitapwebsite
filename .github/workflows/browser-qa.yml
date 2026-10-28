@@ -1,0 +1,42 @@
+name: Visual and functional browser QA
+on:
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'scripts/website-browser-test.mjs'
+      - '.github/workflows/browser-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: npm install --no-save playwright@1.56.1
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - name: Launch Next.js
+        run: |
+          (npm run start -- -p 3100 > /tmp/jitap-next.log 2>&1 &)
+          for i in {1..45}; do
+            if curl -fsS http://127.0.0.1:3100/ >/dev/null; then exit 0; fi
+            sleep 2
+          done
+          cat /tmp/jitap-next.log
+          exit 1
+      - name: Click-through desktop + mobile QA and image checks
+        run: node scripts/website-browser-test.mjs
+        env:
+          BASE_URL: http://127.0.0.1:3100
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jitap-desktop-mobile-screenshots
+          path: ui-test-results/*.png
+          if-no-files-found: ignore
