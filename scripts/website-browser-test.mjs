@@ -2,65 +2,86 @@ import {chromium} from 'playwright';
 import assert from 'node:assert/strict';
 import {mkdir} from 'node:fs/promises';
 
-const base=process.env.BASE_URL || 'http://127.0.0.1:3100';
+const base=process.env.BASE_URL||'http://127.0.0.1:3100';
 const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
 await mkdir('ui-test-results',{recursive:true});
 const page=await browser.newPage({viewport:{width:1440,height:900},deviceScaleFactor:1});
-const result={passed:[],failed:[]};
-async function test(name,fn){try{await fn();result.passed.push(name);console.log('PASS',name)}catch(e){result.failed.push({name,error:String(e)});console.error('FAIL',name,e)}}
-const open=async(url='/')=>page.goto(base+url,{waitUntil:'domcontentloaded',timeout:30000});
-await test('homepage and responsive photo cards render',async()=>{
-  const response=await open();
-  assert.equal(response?.status(),200);
-  await page.getByRole('heading',{name:/Find local help/i}).waitFor();
-  assert.equal(await page.locator('.ref-category-card').count(),8);
-  assert.equal(await page.locator('.ref-task-card').count(),6);
-  const images=page.locator('.ref-category-photo img');
-  await images.first().scrollIntoViewIfNeeded();
-  await page.waitForTimeout(2800);
-  const stat=await images.evaluateAll(nodes=>nodes.map(n=>({src:n.currentSrc,complete:n.complete,width:n.naturalWidth,displayWidth:n.getBoundingClientRect().width})));
-  console.log('Photo image audit',JSON.stringify(stat));
-  assert.ok(stat.every(p=>p.width>0),'Card photos must all load');
-  assert.ok(stat.every(p=>Number(new URL(p.src).searchParams.get('w'))>=p.displayWidth*2),'CDN photo must deliver at least 2x rendered width');
-  assert.ok(!((await page.content()).includes('/images/mombasa-services-reference.webp')),'Tiny sprites cannot appear in active homepage');
-  await page.screenshot({path:'ui-test-results/desktop.png',fullPage:true});
+const results={passed:[],failed:[]};
+async function check(name,fn){try{await fn();console.log('PASS',name);results.passed.push(name)}catch(e){console.error('FAIL',name,e);results.failed.push({name,error:String(e)})}}
+const open=(path='/')=>page.goto(base+path,{waitUntil:'domcontentloaded',timeout:30000});
+await check('approved Google Drive photos load sharply and without repeats',async()=>{
+ const res=await open();assert.equal(res?.status(),200);
+ await page.getByRole('heading',{name:/Every job needs/i}).waitFor();
+ assert.equal(await page.locator('.th-category').count(),8);
+ assert.equal(await page.locator('.th-project').count(),6);
+ await page.locator('.th-category').first().scrollIntoViewIfNeeded();
+ await page.waitForTimeout(1700);
+ const images=await page.locator('.th-categories img').evaluateAll(nodes=>nodes.map(n=>({src:n.getAttribute('src'),loaded:n.complete,natural:n.naturalWidth,display:Math.round(n.getBoundingClientRect().width)})));
+ console.log('APPROVED IMAGES',JSON.stringify(images));
+ assert.ok(images.every(x=>x.loaded&&x.natural>=450),'All category images must load from original approved photos');
+ assert.equal(new Set(images.map(x=>x.src)).size,8,'No repeated category photographs');
+ assert.ok(images.every(x=>x.natural>x.display),'No category image may be upscaled');
+ const mascot=await page.locator('.th-hero-visual>img').evaluate(n=>({natural:n.naturalWidth,display:n.getBoundingClientRect().width}));
+ assert.ok(mascot.natural>mascot.display,'Original mascot must never be upscaled');
+ await page.screenshot({path:'ui-test-results/thumbtack-home-desktop.png',fullPage:true});
 });
-await test('navigation to every service detail page',async()=>{
- for(const slug of ['plumbing','electrical','cleaning','painting','carpentry','appliance-repair','general-repairs','other-services']){
-   await open();
-   await page.locator('.ref-category-card[href="/services/'+slug+'"]').click();
-   await page.waitForURL('**/services/'+slug);
-   assert.equal(new URL(page.url()).pathname,'/services/'+slug);
- }
-});
-await test('header location selector synchronizes search location',async()=>{
+await check('all six Mombasa areas exist in homepage search and header',async()=>{
  await open();
- await page.getByRole('combobox',{name:'Choose your pilot neighbourhood'}).selectOption('Nyali');
- assert.equal(await page.getByRole('combobox',{name:'Your service area'}).inputValue(),'Nyali');
+ const options=await page.getByRole('combobox',{name:'Where do you need a fundi?'}).locator('option').allTextContents();
+ assert.deepEqual(options,['Bamburi','Nyali','Mtwapa','Tudor','Changamwe','Likoni']);
+ await page.getByRole('combobox',{name:'Choose your pilot neighbourhood'}).selectOption('Tudor');
+ assert.equal(await page.getByRole('combobox',{name:'Where do you need a fundi?'}).inputValue(),'Tudor');
 });
-await test('search submits details and selected pilot location',async()=>{
+await check('homepage service search sends a structured request',async()=>{
  await open();
- await page.getByRole('combobox',{name:'Choose your pilot neighbourhood'}).selectOption('Nyali');
- await page.getByRole('textbox',{name:'Describe what you need help with'}).fill('My kitchen sink is leaking today');
- await page.locator('.ref-search button[type=submit]').click();
+ await page.getByRole('combobox',{name:'Where do you need a fundi?'}).selectOption('Mtwapa');
+ await page.getByRole('textbox',{name:'Describe your project or problem'}).fill('My sink is leaking, I need a plumber.');
+ await page.getByRole('button',{name:'Find a fundi'}).click();
  await page.waitForURL('**/request?**');
  const params=new URL(page.url()).searchParams;
- assert.equal(params.get('category'),'plumbing');assert.equal(params.get('area'),'Nyali');
- assert.equal(params.get('description'),'My kitchen sink is leaking today');
+ assert.equal(params.get('area'),'Mtwapa');assert.equal(params.get('category'),'plumbing');
+ assert.ok((params.get('description')||'').includes('sink is leaking'));
+ await page.getByRole('heading',{name:/What plumbing issue/i}).waitFor();
 });
-await test('popular chips and carousel buttons really change route/cards',async()=>{
- await open();
- const original=await page.locator('.ref-task-card').first().innerText();
- await page.getByRole('button',{name:'Next service cards'}).click();
- const next=await page.locator('.ref-task-card').first().innerText();
- assert.notEqual(original,next);
- await page.getByRole('button',{name:'Previous service cards'}).click();
- assert.equal(await page.locator('.ref-task-card').first().innerText(),original);
- await page.locator('.ref-popular-chips').getByRole('button',{name:'Electrical'}).click();
- await page.waitForURL('**/request?**');
- assert.equal(new URL(page.url()).searchParams.get('category'),'electrical');
+await check('Thumbtack-style guided questions, progress, skip and contact step',async()=>{
+ await open('/request?category=cleaning&area=Nyali&description=I%20need%20a%20house%20cleaner');
+ await page.getByRole('heading',{name:/How often would you like/i}).waitFor();
+ await page.getByRole('button',{name:'Every week'}).click();
+ await page.getByRole('button',{name:/Next/}).click();
+ await page.getByRole('heading',{name:/How big is the place/i}).waitFor();
+ await page.getByRole('button',{name:'2 bedrooms'}).click();
+ await page.getByRole('button',{name:/Next/}).click();
+ await page.getByRole('button',{name:'Deep cleaning'}).click();
+ await page.getByRole('button',{name:/Next/}).click();
+ await page.getByRole('button',{name:/Within the week/i}).click();
+ await page.getByRole('button',{name:/Continue to contact details/}).click();
+ await page.getByRole('heading',{name:/How can JiTap reach you/i}).waitFor();
+ await page.getByRole('textbox',{name:'Your name'}).waitFor();
+ assert.equal(await page.getByRole('combobox',{name:'Neighbourhood',exact:true}).inputValue(),'Nyali');
+ assert.equal(await page.getByRole('combobox',{name:'Preferred timing'}).inputValue(),'this-week');
+ await page.screenshot({path:'ui-test-results/thumbtack-guided-request.png',fullPage:true});
 });
-await test('provider CTA and two-step application work',async()=>{
+await check('every category card links to a real service page',async()=>{
+ for(const slug of ['plumbing','electrical','cleaning','painting','carpentry','appliance-repair','general-repairs','other-services']){
+  await open();
+  await page.locator('.th-category[href="/services/'+slug+'"]').click();
+  await page.waitForURL('**/services/'+slug);
+ }
+});
+await check('fundi directory contains 36 profiles but exposes no phone contacts',async()=>{
+ const resp=await open('/fundis');assert.equal(resp?.status(),200);
+ assert.equal(await page.locator('.td-pro-card').count(),36);
+ const text=await page.locator('.td-pro-list').innerText();
+ assert.ok(!/(?:\+?254|0)[ -]?[17]\d(?:[ -]?\d){7,8}/.test(text),'No Kenyan contact number may be visible');
+ assert.ok(!/\b[\w.+-]+@[\w.-]+\.[a-z]{2,}\b/i.test(text),'No public email may be visible');
+ assert.equal(await page.locator('.td-pro-card a[href*="/request"]').count(),36);
+ await page.getByRole('combobox',{name:'Your area'}).selectOption('Changamwe');
+ await page.getByText(/No submitted fundi profiles match/i).waitFor();
+ await page.getByRole('combobox',{name:'Your area'}).selectOption('Nyali');
+ assert.ok((await page.locator('.td-pro-card').count())>0);
+ await page.screenshot({path:'ui-test-results/thumbtack-fundi-directory.png',fullPage:true});
+});
+await check('provider application supports six areas and back/continue',async()=>{
  await open();
  await page.locator('header a.nav-button').click();
  await page.waitForURL('**/providers/apply');
@@ -68,31 +89,39 @@ await test('provider CTA and two-step application work',async()=>{
  await page.getByRole('textbox',{name:'Mobile number'}).fill('0712345678');
  await page.getByRole('button',{name:/Continue/}).click();
  await page.getByText('Step 2 of 2').waitFor();
- await page.getByRole('button',{name:/Back/}).click();
+ for(const area of ['Bamburi','Nyali','Mtwapa','Tudor','Changamwe','Likoni'])assert.ok(await page.getByLabel(area,{exact:true}).count()>0);
+ await page.getByRole('button',{name:'Back'}).click();
  await page.getByText('Step 1 of 2').waitFor();
 });
-await test('help link, category action and mobile menu',async()=>{
+await check('mobile menu, desktop Explore services and area list are interactive',async()=>{
  await open();
- await page.locator('a.jh-help-widget').click();await page.waitForURL('**/contact');
+ await page.locator('.jt-explore summary').click();
+ await page.locator('.jt-explore-panel a[href="/fundis"]').waitFor();
  await page.setViewportSize({width:390,height:844});
  await open();
- const overflow=await page.evaluate(()=>({full:document.documentElement.scrollWidth,view:window.innerWidth}));
- if(overflow.full>overflow.view+3){const offenders=await page.evaluate(()=>Array.from(document.querySelectorAll('body *')).map(el=>({tag:el.tagName,cls:String(el.className||'').slice(0,80),text:(el.textContent||'').slice(0,26),right:Math.round(el.getBoundingClientRect().right),left:Math.round(el.getBoundingClientRect().left),width:Math.round(el.getBoundingClientRect().width)})).filter(o=>o.right>window.innerWidth+3||o.left < -4).sort((a,b)=>b.right-a.right).slice(0,24));console.error('MOBILE OVERFLOW OFFENDERS',JSON.stringify(offenders));}
- assert.ok(overflow.full <= overflow.view+3,'Horizontal overflow on 390px viewport '+JSON.stringify(overflow));
- await page.screenshot({path:'ui-test-results/mobile.png',fullPage:true});
  await page.getByRole('button',{name:'Open menu'}).click();
- await page.getByRole('navigation',{name:'Mobile navigation'}).getByRole('link',{name:'Find Services'}).click();
- await page.waitForURL('**/services');
+ await page.getByRole('navigation',{name:'Mobile navigation'}).getByRole('link',{name:'Find Fundis'}).click();
+ await page.waitForURL('**/fundis');
+ await page.screenshot({path:'ui-test-results/thumbtack-mobile-fundis.png',fullPage:true});
 });
-await test('responsive widths 320, 360, 375, 414, 768, 1024 and 1440 avoid horizontal overflow',async()=>{
- for(const width of [320,360,375,414,768,1024,1440]){
-   await page.setViewportSize({width,height:880});
-   await open();
-   const dims=await page.evaluate(()=>({viewport:window.innerWidth,document:document.documentElement.scrollWidth}));
-   assert.ok(dims.document<=dims.viewport+3,'Overflow at '+width+': '+JSON.stringify(dims));
-   if(width===320||width===768) await page.screenshot({path:'ui-test-results/viewport-'+width+'.png',fullPage:true});
+await check('request API validates newly supported area without requiring deployment DB',async()=>{
+ for(const area of ['Bamburi','Nyali','Mtwapa','Tudor','Changamwe','Likoni']){
+  const response=await page.request.post(base+'/api/intake/request',{headers:{'Content-Type':'application/json'},data:{name:'JiTap Test',phone:'123',consent:true,website:'',category:'cleaning',description:'Synthetic browser validation only',area,timing:'flexible'}});
+  assert.equal(response.status(),422);
+  const body=await response.json();
+  assert.ok(body.issues?.phone?.length);
+  assert.ok(!body.issues?.area,'Valid area should not be rejected: '+area);
+ }
+});
+await check('eight viewport widths have no horizontal overflow',async()=>{
+ for(const width of [320,360,375,390,414,768,1024,1440]){
+  await page.setViewportSize({width,height:880});
+  await open();
+  const dims=await page.evaluate(()=>({viewport:window.innerWidth,doc:document.documentElement.scrollWidth}));
+  assert.ok(dims.doc<=dims.viewport+3,'horizontal overflow width='+width+': '+JSON.stringify(dims));
+  if([320,390,768].includes(width))await page.screenshot({path:'ui-test-results/thumbtack-width-'+width+'.png',fullPage:true});
  }
 });
 await browser.close();
-console.log('\nUI TEST RESULT',JSON.stringify(result));
-if(result.failed.length)process.exit(1);
+console.log('FINAL CHECKS',JSON.stringify(results));
+if(results.failed.length)process.exit(1);
