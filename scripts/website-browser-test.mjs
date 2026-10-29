@@ -57,7 +57,7 @@ await check('Thumbtack-style guided questions, progress, skip and contact step',
  await page.getByRole('button',{name:/Continue to contact details/}).click();
  await page.getByRole('heading',{name:/How can JiTap reach you/i}).waitFor();
  await page.getByRole('textbox',{name:'Your name'}).waitFor();
- assert.equal(await page.getByRole('combobox',{name:'Neighbourhood'}).inputValue(),'Nyali');
+ assert.equal(await page.getByRole('combobox',{name:'Neighbourhood',exact:true}).inputValue(),'Nyali');
  assert.equal(await page.getByRole('combobox',{name:'Preferred timing'}).inputValue(),'this-week');
  await page.screenshot({path:'ui-test-results/thumbtack-guided-request.png',fullPage:true});
 });
