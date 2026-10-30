@@ -41,6 +41,56 @@ function allowedOrigin(req: NextRequest) {
  * Stores validated website enquiries in Supabase PostgreSQL via a server-token-authenticated
  * RPC. No direct public database writes, no demo success, no pretend dispatch.
  */
+
+/** Sends a best-effort internal notification only after the encrypted server-side intake succeeds.
+ * Do not expose the API key or claimant data to logs, clients, or public source.
+ */
+async function notifyJiTap(kind: FormKind, data: Record<string, unknown>, reference: string) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.JITAP_EMAIL_FROM;
+  if (!apiKey || !from) {
+    console.warn('JiTap email notification service is not configured', { kind, reference });
+    return;
+  }
+  const contactRoutes: Record<string, string> = {
+    general: 'hello@jitap.app',
+    service: 'support@jitap.app',
+    support: 'support@jitap.app',
+    provider: 'providers@jitap.app',
+    partnership: 'partners@jitap.app',
+    business: 'info@jitap.app'
+  };
+  const recipient = kind === 'provider' ? 'providers@jitap.app'
+    : kind === 'request' ? 'support@jitap.app'
+    : kind === 'early-access' ? 'hello@jitap.app'
+    : contactRoutes[String(data.type || 'general')] || 'hello@jitap.app';
+  const safeData = Object.entries(data)
+    .filter(([key]) => key !== 'website' && key !== 'consent')
+    .map(([key, value]) => key + ': ' + (Array.isArray(value) ? value.join(', ') : String(value)))
+    .join('\\n');
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + apiKey,
+        'Content-Type': 'application/json',
+        'Idempotency-Key': 'jitap-intake-' + reference
+      },
+      body: JSON.stringify({
+        from, to: [recipient],
+        reply_to: kind === 'contact' && typeof data.email === 'string' ? data.email : undefined,
+        subject: '[JiTap ' + kind + '] New enquiry ' + reference.slice(0, 8),
+        text: 'JiTap website intake reference: ' + reference + '\\n\\n' + safeData
+      }),
+      signal: AbortSignal.timeout(8000),
+      cache: 'no-store'
+    });
+    if (!res.ok) console.error('JiTap email notification failed', { kind, reference, status: res.status });
+  } catch {
+    console.error('JiTap email notification transport failure', { kind, reference });
+  }
+}
+
 export async function POST(req: NextRequest, { params }: { params: Promise<{kind: string}> }) {
   const { kind } = await params;
   if (!kinds.has(kind as FormKind)) return respond({ error: 'Unknown form.' }, 404);
@@ -107,6 +157,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{kind
       console.error('JiTap intake received an unexpected response');
       return respond({ error: 'We could not confirm receipt. Please contact JiTap.' }, 502);
     }
+    await notifyJiTap(kind as FormKind, data, identifier);
     return respond({
       ok: true,
       reference: identifier,
