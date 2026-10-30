@@ -67,7 +67,7 @@ async function notifyJiTap(kind: FormKind, data: Record<string, unknown>, refere
   const safeData = Object.entries(data)
     .filter(([key]) => key !== 'website' && key !== 'consent')
     .map(([key, value]) => key + ': ' + (Array.isArray(value) ? value.join(', ') : String(value)))
-    .join('\\n');
+    .join('\n');
   try {
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -80,7 +80,7 @@ async function notifyJiTap(kind: FormKind, data: Record<string, unknown>, refere
         from, to: [recipient],
         reply_to: kind === 'contact' && typeof data.email === 'string' ? data.email : undefined,
         subject: '[JiTap ' + kind + '] New enquiry ' + reference.slice(0, 8),
-        text: 'JiTap website intake reference: ' + reference + '\\n\\n' + safeData
+        text: 'JiTap website intake reference: ' + reference + '\n\n' + safeData
       }),
       signal: AbortSignal.timeout(8000),
       cache: 'no-store'
