@@ -41,6 +41,60 @@ function allowedOrigin(req: NextRequest) {
  * Stores validated website enquiries in Supabase PostgreSQL via a server-token-authenticated
  * RPC. No direct public database writes, no demo success, no pretend dispatch.
  */
+
+const inboxByType: Record<string, string> = {
+  general: 'hello@jitap.app',
+  support: 'support@jitap.app',
+  service: 'support@jitap.app',
+  provider: 'providers@jitap.app',
+  partnership: 'partners@jitap.app',
+  business: 'info@jitap.app'
+};
+
+async function notifyInbox(kind: FormKind, payload: Record<string, unknown>, reference: string): Promise<boolean> {
+  const apiKey = process.env.RESEND_API_KEY;
+  const sender = process.env.JITAP_EMAIL_FROM;
+  if (!apiKey || !sender) {
+    console.error('JiTap intake email not configured', { kind, reference });
+    return false;
+  }
+  const destination = kind === 'contact'
+    ? inboxByType[String(payload.type || 'general')] || 'hello@jitap.app'
+    : kind === 'provider' ? 'providers@jitap.app'
+    : kind === 'request' ? 'support@jitap.app' : 'hello@jitap.app';
+  const lines = Object.entries(payload)
+    .filter(([key]) => key !== 'consent' && key !== 'website')
+    .map(([key, value]) => key + ': ' + (Array.isArray(value) ? value.join(', ') : String(value)));
+  const body = ['New JiTap website submission', 'Reference: ' + reference, 'Type: ' + kind, '', ...lines].join('\n');
+  try {
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer ' + apiKey,
+        'Content-Type': 'application/json',
+        'Idempotency-Key': 'jitap-' + reference
+      },
+      body: JSON.stringify({
+        from: sender,
+        to: [destination],
+        reply_to: kind === 'contact' && typeof payload.email === 'string' ? payload.email : undefined,
+        subject: '[JiTap ' + kind + '] Submission ' + reference.slice(0, 8),
+        text: body
+      }),
+      cache: 'no-store',
+      signal: AbortSignal.timeout(8000)
+    });
+    if (!response.ok) {
+      console.error('JiTap intake email rejected', { kind, reference, status: response.status });
+      return false;
+    }
+    return true;
+  } catch {
+    console.error('JiTap intake email transport failed', { kind, reference });
+    return false;
+  }
+}
+
 export async function POST(req: NextRequest, { params }: { params: Promise<{kind: string}> }) {
   const { kind } = await params;
   if (!kinds.has(kind as FormKind)) return respond({ error: 'Unknown form.' }, 404);
@@ -107,9 +161,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{kind
       console.error('JiTap intake received an unexpected response');
       return respond({ error: 'We could not confirm receipt. Please contact JiTap.' }, 502);
     }
+    const emailAccepted = await notifyInbox(kind as FormKind, data, identifier);
     return respond({
       ok: true,
       reference: identifier,
+      emailNotificationAccepted: emailAccepted,
       message: kind === 'provider' ? 'Your provider application has been received successfully. JiTap will review it and contact you.' : 'Thank you for contacting JiTap. Your enquiry has been received successfully. Our team will review it and get back to you.'
     }, 201);
   } catch {
