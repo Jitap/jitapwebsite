@@ -110,7 +110,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{kind
     return respond({
       ok: true,
       reference: identifier,
-      message: kind === 'provider' ? 'Your provider application has been received successfully. JiTap will review it and contact you.' : 'Your information has been received and recorded by JiTap. This is not a confirmed provider booking.'
+      message: kind === 'provider' ? 'Your provider application has been received successfully. JiTap will review it and contact you.' : 'Thank you for contacting JiTap. Your enquiry has been received successfully. Our team will review it and get back to you.'
     }, 201);
   } catch {
     console.error('JiTap intake transport failure');
