@@ -54,7 +54,7 @@ export function MarketplaceHome(){
            <div className="th-search-controls"><label className="th-local-input"><MapPin size={19} aria-hidden="true"/><select aria-label="Where do you need a fundi?" value={area} onChange={e=>setArea(e.target.value)}>{areas.map(x=><option key={x}>{x}</option>)}</select></label><button type="submit" className="th-find-button">Find a fundi <ArrowRight size={19}/></button></div>
          </form>
          <p className="th-privacy-note"><ShieldCheck size={17}/> Your contact details are never displayed publicly. JiTap will review the service request before an introduction.</p>
-         <div className="th-hero-facts"><div><strong>{fundiListings.length}</strong><span>onboarding profiles</span></div><div><strong>{areas.length}</strong><span>request areas</span></div><div><strong>ASK • MATCH • BUZZ</strong><span>the JiTap way</span></div></div>
+         <div className="th-hero-facts"><div><strong>300+</strong><span>Households</span></div><div><strong>{areas.length}</strong><span>request areas</span></div><div><strong>ASK • MATCH • BUZZ</strong><span>the JiTap way</span></div></div>
          <div className="th-hero-chips"><span>Popular:</span><button onClick={()=>go('My tap is leaking','plumbing')}>Leaking tap</button><button onClick={()=>go('I need a fundi wa stima','electrical')}>Fundi wa stima</button><button onClick={()=>go('I need someone to clean my house','cleaning')}>House cleaning</button></div>
        </div>
        <div className="th-hero-visual"><img src={root+'mascot-original.png'} alt="JiTap waving mascot" loading="eager" fetchPriority="high"/><span className="th-mascot-note">JiTap's here to help <span>✦</span></span></div>
