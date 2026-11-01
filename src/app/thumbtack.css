@@ -53,7 +53,7 @@
 .th-hero-chips button:hover{background:white}
 .th-hero-visual{position:relative;align-self:end;height:450px;display:flex;justify-content:center;align-items:end}
 .th-hero-visual>img{display:block;position:relative;z-index:2;max-height:400px;max-width:360px;width:auto;height:auto;object-fit:contain;filter:drop-shadow(0 19px 22px #031f39a3)}
-.th-mascot-note{position:absolute;top:36px;left:0;transform:rotate(-8deg);background:#fff;color:#123e50;padding:14px 17px;border-radius:17px;font-size:13px;font-weight:800;z-index:3;box-shadow:0 8px 26px #0823314a}
+.th-mascot-note{position:absolute;top:-42px;left:20%;transform:rotate(-8deg);background:#fff;color:#123e50;padding:14px 17px;border-radius:17px;font-size:13px;font-weight:800;z-index:3;box-shadow:0 8px 26px #0823314a}
 .th-mascot-note span{color:#04aa5f;font-size:18px}
 .th-scroll{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);color:white;opacity:.85;z-index:5}
 .th-section{padding-top:76px;padding-bottom:76px}
