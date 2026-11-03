@@ -115,7 +115,7 @@ export function GuidedRequest(){
  </div>})}</div>
  <div className="jt-cleaning-inline-total"><span>Reference total</span><strong>{money(cleaningTotal)}</strong></div>
  <p className="jt-mamafua-guidance">Final price is confirmed by JiTap and the cleaner. Visit minimums, extra hours or materials may change the quote.</p>
- </div> </div>:<div className="th-choice-list">{question.options.map(x=><button key={x.value} type="button" className={'th-choice'+(answer===x.value?' selected':'')} aria-pressed={answer===x.value} onClick={()=>setAnswers(y=>({...y,[question.id]:x.value}))}><span className="th-radio-indicator"/><span><strong>{x.label}</strong>{x.hint&&<small>{x.hint}</small>}</span></button>)}</div>}</div>
+ </div>:<div className="th-choice-list">{question.options.map(x=><button key={x.value} type="button" className={'th-choice'+(answer===x.value?' selected':'')} aria-pressed={answer===x.value} onClick={()=>setAnswers(y=>({...y,[question.id]:x.value}))}><span className="th-radio-indicator"/><span><strong>{x.label}</strong>{x.hint&&<small>{x.hint}</small>}</span></button>)}</div>}</div>
     <div className="th-question-actions">{!onTime&&!onMamaFua&&<button type="button" className="th-skip" onClick={skip}>Skip</button>}<button type="button" className="th-next" onClick={next} disabled={onTime?(!validDate||!validTime):!answer}> {onTime?'Continue':onMamaFua?'Continue':'Next'} <ArrowRight size={18}/></button></div>
    </div>}
   </div>
