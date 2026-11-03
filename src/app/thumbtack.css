@@ -339,3 +339,18 @@
 .th-request-stage-progress{margin-bottom:25px}
 @media(max-width:540px){.th-request-segments{padding:0 16px;gap:6px}.jt-segment-progress{gap:7px}.jt-segment-progress>span{height:7px}}
 @media(prefers-reduced-motion:reduce){.jt-segment-progress>span{transition:none}}
+
+/* Labeled checkmark stepper for provider applications and general enquiries.
+   The final confirmation only activates after the server confirms the save. */
+.jt-labeled-progress{margin:0 0 28px;width:100%}
+.jt-labeled-progress ol{list-style:none;display:flex;margin:0;padding:0;width:100%}
+.jt-labeled-progress li{position:relative;min-width:0;flex:1;display:flex;align-items:center;flex-direction:column;gap:8px;text-align:center;color:#82909b}
+.jt-labeled-progress li:not(:last-child)::after{content:"";position:absolute;top:20px;height:3px;border-radius:4px;background:#e3e7e9;left:calc(50% + 25px);right:calc(-50% + 25px)}
+.jt-labeled-progress li.is-complete:not(:last-child)::after{background:#32b857}
+.jt-step-circle{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;height:42px;width:42px;flex:none;background:#fff;border:2px solid #cfd6da;border-radius:50%;color:#7b8892;font-weight:700;font-size:15px}
+.jt-labeled-progress .is-complete .jt-step-circle{background:#32b857;color:#fff;border-color:#32b857}
+.jt-labeled-progress .is-current .jt-step-circle{background:#fff;border-color:#172078;color:#172078}
+.jt-labeled-progress .is-current .jt-step-label{color:#172078;font-weight:750}
+.jt-labeled-progress .is-complete .jt-step-label{color:#235c47}
+.jt-step-label{font-size:12px;line-height:1.35;max-width:110px}
+@media(max-width:540px){.jt-labeled-progress li{gap:7px}.jt-step-circle{width:34px;height:34px;font-size:13px}.jt-labeled-progress li:not(:last-child)::after{top:16px;left:calc(50% + 21px);right:calc(-50% + 21px)}.jt-step-label{font-size:10px;max-width:90px}}
