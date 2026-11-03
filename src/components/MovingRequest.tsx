@@ -13,7 +13,7 @@ type MoveInfo={
 const initial:MoveInfo={pickup:'',dropoff:'',pickupArea:'Bamburi',movingDate:'',distanceKm:'',homeSize:'1-bed',pickupFloor:0,dropoffFloor:0,liftPickup:false,liftDropoff:false,packing:'self-packing',special:false,phone:'',email:'',consent:false};
 const labels=['Route','Home','Items','Contact'];
 const fmt=(n:number)=>'KES '+n.toLocaleString('en-KE');
-const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Nairobi',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+const today=()=>{const parts=new Intl.DateTimeFormat('en-GB',{timeZone:'Africa/Nairobi',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());const get=(key:string)=>parts.find(p=>p.type===key)?.value||'';return get('year')+'-'+get('month')+'-'+get('day')};
 const homeLabels:Record<string,string>={'bedsitter':'Bedsitter / studio','1-bed':'1 bedroom','2-bed':'2 bedrooms','3-bed':'3 bedrooms'};
 const packingLabels:Record<string,string>={'self-packing':'I will pack','fragile-only':'Fragile items only','full-packing':'Pack everything'};
 type Saved={id:string;secret:string;stage:number;info:MoveInfo;estimate:number|null};
