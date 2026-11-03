@@ -55,7 +55,7 @@ const byCategory:Record<string,Question[]>={
  'general-repairs':[
  {id:'job',title:'What would you like mounted or repaired?',options:[{value:'TV mounting',label:'Mount my TV'},{value:'Wall shelving',label:'Shelves / wall fittings'},{value:'Door, handle or fixture',label:'Door, handle or fixture'},{value:'Other home repair',label:'Other repairs'}]},time],
  'other-services':[
- {id:'job',title:'Which service best describes the job?',options:[{value:'Computer or phone repairs',label:'Computer / phone repairs'},{value:'Moving or delivery',label:'Moving / delivery'},{value:'Gardening',label:'Gardening / outdoors'},{value:'Other local service',label:'Something else'}]},time]
+ {id:'job',title:'Which service best describes the job?',options:[{value:'Computer or phone repairs',label:'Computer / phone repairs'},{value:'Gardening',label:'Gardening / outdoors'},{value:'Other local service',label:'Something else'}]},time]
 };
 export function GuidedRequest(){
  const [category,setCategory]=useState('other-services');
