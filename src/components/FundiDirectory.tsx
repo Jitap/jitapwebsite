@@ -57,7 +57,8 @@ export function FundiDirectory(){
  </section>;
 }
 
-export function matchesFor(category:string,area:string){
+export function matchesFor(category:string,area:string,specialty?:string){
+ if(specialty==='tv-mounting')return fundiListings.filter(p=>p.areas.includes(area)&&/\\b(?:tv\\s*mount|television\\s*mount|tv\\s*installation)\\b/i.test([p.name,...p.categories].join(' ')));
  const serviceNames:Record<string,string[]>={
   plumbing:['plumbing'],electrical:['electrical'],cleaning:['cleaning'],
   carpentry:['carpentry'],painting:['painting'],'appliance-repair':['appliance repair'],
@@ -66,8 +67,8 @@ export function matchesFor(category:string,area:string){
  const names=serviceNames[category]||serviceNames['other-services'];
  return fundiListings.filter(p=>p.areas.includes(area)&&p.categories.some(c=>names.some(n=>c.toLowerCase().includes(n))));
 }
-export function MatchedFundis({category,area,onQuotes}:{category:string;area:string;onQuotes:()=>void}){
- const matched=matchesFor(category,area);
+export function MatchedFundis({category,area,onQuotes,specialty}:{category:string;area:string;onQuotes:()=>void;specialty?:string}){
+ const matched=matchesFor(category,area,specialty);
  const visible=matched.slice(0,4);
  return <section className="jt-matches" aria-label="Matching local service providers">
   <div className="jt-matches-title"><span className="th-overline">LOCAL SERVICE MATCHES</span><h2>{matched.length} {matched.length===1?'matching profile':'matching profiles'} in {area}</h2><p>Based on listed services and service areas. Availability and quotations are confirmed after a request is submitted.</p></div>
