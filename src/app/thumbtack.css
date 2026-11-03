@@ -550,3 +550,5 @@
 .jt-pin-footer>small{font-size:12px;color:#697d8e}
 .jt-pin-footer .jt-pin-confirm{border:0;border-radius:30px;background:#172078;color:#fff;padding:12px 18px;font-size:14px;font-weight:750;display:flex;justify-content:center;align-items:center;gap:8px;cursor:pointer}
 @media(max-width:540px){.jt-pin-backdrop{padding:8px}.jt-pin-map{height:285px}.jt-pin-header{padding:12px}.jt-pin-footer{padding:12px}.jt-location-suggestions{top:75px}}
+
+.jt-location-google-credit{text-align:right;padding:7px 12px;color:#697f8f;background:#f6f8fa;font-size:11px;font-weight:600}
