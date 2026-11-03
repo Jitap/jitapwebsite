@@ -38,7 +38,7 @@ function furthestDate(today:string){
  return new Date(Date.UTC(y,m-1,d+59)).toISOString().slice(0,10);
 }
 
-const isTvMounting=(text:string)=>/(?:\\b(?:tv|television|smart\\s*tv|screen)\\b.{0,55}\\b(?:mount|mounting|install|hang|bracket|wall)\\b|\\b(?:mount|mounting|hang|bracket)\\b.{0,55}\\b(?:tv|television|screen)\\b|\\btv\\s*mount\\w*\\b)/i.test(text);
+const isTvMounting=(text:string)=>/(?:\b(?:tv|television|smart\s*tv|screen)\b.{0,55}\b(?:mount|mounting|install|hang|bracket|wall)\b|\b(?:mount|mounting|hang|bracket)\b.{0,55}\b(?:tv|television|screen)\b|\btv\s*mount\w*\b)/i.test(text);
 const tvMountingQuestions:Question[]=[
  {id:'screenSize',title:'What size is your TV?',hint:'Choose the screen size in inches so the installer can bring suitable mounting equipment.',options:[
   {value:'Up to 32 inches',label:'Up to 32 inches'},
