@@ -29,7 +29,7 @@ export function MovingRequest(){
  const [receipt,setReceipt]=useState('');
  useEffect(()=>{
   try{const raw=sessionStorage.getItem('jitap:moving-draft');if(!raw)return;const saved=JSON.parse(raw) as Saved;
-   if(saved.id&&saved.secret&&saved.stage>=1&&saved.stage<=4){setLeadId(saved.id);setSecret(saved.secret);setInfo(saved.info);setStage(saved.stage);setEstimate(saved.estimate);setDistanceVerified(saved.distanceVerified===true)}}
+   if(saved.id&&saved.secret&&saved.stage>=1&&saved.stage<=4){setLeadId(saved.id);setSecret(saved.secret);const modern=typeof saved.distanceVerified==='boolean';setInfo({...saved.info,distanceKm:modern&&saved.distanceVerified?saved.info.distanceKm:''});setStage(modern?saved.stage:1);setEstimate(modern?saved.estimate:null);setDistanceVerified(saved.distanceVerified===true)}}
   catch{}
  },[]);
  function edit<K extends keyof MoveInfo>(name:K,value:MoveInfo[K]){setInfo(x=>({...x,[name]:value}));setError('')}
