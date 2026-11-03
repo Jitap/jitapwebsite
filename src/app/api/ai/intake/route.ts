@@ -66,7 +66,7 @@ export async function POST(req:NextRequest){
   let data:unknown;try{data=JSON.parse(text)}catch{return answer({error:'AI response invalid'},503)}
   const validated=parsedSchema.safeParse(data);if(!validated.success||!categorySlugs.includes(validated.data?.category||''))return answer({error:'AI category unavailable'},503);
   const category=validated.data.category;
-  const questions=validated.data.questions.filter(q=>q.id!=='timing'&&q.id!=='job'&&q.id!=='cleanServices'&&q.options.every(o=>o.value.trim()&&o.label.trim())); 
+  const questions=validated.data.questions.filter(q=>q.id!=='timing'&&q.id!=='cleanServices'&&q.options.every(o=>o.value.trim()&&o.label.trim())); 
   return answer({ok:true,category,questions:questions.slice(0,2) },200);
  }catch{console.error('JiTap AI classification transport failure');return answer({error:'AI temporarily unavailable'},503)}
 }
