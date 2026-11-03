@@ -11,8 +11,8 @@ const schema=z.discriminatedUnion('action',[
  z.object({action:z.literal('nearby'),lat:z.number().min(-5).max(5),lng:z.number().min(33).max(42),sessionToken:z.string().uuid()})
 ]);
 type NearbyPlace={displayName?:{text?:string};formattedAddress?:string};
-const plusCode=/^[A-Z0-9]{4,8}\\+[A-Z0-9]{2,}(?:,|\\s|$)/i;
-const clean=(text:string)=>text.replace(plusCode,'').replace(/^,\\s*/,'').trim();
+const plusCode=/^[A-Z0-9]{4,8}\+[A-Z0-9]{2,}(?:,|\s|$)/i;
+const clean=(text:string)=>text.replace(plusCode,'').replace(/^,\s*/,'').trim();
 const isUseful=(name:string)=>!!name&&!plusCode.test(name)&&!/^(mombasa|kenya|coast province)$/i.test(name.trim());
 async function nearbyPlace(key:string,lat:number,lng:number,signal:AbortSignal):Promise<string|null>{
  const response=await fetch('https://places.googleapis.com/v1/places:searchNearby',{
@@ -47,7 +47,7 @@ export async function POST(req:NextRequest){
  if(!key)return NextResponse.json({error:'Place suggestions temporarily unavailable'},{status:503,headers:noStore});
  const suggest=p.data.action==='suggest';
  const nearby=p.data.action==='nearby';
- const url=suggest?'https://places.googleapis.com/v1/places:autocomplete':nearby?'https://places.googleapis.com/v1/places:searchNearby':'https://places.googleapis.com/v1/places/'+encodeURIComponent(p.data.placeId);
+ const url=p.data.action==='suggest'?'https://places.googleapis.com/v1/places:autocomplete':p.data.action==='nearby'?'https://places.googleapis.com/v1/places:searchNearby':'https://places.googleapis.com/v1/places/'+encodeURIComponent(p.data.placeId);
  const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),6500);
  try{
   const r=await fetch(url,{
