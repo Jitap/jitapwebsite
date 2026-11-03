@@ -360,3 +360,20 @@
 .jt-provider-apply>.eyebrow{display:flex;margin-bottom:20px}
 .jt-provider-apply>.form-card{max-width:740px}
 @media(max-width:540px){.jt-provider-apply{padding-top:20px;padding-bottom:44px}.jt-provider-apply>.eyebrow{margin-bottom:14px}}
+
+/* Provider step 2 and review screen: preserve established form visual language. */
+.jt-provider-service-extras{margin-top:6px}
+.jt-provider-service-extras .field small{font-size:12px;line-height:1.5;color:#68789d}
+.jt-coverage-areas{margin:18px 0 25px}
+.jt-coverage-areas legend{font-weight:750;font-size:14px;color:#0b174d;margin-bottom:13px}
+.jt-coverage-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 12px}
+.jt-coverage-grid .check{margin-bottom:10px}
+.jt-provider-review{margin:10px 0 24px}
+.jt-provider-review h2{font-size:24px;margin:0 0 8px}
+.jt-provider-review>p{font-size:14px}
+.jt-provider-review dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;margin:18px 0}
+.jt-provider-review dl>div{background:#f7fafb;border:1px solid #e6edf0;border-radius:13px;padding:12px;min-width:0}
+.jt-provider-review dt{font-size:12px;color:#728590;margin-bottom:6px}
+.jt-provider-review dd{margin:0;font-size:14px;color:#142856;overflow-wrap:anywhere;white-space:pre-wrap}
+.jt-provider-review .jt-review-wide{grid-column:1/-1}
+@media(max-width:540px){.jt-coverage-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.jt-provider-review dl{grid-template-columns:1fr}.jt-provider-review .jt-review-wide{grid-column:1}}
