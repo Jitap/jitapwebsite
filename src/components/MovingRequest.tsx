@@ -112,7 +112,7 @@ export function MovingRequest(){
     <label>Moving from <input value={info.pickup} onChange={e=>edit('pickup',e.target.value)} maxLength={200} placeholder="e.g. Bamburi, near Naivas" required/></label>
     <label>Moving to <input value={info.dropoff} onChange={e=>edit('dropoff',e.target.value)} maxLength={200} placeholder="e.g. Nyali, Links Road" required/></label>
     <label>Preferred moving date <input type="date" min={today()} value={info.movingDate} onChange={e=>edit('movingDate',e.target.value)} required/></label>
-    <p className="jt-moving-note"><MapPin size={15} aria-hidden="true"/> By continuing, your pickup and destination will be sent to Google Maps to calculate road distance. If a route cannot be calculated, you can still request a quote. See our Privacy page.</p>
+    <p className="jt-moving-note"><MapPin size={15} aria-hidden="true"/> Where Google routing is available, JiTap shares the pickup and destination with Google Maps to calculate road distance. If no route is found, you can still request a quote. <Link href="/privacy">Privacy</Link></p>
    </section>}
    {stage>1&&<div className={'jt-moving-route-result'+(distanceVerified?' verified':'')} role="status">
     <MapPin size={16} aria-hidden="true"/>
