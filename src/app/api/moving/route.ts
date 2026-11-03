@@ -42,13 +42,13 @@ export async function POST(req:NextRequest){
  try{
   const result=await fetch(url+'/rest/v1/rpc/save_moving_lead_authorized',{
    method:'POST',headers:{apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json'},
-   body:JSON.stringify({p_token:token,p_lead_id:leadId,p_session_secret:secret,p_stage:stage,p_payload:stage===1?{...p.data,distanceKm:null,routeStatus:'unavailable'}:p.data,p_source_hash:source}),
+   body:JSON.stringify({p_token:token,p_lead_id:leadId,p_session_secret:secret,p_stage:stage,p_payload:stage===1?{...p.data,distanceKm:null,routeStatus:process.env.GOOGLE_MAPS_API_KEY?'pending':'unavailable'}:p.data,p_source_hash:source}),
    cache:'no-store',signal:AbortSignal.timeout(12000)
   });
   if(!result.ok){console.error('JiTap moving save failed',{stage,status:result.status});return respond('Could not save your moving progress. Please try again.',502)}
   let saved=await result.json();
   // Persist the session first so the existing database rate limit runs before any billable Maps request.
-  if(stage===1&&process.env.GOOGLE_MAPS_API_KEY){
+  if(stage===1&&process.env.GOOGLE_MAPS_API_KEY&&saved.routeAttempts<=5){
    const loc=discovery.parse(p.data);
    const route=await calculateDrivingRoute(loc.pickup,loc.dropoff,loc.pickupArea);
    const verified=await fetch(url+'/rest/v1/rpc/save_moving_lead_authorized',{
