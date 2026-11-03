@@ -2,7 +2,7 @@
 import {useEffect,useMemo,useState} from 'react';
 import Link from 'next/link';
 import {ArrowLeft,ArrowRight,ChevronLeft,X,Sparkles,Shirt,Footprints,House,BedDouble,Layers,Droplets,Brush} from 'lucide-react';
-import {areas,categories} from '@/lib/data';
+import {areas,categories,inferService} from '@/lib/data';
 import {IntakeForm} from '@/components/Interactive';
 import {MatchedFundis} from '@/components/FundiDirectory';
 import {MovingRequest} from '@/components/MovingRequest';
@@ -38,6 +38,26 @@ function furthestDate(today:string){
  return new Date(Date.UTC(y,m-1,d+59)).toISOString().slice(0,10);
 }
 
+const isTvMounting=(text:string)=>/(?:\\b(?:tv|television|smart\\s*tv|screen)\\b.{0,55}\\b(?:mount|mounting|install|hang|bracket|wall)\\b|\\b(?:mount|mounting|hang|bracket)\\b.{0,55}\\b(?:tv|television|screen)\\b|\\btv\\s*mount\\w*\\b)/i.test(text);
+const tvMountingQuestions:Question[]=[
+ {id:'screenSize',title:'What size is your TV?',hint:'Choose the screen size in inches so the installer can bring suitable mounting equipment.',options:[
+  {value:'Up to 32 inches',label:'Up to 32 inches'},
+  {value:'33–43 inches',label:'33–43 inches'},
+  {value:'44–55 inches',label:'44–55 inches'},
+  {value:'56–65 inches',label:'56–65 inches'},
+  {value:'Over 65 inches',label:'Over 65 inches'},
+  {value:'Not sure',label:"I'm not sure"}]},
+ {id:'wallType',title:'What kind of wall will the TV be mounted on?',options:[
+  {value:'Concrete or brick',label:'Concrete / brick'},
+  {value:'Plasterboard or partition',label:'Plasterboard / partition'},
+  {value:'Wood or other',label:'Wood / other'},
+  {value:'Not sure',label:"I'm not sure"}]},
+ {id:'bracket',title:'Do you already have a TV wall bracket?',options:[
+  {value:'Already have bracket',label:'Yes, I have a bracket'},
+  {value:'Need installer to supply bracket',label:'No, please supply one'},
+  {value:'Not sure',label:'Not sure'}]},
+ time
+];
 const byCategory:Record<string,Question[]>={
  cleaning:[
  {id:'cleanServices',title:'What should Mama Fua help with?',hint:'Choose services and quantities.',options:mamaFuaServices.map(x=>({value:x.value,label:x.label,hint:x.detail}))},
@@ -71,8 +91,11 @@ export function GuidedRequest(){
  const [ready,setReady]=useState(false);
  const [showMatches,setShowMatches]=useState(false);
  const [finalDescription,setFinalDescription]=useState('');
- useEffect(()=>{const s=new URLSearchParams(window.location.search);const c=s.get('category');const a=s.get('area');const d=s.get('description');if(c&&categories.some(x=>x.slug===c))setCategory(c);if(a&&areas.includes(a))setArea(a);else try{const stored=localStorage.getItem('jitap:area');if(stored&&areas.includes(stored))setArea(stored)}catch{}if(d)setDescription(d)},[]);
- const questions=useMemo(()=>byCategory[category]||byCategory['other-services'],[category]);
+ useEffect(()=>{const s=new URLSearchParams(window.location.search);const c=s.get('category');const a=s.get('area');const d=s.get('description');if(c&&categories.some(x=>x.slug===c))setCategory(c);if(a&&areas.includes(a))setArea(a);else try{const stored=localStorage.getItem('jitap:area');if(stored&&areas.includes(stored))setArea(stored)}catch{}if(d){setDescription(d);if((!c||c==='other-services')&&inferService(d))setCategory(inferService(d)!);}
+ },[]);
+ const [aiQuestions,setAiQuestions]=useState<Question[]|null>(null);
+ const tvMount=isTvMounting(description)&&['general-repairs','other-services'].includes(category);
+ const questions=useMemo(()=>tvMount?tvMountingQuestions:category==='other-services'&&aiQuestions?.length?[...aiQuestions,time]:byCategory[category]||byCategory['other-services'],[category,tvMount,aiQuestions]);
  const question=questions[stage];
  const answer=question?answers[question.id]||'':'';
  const onMamaFua=category==='cleaning'&&question?.id==='cleanServices';
@@ -83,13 +106,33 @@ export function GuidedRequest(){
  const days=useMemo(()=>upcomingDays(clock.date),[clock.date]);
  const validDate=preferredDate>=clock.date&&preferredDate<=furthestDate(clock.date);
  const validTime=preferredTimes.some(([time])=>time===preferredTime)&&!(preferredDate===clock.date&&Number(preferredTime.slice(0,2))*60+Number(preferredTime.slice(3,5))<=clock.minutes);
- const stageNames:string[]=category==='cleaning'?['Need','Time','Total','Contact']:[...questions.map((q,i)=>q.id==='timing'?'Time':q.id==='frequency'?'Frequency':q.id==='size'?'Space':q.id==='cleanType'?'Type':i===0?'Need':'Details'),'Matches','Contact'];
- const label=categories.find(x=>x.slug===category)?.name||'Local service';
+ const stageNames:string[]=category==='cleaning'?['Need','Time','Total','Contact']:[...questions.map((q,i)=>q.id==='timing'?'Time':q.id==='screenSize'?'TV size':q.id==='wallType'?'Wall':q.id==='bracket'?'Bracket':q.id==='frequency'?'Frequency':q.id==='size'?'Space':q.id==='cleanType'?'Type':i===0?'Need':'Details'),'Matches','Contact'];
+ const label=tvMount?'TV Mounting':categories.find(x=>x.slug===category)?.name||'Local service';
  const finished=()=>{const details=category==='cleaning'
  ? cleaningLineItems.map(item=>item.label+' x '+item.quantity+' '+item.unit+(item.quantity===1?'':'s')+' (reference '+money(item.price*item.quantity)+')').join('; ')+'; Reference estimate: '+money(cleaningTotal)+' (not a confirmed quote)'
  : questions.filter(x=>x.id!=='timing').map(q=>answers[q.id]?q.title.replace('?','')+': '+answers[q.id]:null).filter(Boolean).join('; ');const full=[description.trim()||('I need help with '+label.toLowerCase()+' in '+area+'.'),details,preferredDate&&preferredTime?'Preferred appointment: '+preferredDate+' at '+preferredTime+' (East Africa Time)':null].filter(Boolean).join('. ').slice(0,1500);const delta=Math.round((Date.parse(preferredDate+'T00:00:00Z')-Date.parse(clock.date+'T00:00:00Z'))/86400000);const t=delta<=1?'today':delta<=7?'this-week':'flexible';const params=new URLSearchParams(window.location.search);params.set('category',category);params.set('area',area);const finalBrief=full.length<12?'I need a local service fundi in '+area+'.':full;setFinalDescription(finalBrief);params.set('description',finalBrief);params.set('timing',t);params.set('preferredDate',preferredDate);params.set('preferredTime',preferredTime);window.history.replaceState(window.history.state,'','/request?'+params.toString());setShowMatches(true)};
  function next(){if(onTime&&(!validDate||!validTime))return;if(stage>=questions.length-1){finished()}else setStage(n=>n+1)}
  function skip(){if(onTime)return;if(stage>=questions.length-1)finished();else setStage(n=>n+1)}
+ useEffect(()=>{
+  if(!ready&&!showMatches&&category==='other-services'&&description.trim().length>=8){
+   let cancelled=false;
+   const controller=new AbortController();
+   const timer=setTimeout(async()=>{
+    try{
+     const res=await fetch('/api/ai/intake',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({description:description.trim().slice(0,600),area}),signal:controller.signal});
+     if(!res.ok)return;
+     const data=await res.json();
+     if(cancelled||!data.ok)return;
+     if(typeof data.category==='string'&&data.category!=='other-services'&&categories.some(x=>x.slug===data.category)){
+      setCategory(data.category);setStage(0);setAnswers({});setAiQuestions(null);
+     }else if(Array.isArray(data.questions)&&data.questions.length>0){
+      setAiQuestions(data.questions);setStage(0);setAnswers({});
+     }
+    }catch{}
+   },800);
+   return ()=>{cancelled=true;clearTimeout(timer);controller.abort()};
+  }
+ },[description,category,area,ready,showMatches]);
  if(category==='moving')return <MovingRequest/>;
  return <div className="th-request-flow">
   <div className="container th-request-layout">
