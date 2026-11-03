@@ -152,6 +152,7 @@ export function GuidedRequest(){
   if(ready||showMatches||stage!==0||tvMount||category==='cleaning'||category==='moving'||description.trim().length<8){
    setAiBusy(false);return;
   }
+  setAiQuestions(null);
   let cancelled=false;
   const controller=new AbortController();
   const timer=setTimeout(async()=>{
