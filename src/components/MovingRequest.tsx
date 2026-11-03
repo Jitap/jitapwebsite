@@ -93,7 +93,7 @@ export function MovingRequest(){
    const response=await fetch('/api/intake/request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,consent:true,category:'moving',area:info.pickupArea,timing,description:requestDescription})});
    const payload=await response.json();
    if(!response.ok||!payload.ok||!payload.reference)throw new Error(payload.error||'JiTap could not receive this request.');
-   setReceipt('JT-SRV-'+String(payload.reference).replace(/-/g,'').slice(0,12).toUpperCase());
+   setReceipt('JT-SRV-'+String(payload.reference).replace(/-/g,'').slice(0,12).toUpperCase());setStage(5);
    try{await saveStage(4,{phone,email:info.email.trim(),intakeReference:String(payload.reference)});}
    catch{console.error('Moving progress sync failed after successful service intake')}
    sessionStorage.removeItem('jitap:moving-draft');
