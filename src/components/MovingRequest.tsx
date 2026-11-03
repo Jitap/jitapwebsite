@@ -76,9 +76,9 @@ export function MovingRequest(){
    info.distanceKm?'Customer-estimated distance: '+info.distanceKm+' km (unverified).':'Road distance not yet verified.',
    estimate!==null?'JiTap provisional estimate: '+fmt(estimate)+' (not a confirmed quote).':'Quote pending provider assessment.'
   ].join(' ');
-  const phone=info.phone.replace(/[\s().-]/g,'');
+  const phone=info.phone.replace(/[\s().-]/g,''); const daysAway=Math.round((Date.parse(info.movingDate+'T00:00:00Z')-Date.parse(today()+'T00:00:00Z'))/86400000); const timing=daysAway<=1?'today':daysAway<=7?'this-week':'flexible';
   try{
-   const response=await fetch('/api/intake/request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,consent:true,category:'moving',area:info.pickupArea,timing:'flexible',description:requestDescription})});
+   const response=await fetch('/api/intake/request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,consent:true,category:'moving',area:info.pickupArea,timing,description:requestDescription})});
    const payload=await response.json();
    if(!response.ok||!payload.ok||!payload.reference)throw new Error(payload.error||'JiTap could not receive this request.');
    setReceipt('JT-SRV-'+String(payload.reference).replace(/-/g,'').slice(0,12).toUpperCase());
