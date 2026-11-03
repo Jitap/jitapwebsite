@@ -10,7 +10,7 @@ const categorySlugs=categories.map(x=>x.slug);
 const optionSchema=z.object({value:z.string().min(1).max(90),label:z.string().min(1).max(90),hint:z.string().max(130).optional()});
 const parsedSchema=z.object({
  category:z.string(),
- questions:z.array(z.object({id:z.string().regex(/^[a-zA-Z][a-zA-Z0-9]{1,20}$/),title:z.string().min(8).max(135),hint:z.string().max(170).optional(),options:z.array(optionSchema).min(2).max(6)})).max(2)
+ questions:z.array(z.object({id:z.string().regex(/^[a-zA-Z][a-zA-Z0-9_]{1,30}$/),title:z.string().min(8).max(135),hint:z.string().max(170).optional(),options:z.array(optionSchema).min(2).max(6)})).max(2)
 });
 const buckets=new Map<string,{start:number,count:number}>();
 function answer(payload:Record<string,unknown>,status:number){return NextResponse.json(payload,{status,headers})}
@@ -55,11 +55,35 @@ export async function POST(req:NextRequest){
     instructions:system,
     input:'Customer service request: '+safeDescription+'\nArea: '+parsed.data.area+'\nSelected category: '+(parsed.data.categoryHint||'not yet known'),
     max_output_tokens:850,
-    text:{format:{type:'json_object'}},
+    text:{format:{
+     type:'json_schema',name:'jitap_intake_questions',strict:true,
+     schema:{
+      type:'object',additionalProperties:false,required:['category','questions'],
+      properties:{
+       category:{type:'string',enum:categorySlugs},
+       questions:{type:'array',items:{
+        type:'object',additionalProperties:false,required:['id','title','hint','options'],
+        properties:{
+         id:{type:'string'},title:{type:'string'},hint:{type:'string'},
+         options:{type:'array',items:{
+          type:'object',additionalProperties:false,required:['value','label','hint'],
+          properties:{value:{type:'string'},label:{type:'string'},hint:{type:'string'}}
+         }}
+        }
+       }}
+      }
+     }
+    }},
     store:false
    }),cache:'no-store',signal:AbortSignal.timeout(10000)
   });
-  if(!res.ok){console.error('JiTap AI classification request unsuccessful',{status:res.status});return answer({error:'AI classification temporarily unavailable'},503)}
+  if(!res.ok){
+   // API error types are safe to log; never log customer prompts, keys or full response bodies.
+   let errorType='unknown',errorCode='unknown';
+   try{const diagnostic=await res.json() as {error?:{type?:string;code?:string}};errorType=String(diagnostic.error?.type||'unknown').slice(0,90);errorCode=String(diagnostic.error?.code||'unknown').slice(0,90)}catch{}
+   console.error('JiTap AI classification request unsuccessful',{status:res.status,type:errorType,code:errorCode});
+   return answer({error:'AI classification temporarily unavailable'},503);
+  }
   const result=await res.json() as {output?:{content?:{type?:string;text?:string}[]}[]};
   const text=result.output?.flatMap(item=>item.content||[]).find(item=>item.type==='output_text')?.text;
   if(!text)return answer({error:'AI response unavailable'},503);

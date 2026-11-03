@@ -1,6 +1,6 @@
 'use client';
 import {useEffect,useRef,useState,type PointerEvent} from 'react';
-import {MapPin,MapPinned,Search,LocateFixed,Plus,Minus,X,Check} from 'lucide-react';
+import {MapPin,MapPinned,Search,Plus,Minus,X,Check} from 'lucide-react';
 
 export type MoveLocation={label:string;placeId?:string;lat?:number;lng?:number};
 type Suggestion={placeId:string;label:string;main:string;secondary:string};
@@ -18,6 +18,7 @@ function PinnedMap({onSelect,onClose,initial}:{onSelect:(v:MoveLocation)=>void;o
  const [zoom,setZoom]=useState(13);
  const [size,setSize]=useState({w:620,h:310});
  const [landmark,setLandmark]=useState('');
+ const [pinBusy,setPinBusy]=useState(false);
  const el=useRef<HTMLDivElement|null>(null);
  const pointer=useRef<{x:number;y:number;mapX:number;mapY:number}|null>(null);
  useEffect(()=>{if(!el.current)return;const node=el.current;const obs=new ResizeObserver(()=>setSize({w:node.clientWidth,h:node.clientHeight}));obs.observe(node);return ()=>obs.disconnect()},[]);
@@ -31,6 +32,20 @@ function PinnedMap({onSelect,onClose,initial}:{onSelect:(v:MoveLocation)=>void;o
  function pointerDown(e:PointerEvent<HTMLDivElement>){if(e.button!==0)return;const w=coordToWorld(center.lat,center.lng,zoom);pointer.current={x:e.clientX,y:e.clientY,mapX:w.x,mapY:w.y};e.currentTarget.setPointerCapture(e.pointerId)}
  function pointerMove(e:PointerEvent<HTMLDivElement>){const p=pointer.current;if(!p)return;const c=worldToCoord(p.mapX-(e.clientX-p.x),p.mapY-(e.clientY-p.y),zoom);setCenter(clamp(c.lat,c.lng))}
  function pointerUp(e:PointerEvent<HTMLDivElement>){pointer.current=null;if(e.currentTarget.hasPointerCapture(e.pointerId))e.currentTarget.releasePointerCapture(e.pointerId)}
+ async function confirmPin(){
+  if(pinBusy)return;
+  setPinBusy(true);
+  let label=landmark.trim()?landmark.trim()+' (map pin)':'Pinned location — add a building or landmark';
+  if(!landmark.trim()){
+   try{
+    const response=await fetch('/api/places',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'nearby',lat:center.lat,lng:center.lng,sessionToken:crypto.randomUUID()})});
+    const result=await response.json();
+    if(response.ok&&typeof result.label==='string'&&result.label.length>3)label=result.label;
+   }catch{}
+  }
+  onSelect({label,lat:center.lat,lng:center.lng});
+  setPinBusy(false);onClose();
+ }
  return <div className="jt-pin-backdrop" role="presentation" onClick={onClose}>
  <section className="jt-pin-dialog" role="dialog" aria-modal="true" aria-label="Choose a moving location on the map" onClick={e=>e.stopPropagation()}>
   <div className="jt-pin-header"><div><strong>Drop a pin</strong><small>Drag the map to position the pin on your pickup or destination</small></div><button type="button" aria-label="Close map" onClick={onClose}><X size={21}/></button></div>
@@ -45,8 +60,8 @@ function PinnedMap({onSelect,onClose,initial}:{onSelect:(v:MoveLocation)=>void;o
   </div>
   <div className="jt-pin-footer">
    <label htmlFor="jt-pin-landmark">Building or landmark (optional)<input id="jt-pin-landmark" maxLength={80} value={landmark} onChange={e=>setLandmark(e.target.value)} placeholder="e.g. near Coast General Hospital"/></label>
-   <small>Pin: {center.lat.toFixed(5)}, {center.lng.toFixed(5)} · Confirm access with your mover</small>
-   <button type="button" className="jt-pin-confirm" onClick={()=>{onSelect({label:(landmark.trim()?landmark.trim()+' · ':'')+'Map pin ('+center.lat.toFixed(5)+', '+center.lng.toFixed(5)+')',lat:center.lat,lng:center.lng});onClose()}}><Check size={18}/> Use this location</button>
+   <small>JiTap saves the exact map pin for distance calculations. The displayed name uses your landmark or a nearby mapped place.</small>
+   <button type="button" className="jt-pin-confirm" disabled={pinBusy} onClick={confirmPin}><Check size={18}/> {pinBusy?'Finding nearby place…':'Use this location'}</button>
   </div>
  </section></div>;
 }
@@ -76,13 +91,14 @@ export function MovingLocationPicker({title,value,selected,onChange,onSelect}:{t
   return ()=>{clearTimeout(t);controller.abort()}
  },[value,focused,selected]);
  async function choose(s:Suggestion){
-  setFocused(false);setResults([]);onSelect({label:s.label,placeId:s.placeId});
+  setLoading(true);setError('');setFocused(false);setResults([]);
   try{
    const r=await fetch('/api/places',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'details',placeId:s.placeId,sessionToken:token.current})});
    const data=await r.json();
-   if(r.ok&&data.place)onSelect(data.place);
-  }catch{}
-  token.current=crypto.randomUUID();
+   if(r.ok&&data.place){onSelect(data.place);}
+   else{setFocused(true);setError(data.error||'Could not confirm that location. Choose a street or map pin.');}
+  }catch{setFocused(true);setError('Could not confirm that location. Choose a map pin or type a precise address.');}
+  finally{setLoading(false);token.current=crypto.randomUUID();}
  }
  return <div className="jt-location-search">
   <label htmlFor={'jt-location-'+title}>{title}</label>
