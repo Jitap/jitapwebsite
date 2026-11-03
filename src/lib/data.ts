@@ -1,3 +1,4 @@
+import {understandJob} from '@/lib/job-intelligence';
 import {Droplets,Zap,Paintbrush,Hammer,Sparkles,Refrigerator,Wrench,Truck,MoreHorizontal,type LucideIcon} from 'lucide-react';
 export type Category={slug:string;name:string;summary:string;description:string;jobs:string[];tips:string[];icon:LucideIcon};
 export const categories:Category[]=[
@@ -21,7 +22,7 @@ export const guides:Guide[]=[
 ];
 export const serviceBySlug=(slug:string)=>categories.find(x=>x.slug===slug);
 export const guideBySlug=(slug:string)=>guides.find(x=>x.slug===slug);
-export function inferService(query:string){const t=query.toLowerCase();
+export function inferService(query:string){const t=query.toLowerCase();const understood=understandJob(query);if(understood)return understood.category;
  // High-confidence intent vocabulary runs before generic category matching.
  // Handles terse English, Kiswahili and Sheng service requests even when AI is offline.
  if(/\b(plumb(?:er|ing|ers)?|fundi\s+wa\s+maji|bomba|mabomba|tap|faucet|sink|drain|leak(?:ing|age)?|dripping|imeziba|imevuja|inavuja|choo\s+imeziba)\b/i.test(t))return 'plumbing';
