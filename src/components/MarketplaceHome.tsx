@@ -21,7 +21,7 @@ const categories=[
 const popular=[
  {title:'Tap & leak repairs',slug:'plumbing',desc:'Fundi wa plumbing',img:'plumbing.png',query:'My tap is leaking and I need a plumber'},
  {title:'Electrical repairs',slug:'electrical',desc:'Fundi wa stima',img:'electrical.png',query:'I need an electrician for a faulty socket'},
- {title:'House cleaning',slug:'cleaning',desc:'Home & Airbnb cleaning',img:'cleaning.png',query:'I need a cleaner for my house'},
+ {title:'Mama Fua · House cleaning',slug:'cleaning',desc:'Cleaning, laundry & ironing',img:'cleaning.png',query:'I need a Mama Fua for cleaning and laundry'},
  {title:'TV mounting',slug:'general-repairs',desc:'Wall mounting & fittings',img:'tv-mounting.png',query:'I need someone to mount my TV'},
  {title:'Furniture & woodwork',slug:'carpentry',desc:'Fundi wa mbao',img:'carpentry.png',query:'I need a carpenter to assemble furniture'},
  {title:'Interior painting',slug:'painting',desc:'Painters & finishing',img:'painting.png',query:'I need a painter for my room'}
@@ -55,7 +55,7 @@ export function MarketplaceHome(){
          </form>
          <p className="th-privacy-note"><ShieldCheck size={17}/> Your contact details are never displayed publicly. JiTap will review the service request before an introduction.</p>
          <div className="th-hero-facts"><div><strong>300+</strong><span>Households</span></div><div><strong>{areas.length}</strong><span>request areas</span></div><div><strong>ASK • MATCH • BUZZ</strong><span>the JiTap way</span></div></div>
-         <div className="th-hero-chips"><span>Popular:</span><button onClick={()=>go('My tap is leaking','plumbing')}>Leaking tap</button><button onClick={()=>go('I need a fundi wa stima','electrical')}>Fundi wa stima</button><button onClick={()=>go('I need someone to clean my house','cleaning')}>House cleaning</button></div>
+         <div className="th-hero-chips"><span>Popular:</span><button onClick={()=>go('My tap is leaking','plumbing')}>Leaking tap</button><button onClick={()=>go('I need a fundi wa stima','electrical')}>Fundi wa stima</button><button onClick={()=>go('I need a Mama Fua for house cleaning or laundry','cleaning')}>Mama Fua</button></div>
        </div>
        <div className="th-hero-visual"><img src={root+'mascot-original.png'} alt="JiTap waving mascot" loading="eager" fetchPriority="high"/><span className="th-mascot-note">JiTap's here to help <span>✦</span></span></div>
      </div>

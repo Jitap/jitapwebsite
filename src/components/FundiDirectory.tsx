@@ -24,7 +24,7 @@ export function FundiDirectory(){
   const areaOk=area==='All areas'||p.areas.includes(area);
   const catOk=category==='All services'||(category==='Other'?p.categories.some(c=>c==='Other'):p.categories.some(c=>c.toLowerCase().includes(category.toLowerCase())));
   const term=query.trim().toLowerCase();
-  const textOk=!term||[p.name,...p.categories,...p.areas].join(' ').toLowerCase().includes(term);
+  const mamaFua=/(?:mama[\s-]*fua|mamafua|kufua|laundry|house.?cleaner|house.?keeper|house cleaning)/i.test(term);const textOk=!term||(mamaFua&&p.categories.some(c=>c.toLowerCase().includes('cleaning')))||[p.name,...p.categories,...p.areas].join(' ').toLowerCase().includes(term);
   return areaOk&&catOk&&textOk;
  }),[area,category,query]);
  return <section className="td-directory" aria-labelledby="td-directory-title">
@@ -34,7 +34,7 @@ export function FundiDirectory(){
     <h2><SlidersHorizontal size={19}/> Filter fundis</h2>
     <label htmlFor="dir-area">Your area</label><select id="dir-area" value={area} onChange={e=>setArea(e.target.value)}><option>All areas</option>{areas.map(a=><option key={a}>{a}</option>)}</select>
     <label htmlFor="dir-category">Type of work</label><select id="dir-category" value={category} onChange={e=>setCategory(e.target.value)}>{filters.map(x=><option key={x}>{x}</option>)}</select>
-    <label htmlFor="dir-search">Search skills or business</label><div className="td-dir-input"><Search size={18}/><input id="dir-search" value={query} onChange={e=>setQuery(e.target.value)} placeholder="e.g. fundi wa stima"/></div>
+    <label htmlFor="dir-search">Search skills or business</label><div className="td-dir-input"><Search size={18}/><input id="dir-search" value={query} onChange={e=>setQuery(e.target.value)} placeholder="e.g. Mama Fua, fundi wa stima"/></div>
     <button type="button" className="td-clear" onClick={()=>{setArea('All areas');setCategory('All services');setQuery('')}}>Clear filters</button>
     
    </aside>
