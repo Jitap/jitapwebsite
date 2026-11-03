@@ -1,5 +1,5 @@
 /** JiTap intent patterns: raw user words remain unchanged; this is a separate interpretation. */
-export type JobQuestion={id:string;title:string;hint?:string;options:{value:string;label:string}[]};
+export type JobQuestion={id:string;title:string;hint?:string;options:{value:string;label:string;hint?:string}[]};
 export type JobIntent={category:string;subcategory:string;task:string;languagePattern:string;confidence:'high'|'medium';questions:JobQuestion[]};
 const make=(id:string,title:string,labels:string[],hint?:string):JobQuestion=>({id,title,hint,options:labels.map(label=>({value:label,label}))});
 export function understandJob(text:string):JobIntent|null {
