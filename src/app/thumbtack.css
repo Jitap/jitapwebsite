@@ -505,3 +505,10 @@
 .jt-moving-receipt p{color:#637b89}
 .jt-moving-receipt strong{color:#172078}
 @media(max-width:540px){.jt-moving-page{padding-top:20px}.jt-moving-card{padding:17px}.jt-moving-stage-title h2{font-size:21px}.jt-moving-heading{margin-bottom:13px}.jt-truck-node{width:37px;height:37px}.jt-truck-progress li:not(:last-child)::after{top:18px;left:calc(50% + 24px);right:calc(-50% + 24px)}.jt-moving-actions .jt-moving-next{flex:1}.jt-moving-cols{gap:9px}}
+
+/* Verified road-distance badge for moving; does not imply confirmed truck accessibility. */
+.jt-moving-route-result{display:flex;align-items:flex-start;gap:9px;margin:0 0 18px;padding:11px 13px;border:1px solid #e2e8ed;border-radius:11px;color:#6c808d;background:#f7f9fb;font-size:12px;line-height:1.5}
+.jt-moving-route-result.verified{border-color:#c8e8db;background:#edf8f3;color:#17664e}
+.jt-moving-route-result svg{flex:none;margin-top:1px}
+.jt-moving-route-result strong{font-weight:760}
+.jt-moving-note svg{vertical-align:middle;margin-right:4px}
