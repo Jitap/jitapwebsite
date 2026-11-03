@@ -377,3 +377,7 @@
 .jt-provider-review dd{margin:0;font-size:14px;color:#142856;overflow-wrap:anywhere;white-space:pre-wrap}
 .jt-provider-review .jt-review-wide{grid-column:1/-1}
 @media(max-width:540px){.jt-coverage-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.jt-provider-review dl{grid-template-columns:1fr}.jt-provider-review .jt-review-wide{grid-column:1}}
+
+/* Remove introductory sidebar so customers reach guided service questions immediately. */
+.th-request-layout{grid-template-columns:minmax(0,1fr);max-width:870px;gap:0}
+@media(max-width:960px){.th-request-layout{grid-template-columns:minmax(0,1fr);gap:0}}
