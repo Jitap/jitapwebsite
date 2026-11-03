@@ -16,24 +16,25 @@ const fmt=(n:number)=>'KES '+n.toLocaleString('en-KE');
 const today=()=>{const parts=new Intl.DateTimeFormat('en-GB',{timeZone:'Africa/Nairobi',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());const get=(key:string)=>parts.find(p=>p.type===key)?.value||'';return get('year')+'-'+get('month')+'-'+get('day')};
 const homeLabels:Record<string,string>={'bedsitter':'Bedsitter / studio','1-bed':'1 bedroom','2-bed':'2 bedrooms','3-bed':'3 bedrooms'};
 const packingLabels:Record<string,string>={'self-packing':'I will pack','fragile-only':'Fragile items only','full-packing':'Pack everything'};
-type Saved={id:string;secret:string;stage:number;info:MoveInfo;estimate:number|null};
+type Saved={id:string;secret:string;stage:number;info:MoveInfo;estimate:number|null;distanceVerified?:boolean};
 export function MovingRequest(){
  const [stage,setStage]=useState(1);
  const [info,setInfo]=useState<MoveInfo>(initial);
  const [leadId,setLeadId]=useState<string|null>(null);
  const [secret,setSecret]=useState('');
  const [estimate,setEstimate]=useState<number|null>(null);
+ const [distanceVerified,setDistanceVerified]=useState(false);
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState('');
  const [receipt,setReceipt]=useState('');
  useEffect(()=>{
   try{const raw=sessionStorage.getItem('jitap:moving-draft');if(!raw)return;const saved=JSON.parse(raw) as Saved;
-   if(saved.id&&saved.secret&&saved.stage>=1&&saved.stage<=4){setLeadId(saved.id);setSecret(saved.secret);setInfo(saved.info);setStage(saved.stage);setEstimate(saved.estimate)}}
+   if(saved.id&&saved.secret&&saved.stage>=1&&saved.stage<=4){setLeadId(saved.id);setSecret(saved.secret);setInfo(saved.info);setStage(saved.stage);setEstimate(saved.estimate);setDistanceVerified(saved.distanceVerified===true)}}
   catch{}
  },[]);
  function edit<K extends keyof MoveInfo>(name:K,value:MoveInfo[K]){setInfo(x=>({...x,[name]:value}));setError('')}
  function stagePayload(s:number){
-  if(s===1)return {pickup:info.pickup.trim(),dropoff:info.dropoff.trim(),movingDate:info.movingDate,distanceKm:info.distanceKm.trim()?Number(info.distanceKm):null};
+  if(s===1)return {pickup:info.pickup.trim(),dropoff:info.dropoff.trim(),pickupArea:info.pickupArea,movingDate:info.movingDate};
   if(s===2)return {homeSize:info.homeSize,pickupFloor:info.pickupFloor,dropoffFloor:info.dropoffFloor,liftPickup:info.liftPickup,liftDropoff:info.liftDropoff};
   return {packing:info.packing,special:info.special};
  }
@@ -43,14 +44,20 @@ export function MovingRequest(){
   const data=await response.json();
   if(!response.ok||!data.ok)throw new Error(data.error||'Unable to save your progress.');
   setSecret(key);setLeadId(data.leadId);setEstimate(typeof data.estimateKes==='number'?data.estimateKes:null);
-  if(s<4)sessionStorage.setItem('jitap:moving-draft',JSON.stringify({id:data.leadId,secret:key,stage:s+1,info,estimate:data.estimateKes??null}));
+  const verified=data.distanceVerified===true&&typeof data.distanceKm==='number';
+  setDistanceVerified(verified);
+  const nextInfo=s===1?{...info,distanceKm:verified?String(data.distanceKm):''}:info;
+  if(s===1)setInfo(nextInfo);
+  if(s<4)sessionStorage.setItem('jitap:moving-draft',JSON.stringify({
+   id:data.leadId,secret:key,stage:s+1,info:nextInfo,estimate:data.estimateKes??null,distanceVerified:verified
+  }));
   return data;
  }
  function check(s:number){
   if(s===1){
    if(info.pickup.trim().length<3||info.dropoff.trim().length<3)return 'Enter a pickup and drop-off location or landmark.';
    if(!info.movingDate||info.movingDate<today())return 'Choose a future moving date.';
-   if(info.distanceKm.trim()&&(Number(info.distanceKm)<0||Number(info.distanceKm)>2000||!Number.isFinite(Number(info.distanceKm))))return 'Enter a valid estimated distance in kilometres.';
+
   }
   return '';
  }
@@ -73,7 +80,7 @@ export function MovingRequest(){
    'Floors: pickup '+info.pickupFloor+(info.liftPickup?' (lift)':' (stairs)')+', drop-off '+info.dropoffFloor+(info.liftDropoff?' (lift)':' (stairs)')+'.',
    'Packing: '+packingLabels[info.packing]+'.',
    'Special items: '+(info.special?'Yes':'No')+'.',
-   info.distanceKm?'Customer-estimated distance: '+info.distanceKm+' km (unverified).':'Road distance not yet verified.',
+   distanceVerified&&info.distanceKm?'Google Routes driving distance: '+info.distanceKm+' km (map-verified).':'Road distance not yet verified; extra-distance charges may apply.',
    estimate!==null?'JiTap provisional estimate: '+fmt(estimate)+' (not a confirmed quote).':'Quote pending provider assessment.'
   ].join(' ');
   const phone=info.phone.replace(/[\s().-]/g,''); const daysAway=Math.round((Date.parse(info.movingDate+'T00:00:00Z')-Date.parse(today()+'T00:00:00Z'))/86400000); const timing=daysAway<=1?'today':daysAway<=7?'this-week':'flexible';
@@ -105,9 +112,12 @@ export function MovingRequest(){
     <label>Moving from <input value={info.pickup} onChange={e=>edit('pickup',e.target.value)} maxLength={200} placeholder="e.g. Bamburi, near Naivas" required/></label>
     <label>Moving to <input value={info.dropoff} onChange={e=>edit('dropoff',e.target.value)} maxLength={200} placeholder="e.g. Nyali, Links Road" required/></label>
     <label>Preferred moving date <input type="date" min={today()} value={info.movingDate} onChange={e=>edit('movingDate',e.target.value)} required/></label>
-    <label>Approximate distance in km <small>(optional)</small><input type="number" step="0.1" min="0" max="2000" inputMode="decimal" value={info.distanceKm} onChange={e=>edit('distanceKm',e.target.value)} placeholder="Only if you know it"/></label>
-    <p className="jt-moving-note">JiTap has not calculated a road route. Leaving distance blank gives a preliminary price that excludes any extra-distance charge.</p>
+    <p className="jt-moving-note"><MapPin size={15} aria-hidden="true"/> JiTap will calculate the driving distance when you tap Continue. If a route cannot be calculated, you can still request a quote.</p>
    </section>}
+   {stage>1&&<div className={'jt-moving-route-result'+(distanceVerified?' verified':'')} role="status">
+    <MapPin size={16} aria-hidden="true"/>
+    {distanceVerified?<span><strong>Google road distance: {info.distanceKm} km</strong> · verified for this estimate</span>:<span>Road distance unavailable · estimate excludes possible extra-distance costs.</span>}
+   </div>}
    {stage===2&&<section className="jt-moving-step">
     <div className="jt-moving-stage-title"><House/><div><h2>Tell us about your home</h2><p>We'll estimate the truck and handling required.</p></div></div>
     <label>Home size <select value={info.homeSize} onChange={e=>edit('homeSize',e.target.value as MoveInfo['homeSize'])}>{Object.entries(homeLabels).map(([k,v])=><option value={k} key={k}>{v}</option>)}</select></label>
@@ -122,7 +132,7 @@ export function MovingRequest(){
    </section>}
    {stage===4&&<section className="jt-moving-step">
     <div className="jt-moving-stage-title"><Phone/><div><h2>Review your move</h2><p>Share a number JiTap can reach.</p></div></div>
-    <div className="jt-moving-estimate"><span>Provisional moving estimate</span><strong>{estimate===null?'Quote pending':fmt(estimate)}</strong><small>Not a confirmed mover quote. {info.distanceKm?'Distance is customer-estimated, not map-verified.':'Road distance and extra-distance charges are not yet included.'} Final price depends on scope, access and provider confirmation.</small></div>
+    <div className="jt-moving-estimate"><span>Provisional moving estimate</span><strong>{estimate===null?'Quote pending':fmt(estimate)}</strong><small>Not a confirmed mover quote. {distanceVerified?'Driving distance calculated by Google Routes.':'Road distance and extra-distance charges are not yet included.'} Final price depends on scope, access and provider confirmation.</small></div>
     <div className="jt-moving-review"><p><MapPin size={16}/> {info.pickup} → {info.dropoff}</p><p><CalendarDays size={16}/> {info.movingDate} · {homeLabels[info.homeSize]}</p><p><Package size={16}/> {packingLabels[info.packing]}{info.special?' · Special items':''}</p></div>
     <label>Mobile number <input required inputMode="tel" autoComplete="tel" type="tel" placeholder="0712345678" value={info.phone} onChange={e=>edit('phone',e.target.value)}/></label>
     <label>Email <small>(optional)</small><input type="email" autoComplete="email" value={info.email} onChange={e=>edit('email',e.target.value)} placeholder="you@example.com"/></label>
