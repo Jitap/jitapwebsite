@@ -1,7 +1,7 @@
 'use client';
 import {useMemo,useState} from 'react';
 import Link from 'next/link';
-import {ArrowRight,MapPin,Search,SlidersHorizontal,ShieldAlert} from 'lucide-react';
+import {ArrowRight,MapPin,Search,SlidersHorizontal} from 'lucide-react';
 import {areas} from '@/lib/data';
 import {fundiListings} from '@/lib/fundis-public';
 
@@ -36,7 +36,7 @@ export function FundiDirectory(){
     <label htmlFor="dir-category">Type of work</label><select id="dir-category" value={category} onChange={e=>setCategory(e.target.value)}>{filters.map(x=><option key={x}>{x}</option>)}</select>
     <label htmlFor="dir-search">Search skills or business</label><div className="td-dir-input"><Search size={18}/><input id="dir-search" value={query} onChange={e=>setQuery(e.target.value)} placeholder="e.g. fundi wa stima"/></div>
     <button type="button" className="td-clear" onClick={()=>{setArea('All areas');setCategory('All services');setQuery('')}}>Clear filters</button>
-    <div className="td-directory-note"><ShieldAlert size={19}/><span>Profiles show service categories and areas supplied to JiTap. Availability, credentials and customer ratings have not been independently confirmed.</span></div>
+    
    </aside>
    <div className="td-dir-results"><div className="td-results-top"><h2>Mombasa Local Skill Network</h2><p>{area==='All areas'?'Across the JiTap network':'Listed for '+area}</p></div>
     {shown.length===0?<div className="td-empty"><h3>No submitted fundi profiles match these filters yet.</h3><p>You can still send a service request in {area==='All areas'?'Mombasa':area}; JiTap will review it against current coverage.</p><Link href={'/request?area='+encodeURIComponent(area==='All areas'?'Bamburi':area)} className="td-primary">Describe your job <ArrowRight size={16}/></Link></div>:
