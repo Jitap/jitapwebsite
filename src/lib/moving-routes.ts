@@ -3,7 +3,8 @@
  * TRAFFIC_UNAWARE is sufficient for distance pricing; it is not an ETA or truck-access guarantee.
  */
 export type RoutingOutcome={status:'verified';distanceKm:number}|{status:'unavailable';distanceKm:null};
-export async function calculateDrivingRoute(pickup:string,dropoff:string,pickupArea:string):Promise<RoutingOutcome>{
+type LocationChoice={label:string;placeId?:string;lat?:number;lng?:number}|null|undefined;
+export async function calculateDrivingRoute(pickup:string,dropoff:string,pickupArea:string,pickupLocation?:LocationChoice,dropoffLocation?:LocationChoice):Promise<RoutingOutcome>{
  const key=process.env.GOOGLE_MAPS_API_KEY;
  if(!key)return {status:'unavailable',distanceKm:null};
  const qualify=(input:string,area?:string)=>{
@@ -11,6 +12,11 @@ export async function calculateDrivingRoute(pickup:string,dropoff:string,pickupA
   const suffix=/\bkenya\b/i.test(value)?'':', Kenya';
   const context=area&&!value.toLowerCase().includes(area.toLowerCase())?', '+area+', Mombasa':'';
   return value+context+suffix;
+ };
+ const waypoint=(input:string,choice:LocationChoice,area?:string)=>{
+  if(choice?.placeId&&/^[A-Za-z0-9_:-]{4,250}$/.test(choice.placeId))return {placeId:choice.placeId};
+  if(choice?.lat!==undefined&&choice?.lng!==undefined&&Number.isFinite(choice.lat)&&Number.isFinite(choice.lng)&&choice.lat>=-5&&choice.lat<=5&&choice.lng>=33&&choice.lng<=42)return {location:{latLng:{latitude:choice.lat,longitude:choice.lng}}};
+  return {address:qualify(input,area)};
  };
  try{
   const controller=new AbortController();
@@ -20,8 +26,8 @@ export async function calculateDrivingRoute(pickup:string,dropoff:string,pickupA
     method:'POST',
     headers:{'Content-Type':'application/json','X-Goog-Api-Key':key,'X-Goog-FieldMask':'routes.distanceMeters'},
     body:JSON.stringify({
-     origin:{address:qualify(pickup,pickupArea)},
-     destination:{address:qualify(dropoff)},
+     origin:waypoint(pickup,pickupLocation,pickupArea),
+     destination:waypoint(dropoff,dropoffLocation),
      travelMode:'DRIVE',
      routingPreference:'TRAFFIC_UNAWARE',
      computeAlternativeRoutes:false,
