@@ -1,7 +1,7 @@
 'use client';
 import {useEffect,useMemo,useState} from 'react';
 import Link from 'next/link';
-import {ArrowLeft,ArrowRight,CheckCircle2,ChevronLeft,MapPin,Search,X} from 'lucide-react';
+import {ArrowLeft,ArrowRight,ChevronLeft,X} from 'lucide-react';
 import {areas,categories} from '@/lib/data';
 import {IntakeForm} from '@/components/Interactive';
 import {MatchedFundis} from '@/components/FundiDirectory';
@@ -47,7 +47,7 @@ export function GuidedRequest(){
  function skip(){if(stage>=questions.length-1)finished();else setStage(n=>n+1)}
  return <div className="th-request-flow">
   <div className="container th-request-layout">
-   <aside className="th-request-aside"><span className="th-overline">JITAP REQUEST</span><h2>Habari! What needs fixing?</h2><p>Help us understand your job so we can review your service request accurately.</p><div className="th-request-summary"><div><Search size={18}/><span><strong>{label}</strong><small>{description||'Describe your job below'}</small></span></div><div><MapPin size={18}/><span><strong>{area}</strong><small>Service neighbourhood</small></span></div></div><div className="th-request-notice"><CheckCircle2 size={18}/><p>We will collect your mobile number in the final step. It will not appear on a public fundi profile.</p></div><Link href="/fundis" className="th-request-directory-link">Browse registered fundis <ArrowRight size={15}/></Link></aside>
+   <aside className="th-request-aside"><span className="th-overline">JITAP REQUEST</span><h2>Habari! What needs fixing?</h2><p>Help us understand your job so we can review your service request accurately.</p><Link href="/fundis" className="th-request-directory-link">Browse registered fundis <ArrowRight size={15}/></Link></aside>
    {ready?<div className="th-request-final"><div className="th-request-final-title"><span className="th-overline">FINAL STEP</span><h2>How can JiTap reach you?</h2><p>Review and submit your enquiry. Submitting isn't a booking or a guaranteed match.</p><button type="button" onClick={()=>setReady(false)}><ChevronLeft size={18}/> Edit job details</button></div><IntakeForm kind="request" initialCategory={category} initialArea={area} initialTiming={answers.timing==="today"||answers.timing==="this-week"?answers.timing:"flexible"} initialDescription={finalDescription}/></div>:showMatches?<div className="th-request-final jt-matches-wrap"><button type="button" className="jt-profile-back" onClick={()=>setShowMatches(false)}>← Edit service brief</button><MatchedFundis category={category} area={area} onQuotes={()=>setReady(true)}/></div>:
    <div className="th-questions" role="region" aria-label="Service request questions"><div className="th-question-nav"><button type="button" onClick={()=>stage>0?setStage(n=>n-1):window.location.assign('/services')} aria-label="Back"><ArrowLeft size={20}/></button><div><strong>{label}</strong><span>{stage+1} of {questions.length} · Tell us about your job</span></div><Link href="/" aria-label="Close questionnaire"><X size={20}/></Link></div>
     <div className="th-progress"><span style={{width:((stage+1)/questions.length)*100+'%'}}/></div>
