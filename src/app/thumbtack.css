@@ -298,8 +298,11 @@
 @media(prefers-reduced-motion:reduce){.th-category,.th-project,.th-progress span{transition:none}}
 
 /* Scoped JiTap provider discovery and quote-request presentation */
-.td-outline-button{background:#00a16c;color:#fff;border-color:#00a16c;border-radius:99px;padding:13px 22px;font-weight:800;justify-content:center;text-decoration:none;cursor:pointer}
-.td-outline-button:hover{background:#087f59;border-color:#087f59;color:#fff}
+.td-outline-button{background:#087f68;color:#fff;border-color:#087f68;border-radius:99px;padding:12px 20px;font-weight:750;justify-content:center;text-decoration:none;cursor:pointer;transition:background-color .18s ease,border-color .18s ease}
+.td-outline-button:hover{background:#066b59;border-color:#066b59;color:#fff}
+/* Primary quote actions use JiTap's brighter green; profile viewing is secondary. */
+.jt-matches-quote .td-outline-button,.jt-profile-panel .td-outline-button{background:#00a16c;border-color:#00a16c}
+.jt-matches-quote .td-outline-button:hover,.jt-profile-panel .td-outline-button:hover{background:#087f59;border-color:#087f59}
 .jt-matches-wrap{padding:25px}
 .jt-matches-title h2{font-size:clamp(23px,3vw,31px);color:#173747;margin:6px 0 9px}
 .jt-matches-title p,.jt-matches-quote p{font-size:13px;color:#657e89;line-height:1.6;margin:0}
