@@ -13,7 +13,17 @@ const base=z.object({
   stage:z.number().int().min(1).max(4),
   payload:z.record(z.unknown())
 });
-const discovery=z.object({pickup:z.string().trim().min(3).max(200),dropoff:z.string().trim().min(3).max(200),movingDate:z.string().regex(/^\d{4}-\d{2}-\d{2}$/),pickupArea:z.string().trim().min(2).max(80)});
+const locationChoice=z.object({
+ label:z.string().trim().min(3).max(200),
+ placeId:z.string().regex(/^[A-Za-z0-9_:-]{4,250}$/).optional(),
+ lat:z.number().min(-5).max(5).optional(),
+ lng:z.number().min(33).max(42).optional()
+}).nullable().optional();
+const discovery=z.object({
+ pickup:z.string().trim().min(3).max(200),dropoff:z.string().trim().min(3).max(200),
+ movingDate:z.string().regex(/^\d{4}-\d{2}-\d{2}$/),pickupArea:z.string().trim().min(2).max(80),
+ pickupLocation:locationChoice,dropoffLocation:locationChoice
+});
 const home=z.object({homeSize:z.enum(['bedsitter','1-bed','2-bed','3-bed']),pickupFloor:z.number().int().min(0).max(40),dropoffFloor:z.number().int().min(0).max(40),liftPickup:z.boolean(),liftDropoff:z.boolean()});
 const inventory=z.object({packing:z.enum(['self-packing','fragile-only','full-packing']),special:z.boolean()});
 const contact=z.object({phone:z.string().regex(/^(?:\+254|254|0)(?:7|1)\d{8}$/),email:z.union([z.literal(''),z.string().email().max(150)]),intakeReference:z.string().uuid()});
@@ -50,7 +60,7 @@ export async function POST(req:NextRequest){
   // Persist the session first so the existing database rate limit runs before any billable Maps request.
   if(stage===1&&process.env.GOOGLE_MAPS_API_KEY&&saved.routeAttempts<=5){
    const loc=discovery.parse(p.data);
-   const route=await calculateDrivingRoute(loc.pickup,loc.dropoff,loc.pickupArea);
+   const route=await calculateDrivingRoute(loc.pickup,loc.dropoff,loc.pickupArea,loc.pickupLocation,loc.dropoffLocation);
    const verified=await fetch(url+'/rest/v1/rpc/save_moving_lead_authorized',{
     method:'POST',headers:{apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json'},
     body:JSON.stringify({p_token:token,p_lead_id:saved.leadId,p_session_secret:secret,p_stage:1,p_payload:{
