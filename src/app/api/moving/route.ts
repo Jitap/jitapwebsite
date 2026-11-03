@@ -1,6 +1,7 @@
 import {NextRequest,NextResponse} from 'next/server';
 import {createHash} from 'node:crypto';
 import {z} from 'zod';
+import {calculateDrivingRoute} from '@/lib/moving-routes';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -12,7 +13,7 @@ const base=z.object({
   stage:z.number().int().min(1).max(4),
   payload:z.record(z.unknown())
 });
-const discovery=z.object({pickup:z.string().trim().min(3).max(200),dropoff:z.string().trim().min(3).max(200),movingDate:z.string().regex(/^\d{4}-\d{2}-\d{2}$/),distanceKm:z.number().min(0).max(2000).nullable()});
+const discovery=z.object({pickup:z.string().trim().min(3).max(200),dropoff:z.string().trim().min(3).max(200),movingDate:z.string().regex(/^\d{4}-\d{2}-\d{2}$/),pickupArea:z.string().trim().min(2).max(80)});
 const home=z.object({homeSize:z.enum(['bedsitter','1-bed','2-bed','3-bed']),pickupFloor:z.number().int().min(0).max(40),dropoffFloor:z.number().int().min(0).max(40),liftPickup:z.boolean(),liftDropoff:z.boolean()});
 const inventory=z.object({packing:z.enum(['self-packing','fragile-only','full-packing']),special:z.boolean()});
 const contact=z.object({phone:z.string().regex(/^(?:\+254|254|0)(?:7|1)\d{8}$/),email:z.union([z.literal(''),z.string().email().max(150)]),intakeReference:z.string().uuid()});
@@ -41,11 +42,29 @@ export async function POST(req:NextRequest){
  try{
   const result=await fetch(url+'/rest/v1/rpc/save_moving_lead_authorized',{
    method:'POST',headers:{apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json'},
-   body:JSON.stringify({p_token:token,p_lead_id:leadId,p_session_secret:secret,p_stage:stage,p_payload:p.data,p_source_hash:source}),
+   body:JSON.stringify({p_token:token,p_lead_id:leadId,p_session_secret:secret,p_stage:stage,p_payload:stage===1?{...p.data,distanceKm:null,routeStatus:'unavailable'}:p.data,p_source_hash:source}),
    cache:'no-store',signal:AbortSignal.timeout(12000)
   });
   if(!result.ok){console.error('JiTap moving save failed',{stage,status:result.status});return respond('Could not save your moving progress. Please try again.',502)}
-  const saved=await result.json();
-  return NextResponse.json({ok:true,leadId:saved.leadId,stage:saved.stage,estimateKes:saved.estimateKes,distanceVerified:false},{status:200,headers});
+  let saved=await result.json();
+  // Persist the session first so the existing database rate limit runs before any billable Maps request.
+  if(stage===1&&process.env.GOOGLE_MAPS_API_KEY){
+   const loc=discovery.parse(p.data);
+   const route=await calculateDrivingRoute(loc.pickup,loc.dropoff,loc.pickupArea);
+   const verified=await fetch(url+'/rest/v1/rpc/save_moving_lead_authorized',{
+    method:'POST',headers:{apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json'},
+    body:JSON.stringify({p_token:token,p_lead_id:saved.leadId,p_session_secret:secret,p_stage:1,p_payload:{
+     pickup:loc.pickup,dropoff:loc.dropoff,movingDate:loc.movingDate,
+     distanceKm:route.distanceKm,routeStatus:route.status
+    },p_source_hash:source}),
+    cache:'no-store',signal:AbortSignal.timeout(12000)
+   });
+   if(verified.ok)saved=await verified.json();
+   else console.error('JiTap route verification state could not be saved',{status:verified.status});
+  }
+  return NextResponse.json({ok:true,leadId:saved.leadId,stage:saved.stage,
+   estimateKes:saved.estimateKes,distanceKm:saved.distanceKm??null,
+   distanceVerified:saved.distanceVerified===true,routeStatus:saved.routeStatus||'unavailable'
+  },{status:200,headers});
  }catch{console.error('JiTap moving service unavailable',{stage});return respond('Could not save your moving progress. Please try again.',502)}
 }
