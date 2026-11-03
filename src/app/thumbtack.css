@@ -327,3 +327,15 @@
 .jt-compact-intake .row-buttons{justify-content:center}
 .jt-compact-intake .row-buttons .button{background:#172078;border-color:#172078;color:#fff;border-radius:999px;padding:13px 38px;font-weight:760;min-width:190px;justify-content:center}
 .jt-compact-intake .row-buttons .button:hover{background:#2c3c9a;border-color:#2c3c9a}
+
+/* JiTap segmented step indicator — quiet, compact, no percentages */
+.jt-segment-progress{display:flex;align-items:center;gap:9px;width:100%;margin:0 0 18px}
+.jt-segment-progress>span{height:8px;flex:1;min-width:0;border-radius:100px;background:#edf0f0;transition:background-color .18s ease}
+.jt-segment-progress>span.is-active{background:#00c853}
+.jt-form-progress{margin:0 0 23px}
+.jt-progress-caption{display:block;color:#386070;font-size:12px;font-weight:750;margin-bottom:12px}
+.th-request-segments{margin:0;padding:0 27px 0;gap:8px}
+.th-request-segments>span{height:6px}
+.th-request-stage-progress{margin-bottom:25px}
+@media(max-width:540px){.th-request-segments{padding:0 16px;gap:6px}.jt-segment-progress{gap:7px}.jt-segment-progress>span{height:7px}}
+@media(prefers-reduced-motion:reduce){.jt-segment-progress>span{transition:none}}
