@@ -419,3 +419,33 @@
 .jt-mamafua-choice small{display:block;color:#6b808a;font-size:11px;line-height:1.4;margin-top:5px}
 .jt-mamafua-choice em{font-style:normal;color:#087f68;font-size:11px;font-weight:750;white-space:nowrap;margin-left:28px}
 @media(max-width:640px){.jt-mamafua-options{grid-template-columns:1fr}.jt-mamafua-choice{padding:12px}.jt-mamafua-choice em{margin-left:29px}}
+
+/* Compact Uber-inspired Mama Fua price list, without claiming live provider pricing. */
+.jt-uber-service-list{display:flex;flex-direction:column;gap:10px}
+.jt-uber-service{border:1px solid #e0e6eb;border-radius:15px;overflow:hidden;background:#fff;transition:border-color .16s ease,box-shadow .16s ease}
+.jt-uber-service.selected{border:2px solid #172078;box-shadow:0 2px 8px #17207814}
+.jt-uber-service-main{width:100%;border:0;background:transparent;padding:15px 12px;display:flex;align-items:center;gap:12px;text-align:left;cursor:pointer;color:#192f42}
+.jt-uber-icon{width:49px;height:49px;border-radius:13px;display:flex;align-items:center;justify-content:center;flex:none;color:#172078;background:#eff2ff}
+.jt-uber-service-name{min-width:0;flex:1}
+.jt-uber-service-name strong{display:block;font-size:15px;color:#142e42}
+.jt-uber-service-name small{display:block;font-size:12px;line-height:1.35;color:#70808b;margin-top:4px}
+.jt-uber-price{text-align:right;white-space:nowrap;flex:none}
+.jt-uber-price strong{display:block;font-size:15px;font-weight:800;color:#172078}
+.jt-uber-price small{display:block;font-size:11px;color:#738894;margin-top:4px}
+.jt-uber-indicator{width:20px;height:20px;border:1.6px solid #c5d1da;border-radius:50%;font-size:12px;display:flex;align-items:center;justify-content:center;color:#fff;flex:none}
+.jt-uber-service.selected .jt-uber-indicator{border-color:#172078;background:#172078}
+.jt-uber-quantity{display:flex;align-items:center;gap:10px;border-top:1px solid #e5ebee;background:#f8fafc;padding:11px 14px;flex-wrap:wrap;font-size:12px;color:#617784}
+.jt-uber-quantity select{border:1px solid #cdd9df;background:white;border-radius:9px;padding:8px 12px;min-width:65px;color:#173a4b;font-weight:700}
+.jt-uber-quantity>span{margin-left:auto}
+.jt-uber-quantity strong{color:#172078}
+.jt-cleaning-inline-total{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:17px;padding:14px 16px;border-radius:12px;background:#edf6f3;color:#183d3b}
+.jt-cleaning-inline-total strong{font-size:23px;color:#172078}
+.jt-cleaning-total{border:1px solid #dfe8e7;border-radius:16px;background:#fff;padding:20px;margin-bottom:22px}
+.jt-cleaning-total-head{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.jt-cleaning-total-head h2{font-size:23px;color:#143a4b;margin:5px 0 0}
+.jt-cleaning-total-head>strong{font-size:26px;color:#172078;white-space:nowrap}
+.jt-cleaning-total-lines{margin:18px 0;display:flex;flex-direction:column;gap:12px}
+.jt-cleaning-total-lines>div{display:flex;justify-content:space-between;gap:14px;font-size:14px;color:#1f3c4c}
+.jt-cleaning-total-lines small{color:#7d8d96;font-size:12px}
+.jt-cleaning-total>p{font-size:12px;line-height:1.6;color:#71848e;margin:8px 0 0}
+@media(max-width:540px){.jt-uber-service-main{padding:11px 9px;gap:9px}.jt-uber-icon{width:41px;height:41px}.jt-uber-service-name strong,.jt-uber-price strong{font-size:13px}.jt-uber-service-name small{font-size:11px}.jt-uber-price small{font-size:10px}.jt-uber-indicator{width:17px;height:17px}.jt-cleaning-total-head>strong{font-size:21px}.jt-cleaning-total{padding:15px}}
