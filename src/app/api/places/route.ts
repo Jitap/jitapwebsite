@@ -34,7 +34,7 @@ export async function POST(req:NextRequest){
   const r=await fetch(url,{
    method:suggest?'POST':'GET',
    headers:{'X-Goog-Api-Key':key,...(suggest?{'Content-Type':'application/json','X-Goog-FieldMask':'suggestions.placePrediction.placeId,suggestions.placePrediction.text.text,suggestions.placePrediction.structuredFormat'}:{'X-Goog-FieldMask':'id,formattedAddress,location,displayName'})},
-   ...(suggest?{body:JSON.stringify({
+   ...(p.data.action==='suggest'?{body:JSON.stringify({
     input:p.data.query,sessionToken:p.data.sessionToken,
     includedRegionCodes:['ke'],
     locationBias:{circle:{center:{latitude:-4.045,longitude:39.675},radius:110000}}
