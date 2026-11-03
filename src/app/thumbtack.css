@@ -512,3 +512,43 @@
 .jt-moving-route-result svg{flex:none;margin-top:1px}
 .jt-moving-route-result strong{font-weight:760}
 .jt-moving-note svg{vertical-align:middle;margin-right:4px}
+
+/* Moving route: Google Places search and opt-in OSM map pin. */
+.jt-location-search{position:relative;display:flex;flex-direction:column;gap:8px;min-width:0}
+.jt-location-search>label{font-size:14px;font-weight:700;color:#193549}
+.jt-location-input{position:relative;display:flex;align-items:center;gap:9px;min-width:0;border:1px solid #d4dfe5;border-radius:12px;background:#fff;padding:0 12px}
+.jt-location-input:focus-within{outline:2px solid #172078;outline-offset:2px}
+.jt-location-input>svg{color:#69808e;flex:none}
+.jt-location-input>input{border:0!important;outline:0!important;box-shadow:none!important;padding:13px 0!important;flex:1;width:100%;min-height:46px;min-width:0;font-size:16px}
+.jt-location-suggestions{background:#fff;border:1px solid #dae3e8;border-radius:12px;box-shadow:0 10px 26px #173c5429;overflow:hidden;position:absolute;z-index:30;left:0;right:0;top:76px;max-height:290px;overflow-y:auto}
+.jt-location-suggestions button{display:flex;align-items:flex-start;gap:11px;width:100%;border:0;border-bottom:1px solid #edf0f2;background:#fff;padding:13px 12px;text-align:left;cursor:pointer;color:#173648}
+.jt-location-suggestions button:hover,.jt-location-suggestions button:focus-visible{background:#f2f5ff}
+.jt-location-suggestions button>svg{color:#172078;flex:none;margin-top:3px}
+.jt-location-suggestions strong{display:block;font-size:13px}
+.jt-location-suggestions small{display:block;font-size:11px;color:#6b8390;margin-top:4px;line-height:1.4}
+.jt-location-status{color:#687e8d;font-size:11px;line-height:1.5}
+.jt-location-extras{display:flex;flex-wrap:wrap;gap:13px;align-items:center}
+.jt-location-extras button{display:inline-flex;align-items:center;gap:5px;border:none;background:transparent;padding:2px 0;color:#172078;font-size:12px;font-weight:700;cursor:pointer}
+.jt-location-extras button:hover{text-decoration:underline}
+.jt-location-selected{display:flex;align-items:center;gap:5px;color:#0c7657;font-size:11px}
+.jt-pin-backdrop{position:fixed;inset:0;z-index:1000;background:#07182799;display:flex;align-items:center;justify-content:center;padding:18px}
+.jt-pin-dialog{width:min(710px,100%);max-height:95vh;overflow:auto;background:#fff;border-radius:18px;box-shadow:0 20px 65px #05172c47}
+.jt-pin-header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px 18px}
+.jt-pin-header strong{display:block;font-size:17px;color:#153b4e}
+.jt-pin-header small{display:block;font-size:12px;color:#698392;margin-top:4px}
+.jt-pin-header button{border:none;background:#edf1f5;display:flex;align-items:center;justify-content:center;width:35px;height:35px;border-radius:50%;cursor:pointer;flex:none}
+.jt-pin-map{height:310px;position:relative;overflow:hidden;background:#e8eef0;touch-action:none;cursor:grab}
+.jt-pin-map:active{cursor:grabbing}
+.jt-pin-center{position:absolute;left:50%;top:50%;transform:translate(-50%,-100%);pointer-events:none;filter:drop-shadow(0 2px 3px #0005);z-index:2}
+.jt-pin-controls{position:absolute;z-index:4;right:13px;top:13px;display:flex;flex-direction:column;border:1px solid #dde6e8;border-radius:11px;overflow:hidden;background:#fff;box-shadow:0 2px 8px #0002}
+.jt-pin-controls button{border:0;background:#fff;color:#17374b;width:37px;height:37px;display:grid;place-items:center;cursor:pointer}
+.jt-pin-controls button+button{border-top:1px solid #e5eaed}
+.jt-pin-attribution{position:absolute;z-index:4;bottom:4px;right:6px;background:#ffffffcc;color:#172078;padding:3px 6px;font-size:10px}
+.jt-pin-footer{display:flex;flex-direction:column;gap:9px;padding:15px 18px 18px}
+.jt-pin-footer>label{font-size:13px;font-weight:700;color:#193549}
+.jt-pin-footer input{display:block;margin-top:7px;width:100%;border:1px solid #d4dfe5;border-radius:10px;padding:11px 12px;font-size:16px}
+.jt-pin-footer>small{font-size:12px;color:#697d8e}
+.jt-pin-footer .jt-pin-confirm{border:0;border-radius:30px;background:#172078;color:#fff;padding:12px 18px;font-size:14px;font-weight:750;display:flex;justify-content:center;align-items:center;gap:8px;cursor:pointer}
+@media(max-width:540px){.jt-pin-backdrop{padding:8px}.jt-pin-map{height:285px}.jt-pin-header{padding:12px}.jt-pin-footer{padding:12px}.jt-location-suggestions{top:75px}}
+
+.jt-location-google-credit{text-align:right;padding:7px 12px;color:#697f8f;background:#f6f8fa;font-size:11px;font-weight:600}

@@ -3,14 +3,16 @@ import {useEffect,useState,type FormEvent} from 'react';
 import Link from 'next/link';
 import {Truck,Check,ArrowLeft,ArrowRight,MapPin,House,Package,Phone,CalendarDays} from 'lucide-react';
 import {areas} from '@/lib/data';
+import {MovingLocationPicker,type MoveLocation} from '@/components/MovingLocationPicker';
 
 type MoveInfo={
  pickup:string;dropoff:string;pickupArea:string;movingDate:string;distanceKm:string;
+ pickupLocation:MoveLocation|null;dropoffLocation:MoveLocation|null;
  homeSize:'bedsitter'|'1-bed'|'2-bed'|'3-bed';
  pickupFloor:number;dropoffFloor:number;liftPickup:boolean;liftDropoff:boolean;
  packing:'self-packing'|'fragile-only'|'full-packing';special:boolean;phone:string;email:string;consent:boolean
 };
-const initial:MoveInfo={pickup:'',dropoff:'',pickupArea:'Bamburi',movingDate:'',distanceKm:'',homeSize:'1-bed',pickupFloor:0,dropoffFloor:0,liftPickup:false,liftDropoff:false,packing:'self-packing',special:false,phone:'',email:'',consent:false};
+const initial:MoveInfo={pickup:'',dropoff:'',pickupLocation:null,dropoffLocation:null,pickupArea:'Bamburi',movingDate:'',distanceKm:'',homeSize:'1-bed',pickupFloor:0,dropoffFloor:0,liftPickup:false,liftDropoff:false,packing:'self-packing',special:false,phone:'',email:'',consent:false};
 const labels=['Route','Home','Items','Contact'];
 const fmt=(n:number)=>'KES '+n.toLocaleString('en-KE');
 const today=()=>{const parts=new Intl.DateTimeFormat('en-GB',{timeZone:'Africa/Nairobi',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());const get=(key:string)=>parts.find(p=>p.type===key)?.value||'';return get('year')+'-'+get('month')+'-'+get('day')};
@@ -29,12 +31,14 @@ export function MovingRequest(){
  const [receipt,setReceipt]=useState('');
  useEffect(()=>{
   try{const raw=sessionStorage.getItem('jitap:moving-draft');if(!raw)return;const saved=JSON.parse(raw) as Saved;
-   if(saved.id&&saved.secret&&saved.stage>=1&&saved.stage<=4){setLeadId(saved.id);setSecret(saved.secret);const modern=typeof saved.distanceVerified==='boolean';setInfo({...saved.info,distanceKm:modern&&saved.distanceVerified?saved.info.distanceKm:''});setStage(modern?saved.stage:1);setEstimate(modern?saved.estimate:null);setDistanceVerified(saved.distanceVerified===true)}}
+   if(saved.id&&saved.secret&&saved.stage>=1&&saved.stage<=4){setLeadId(saved.id);setSecret(saved.secret);const modern=typeof saved.distanceVerified==='boolean';setInfo({...saved.info,pickupLocation:saved.info.pickupLocation||null,dropoffLocation:saved.info.dropoffLocation||null,distanceKm:modern&&saved.distanceVerified?saved.info.distanceKm:''});setStage(modern?saved.stage:1);setEstimate(modern?saved.estimate:null);setDistanceVerified(saved.distanceVerified===true)}}
   catch{}
  },[]);
  function edit<K extends keyof MoveInfo>(name:K,value:MoveInfo[K]){setInfo(x=>({...x,[name]:value}));setError('')}
+ function chooseLocation(which:'pickup'|'dropoff',selected:MoveLocation){setInfo(x=>({...x,[which]:selected.label,[which==='pickup'?'pickupLocation':'dropoffLocation']:selected,distanceKm:''}));setDistanceVerified(false);setEstimate(null);setError('')}
+ function typeLocation(which:'pickup'|'dropoff',value:string){setInfo(x=>({...x,[which]:value,[which==='pickup'?'pickupLocation':'dropoffLocation']:null,distanceKm:''}));setDistanceVerified(false);setEstimate(null);setError('')}
  function stagePayload(s:number){
-  if(s===1)return {pickup:info.pickup.trim(),dropoff:info.dropoff.trim(),pickupArea:info.pickupArea,movingDate:info.movingDate};
+  if(s===1)return {pickup:info.pickup.trim(),dropoff:info.dropoff.trim(),pickupArea:info.pickupArea,movingDate:info.movingDate,pickupLocation:info.pickupLocation,dropoffLocation:info.dropoffLocation};
   if(s===2)return {homeSize:info.homeSize,pickupFloor:info.pickupFloor,dropoffFloor:info.dropoffFloor,liftPickup:info.liftPickup,liftDropoff:info.liftDropoff};
   return {packing:info.packing,special:info.special};
  }
@@ -55,7 +59,8 @@ export function MovingRequest(){
  }
  function check(s:number){
   if(s===1){
-   if(info.pickup.trim().length<3||info.dropoff.trim().length<3)return 'Enter a pickup and drop-off location or landmark.';
+   if(info.pickup.trim().length<3||info.dropoff.trim().length<3)return 'Choose a pickup and destination.';
+   if(!info.pickupLocation||!info.dropoffLocation)return 'Select a suggested place, use the typed address, or choose a map pin for both locations.';
    if(!info.movingDate||info.movingDate<today())return 'Choose a future moving date.';
 
   }
@@ -109,8 +114,8 @@ export function MovingRequest(){
    {stage===1&&<section className="jt-moving-step">
     <div className="jt-moving-stage-title"><MapPin/><div><h2>Where are you moving?</h2><p>Use neighbourhoods, streets or nearby landmarks.</p></div></div>
     <label>Pickup area <select value={info.pickupArea} onChange={e=>edit('pickupArea',e.target.value)}>{areas.map(a=><option key={a}>{a}</option>)}</select></label>
-    <label>Moving from <input value={info.pickup} onChange={e=>edit('pickup',e.target.value)} maxLength={200} placeholder="e.g. Bamburi, near Naivas" required/></label>
-    <label>Moving to <input value={info.dropoff} onChange={e=>edit('dropoff',e.target.value)} maxLength={200} placeholder="e.g. Nyali, Links Road" required/></label>
+    <MovingLocationPicker title="Moving from" value={info.pickup} selected={info.pickupLocation} onChange={v=>typeLocation('pickup',v)} onSelect={v=>chooseLocation('pickup',v)}/>
+    <MovingLocationPicker title="Moving to" value={info.dropoff} selected={info.dropoffLocation} onChange={v=>typeLocation('dropoff',v)} onSelect={v=>chooseLocation('dropoff',v)}/>
     <label>Preferred moving date <input type="date" min={today()} value={info.movingDate} onChange={e=>edit('movingDate',e.target.value)} required/></label>
     <p className="jt-moving-note"><MapPin size={15} aria-hidden="true"/> Where Google routing is available, JiTap shares the pickup and destination with Google Maps to calculate road distance. If no route is found, you can still request a quote. <Link href="/privacy">Privacy</Link></p>
    </section>}
