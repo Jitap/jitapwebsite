@@ -28,7 +28,7 @@ export async function POST(req:NextRequest){
  const key=process.env.GOOGLE_MAPS_API_KEY;
  if(!key)return NextResponse.json({error:'Place suggestions temporarily unavailable'},{status:503,headers:noStore});
  const suggest=p.data.action==='suggest';
- const url=suggest?'https://places.googleapis.com/v1/places:autocomplete':'https://places.googleapis.com/v1/places/'+encodeURIComponent(p.data.placeId);
+ const url=p.data.action==='suggest'?'https://places.googleapis.com/v1/places:autocomplete':'https://places.googleapis.com/v1/places/'+encodeURIComponent(p.data.placeId);
  const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),6500);
  try{
   const r=await fetch(url,{
@@ -44,7 +44,7 @@ export async function POST(req:NextRequest){
   if(!r.ok){console.error('Google Places request failed',{status:r.status,kind:p.data.action});
    return NextResponse.json({error:r.status===403?'Places API (New) needs enabling in Google Cloud':'Place lookup unavailable. Use the map pin or type an address.'},{status:503,headers:noStore});}
   const data=await r.json();
-  if(suggest){
+  if(p.data.action==='suggest'){
    const suggestions=(Array.isArray(data.suggestions)?data.suggestions:[]).flatMap((s:{placePrediction?:{placeId?:string;text?:{text?:string};structuredFormat?:{mainText?:{text?:string};secondaryText?:{text?:string}}}})=>{
     const x=s.placePrediction;
     return x?.placeId&&x?.text?.text?[{placeId:x.placeId,label:x.text.text,main:x.structuredFormat?.mainText?.text||x.text.text,secondary:x.structuredFormat?.secondaryText?.text||''}]:[];
