@@ -91,13 +91,14 @@ export function MovingLocationPicker({title,value,selected,onChange,onSelect}:{t
   return ()=>{clearTimeout(t);controller.abort()}
  },[value,focused,selected]);
  async function choose(s:Suggestion){
-  setFocused(false);setResults([]);onSelect({label:s.label,placeId:s.placeId});
+  setLoading(true);setError('');setFocused(false);setResults([]);
   try{
    const r=await fetch('/api/places',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'details',placeId:s.placeId,sessionToken:token.current})});
    const data=await r.json();
-   if(r.ok&&data.place)onSelect(data.place);
-  }catch{}
-  token.current=crypto.randomUUID();
+   if(r.ok&&data.place){onSelect(data.place);}
+   else{setFocused(true);setError(data.error||'Could not confirm that location. Choose a street or map pin.');}
+  }catch{setFocused(true);setError('Could not confirm that location. Choose a map pin or type a precise address.');}
+  finally{setLoading(false);token.current=crypto.randomUUID();}
  }
  return <div className="jt-location-search">
   <label htmlFor={'jt-location-'+title}>{title}</label>
