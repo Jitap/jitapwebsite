@@ -381,3 +381,28 @@
 /* Remove introductory sidebar so customers reach guided service questions immediately. */
 .th-request-layout{grid-template-columns:minmax(0,1fr);max-width:870px;gap:0}
 @media(max-width:960px){.th-request-layout{grid-template-columns:minmax(0,1fr);gap:0}}
+
+/* Customer timing: compact selectable calendar and time preferences, not live availability. */
+.jt-named-progress{gap:7px;align-items:flex-start;margin-bottom:8px}
+.jt-named-progress .jt-progress-unit{min-width:0;flex:1;display:flex;flex-direction:column;gap:7px;text-align:center}
+.jt-named-progress .jt-progress-unit>span{height:7px;width:100%;border-radius:99px;background:#edf0f0}
+.jt-named-progress .jt-progress-unit>span.is-active{background:#00c853}
+.jt-named-progress .jt-progress-unit small{font-size:10px;line-height:1.2;color:#7d8c93;font-weight:650}
+.jt-named-progress .jt-progress-unit small.is-current{color:#172078;font-weight:800}
+.jt-time-picker{margin:10px auto 0;max-width:690px}
+.jt-time-picker h3{font-size:16px;color:#183346;margin:22px 0 12px;letter-spacing:0}
+.jt-time-picker h3 small{font-size:11px;color:#7a8c95;font-weight:500}
+.jt-date-options{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:7px}
+.jt-date-chip,.jt-time-chip{background:#fff;border:1px solid #dbe5e9;border-radius:13px;color:#243a4b;cursor:pointer;transition:background .16s,border-color .16s}
+.jt-date-chip{min-width:0;display:flex;flex-direction:column;gap:5px;align-items:center;padding:11px 3px}
+.jt-date-chip strong{font-size:18px}
+.jt-date-chip small{font-size:10px;color:#687e89}
+.jt-date-chip.selected,.jt-time-chip.selected{background:#eaf0ff;border-color:#172078;color:#172078;box-shadow:0 0 0 1px #172078}
+.jt-later-date{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin:15px 0;font-size:12px;font-weight:650;color:#52707e}
+.jt-later-date input{font:inherit;border:1px solid #dbe5e9;border-radius:9px;padding:9px;color:#203956;max-width:100%}
+.jt-time-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.jt-time-chip{padding:13px 8px;font-weight:700;font-size:13px}
+.jt-time-chip:disabled{opacity:.38;cursor:not-allowed}
+.jt-time-note{font-size:12px;color:#738995;line-height:1.5;margin:18px 0 0}
+.jt-request-schedule{font-size:13px!important;color:#172078!important;margin:7px 0}
+@media(max-width:540px){.jt-date-options{gap:4px}.jt-date-chip{padding:10px 2px;border-radius:10px}.jt-date-chip small{font-size:9px}.jt-date-chip strong{font-size:16px}.jt-time-options{grid-template-columns:repeat(2,minmax(0,1fr))}.jt-named-progress .jt-progress-unit small{font-size:9px}}
