@@ -5,6 +5,7 @@ import {ArrowLeft,ArrowRight,ChevronLeft,X,Sparkles,Shirt,Footprints,House,BedDo
 import {areas,categories} from '@/lib/data';
 import {IntakeForm} from '@/components/Interactive';
 import {MatchedFundis} from '@/components/FundiDirectory';
+import {MovingRequest} from '@/components/MovingRequest';
 
 type Question={id:string;title:string;hint?:string;options:{value:string;label:string;hint?:string}[]};
 const mamaFuaServices=[
@@ -54,7 +55,7 @@ const byCategory:Record<string,Question[]>={
  'general-repairs':[
  {id:'job',title:'What would you like mounted or repaired?',options:[{value:'TV mounting',label:'Mount my TV'},{value:'Wall shelving',label:'Shelves / wall fittings'},{value:'Door, handle or fixture',label:'Door, handle or fixture'},{value:'Other home repair',label:'Other repairs'}]},time],
  'other-services':[
- {id:'job',title:'Which service best describes the job?',options:[{value:'Computer or phone repairs',label:'Computer / phone repairs'},{value:'Moving or delivery',label:'Moving / delivery'},{value:'Gardening',label:'Gardening / outdoors'},{value:'Other local service',label:'Something else'}]},time]
+ {id:'job',title:'Which service best describes the job?',options:[{value:'Computer or phone repairs',label:'Computer / phone repairs'},{value:'Gardening',label:'Gardening / outdoors'},{value:'Other local service',label:'Something else'}]},time]
 };
 export function GuidedRequest(){
  const [category,setCategory]=useState('other-services');
@@ -89,6 +90,7 @@ export function GuidedRequest(){
  : questions.filter(x=>x.id!=='timing').map(q=>answers[q.id]?q.title.replace('?','')+': '+answers[q.id]:null).filter(Boolean).join('; ');const full=[description.trim()||('I need help with '+label.toLowerCase()+' in '+area+'.'),details,preferredDate&&preferredTime?'Preferred appointment: '+preferredDate+' at '+preferredTime+' (East Africa Time)':null].filter(Boolean).join('. ').slice(0,1500);const delta=Math.round((Date.parse(preferredDate+'T00:00:00Z')-Date.parse(clock.date+'T00:00:00Z'))/86400000);const t=delta<=1?'today':delta<=7?'this-week':'flexible';const params=new URLSearchParams(window.location.search);params.set('category',category);params.set('area',area);const finalBrief=full.length<12?'I need a local service fundi in '+area+'.':full;setFinalDescription(finalBrief);params.set('description',finalBrief);params.set('timing',t);params.set('preferredDate',preferredDate);params.set('preferredTime',preferredTime);window.history.replaceState(window.history.state,'','/request?'+params.toString());setShowMatches(true)};
  function next(){if(onTime&&(!validDate||!validTime))return;if(stage>=questions.length-1){finished()}else setStage(n=>n+1)}
  function skip(){if(onTime)return;if(stage>=questions.length-1)finished();else setStage(n=>n+1)}
+ if(category==='moving')return <MovingRequest/>;
  return <div className="th-request-flow">
   <div className="container th-request-layout">
    

@@ -449,3 +449,59 @@
 .jt-cleaning-total-lines small{color:#7d8d96;font-size:12px}
 .jt-cleaning-total>p{font-size:12px;line-height:1.6;color:#71848e;margin:8px 0 0}
 @media(max-width:540px){.jt-uber-service-main{padding:11px 9px;gap:9px}.jt-uber-icon{width:41px;height:41px}.jt-uber-service-name strong,.jt-uber-price strong{font-size:13px}.jt-uber-service-name small{font-size:11px}.jt-uber-price small{font-size:10px}.jt-uber-indicator{width:17px;height:17px}.jt-cleaning-total-head>strong{font-size:21px}.jt-cleaning-total{padding:15px}}
+
+/* Moving: compact four-stage truck tracker and local quote funnel. */
+.jt-moving-page{max-width:800px;padding-top:30px;padding-bottom:70px}
+.jt-moving-heading{margin-bottom:20px}
+.jt-moving-heading h1{font-size:clamp(29px,5vw,42px);line-height:1.15;margin:9px 0;color:#143447}
+.jt-moving-heading>p{font-size:14px;color:#667d88;margin:0}
+.jt-moving-card{background:#fff;border:1px solid #e0e8ed;border-radius:22px;padding:24px;box-shadow:0 8px 30px #1133440c}
+.jt-truck-progress ol{list-style:none;display:grid;grid-template-columns:repeat(4,1fr);padding:0;margin:0 0 28px}
+.jt-truck-progress li{display:flex;flex-direction:column;align-items:center;gap:8px;position:relative;color:#8295a0;font-size:11px;font-weight:650}
+.jt-truck-progress li:not(:last-child)::after{content:"";height:3px;position:absolute;top:19px;left:calc(50% + 27px);right:calc(-50% + 27px);background:#e1e8ee;z-index:0}
+.jt-truck-progress li.done:not(:last-child)::after{background:#00a16c}
+.jt-truck-node{width:40px;height:40px;border:2px solid #d7e1e6;color:#6d8896;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;position:relative;z-index:1}
+.jt-truck-progress .done .jt-truck-node{background:#00a16c;color:#fff;border-color:#00a16c}
+.jt-truck-progress .active{color:#172078;font-weight:800}
+.jt-truck-progress .active .jt-truck-node{background:#172078;border-color:#172078;color:#fff;box-shadow:0 0 0 4px #edf0ff}
+.jt-moving-step{display:flex;flex-direction:column;gap:17px}
+.jt-moving-stage-title{display:flex;gap:12px;align-items:flex-start;margin-bottom:2px}
+.jt-moving-stage-title>svg{color:#172078;margin-top:3px;flex:none}
+.jt-moving-stage-title h2{margin:0;font-size:23px;color:#173a4c}
+.jt-moving-stage-title p{margin:4px 0 0;color:#778b95;font-size:13px}
+.jt-moving-step>label,.jt-moving-cols label{font-size:14px;font-weight:700;color:#193549;display:flex;flex-direction:column;gap:8px}
+.jt-moving-step label small{color:#8b9ca5;font-weight:500}
+.jt-moving-step input:not([type=checkbox]),.jt-moving-step select{width:100%;min-width:0;box-sizing:border-box;padding:13px 15px;min-height:48px;border-radius:12px;border:1px solid #d4dfe5;color:#1a3344;background:#fff;font-size:16px}
+.jt-moving-step input:focus-visible,.jt-moving-step select:focus-visible{outline:2px solid #172078;outline-offset:2px}
+.jt-moving-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.jt-moving-step label.jt-moving-check{display:flex;flex-direction:row;align-items:flex-start;gap:10px;color:#526e7d;font-weight:500;font-size:13px;line-height:1.5}
+.jt-moving-check input{accent-color:#172078;width:18px;height:18px;flex:none;margin:1px 0 0}
+.jt-moving-check a{color:#172078;text-decoration:underline}
+.jt-moving-note{font-size:12px;color:#758993;line-height:1.5;margin:0}
+.jt-moving-tiers{display:flex;flex-direction:column;gap:9px}
+.jt-moving-tiers button{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:15px;text-align:left;background:#fff;border:1px solid #d9e4e9;border-radius:14px;cursor:pointer}
+.jt-moving-tiers button.selected{border:2px solid #172078;background:#f3f5ff}
+.jt-moving-tiers strong{font-size:15px;color:#163548}
+.jt-moving-tiers small{display:block;color:#708896;margin-top:4px}
+.jt-moving-radio{width:19px;height:19px;border:2px solid #b9c9d2;border-radius:50%;flex:none}
+.jt-moving-tiers button.selected .jt-moving-radio{border:6px solid #172078}
+.jt-moving-estimate{background:#f0f5fc;border-radius:16px;padding:19px;display:flex;flex-direction:column;gap:8px}
+.jt-moving-estimate>span{font-size:13px;color:#4a6681}
+.jt-moving-estimate strong{font-size:29px;color:#172078}
+.jt-moving-estimate small{font-size:12px;line-height:1.5;color:#607988}
+.jt-moving-review{background:#f9fafb;padding:10px 15px;border:1px solid #e6ebef;border-radius:13px}
+.jt-moving-review p{display:flex;align-items:flex-start;gap:8px;color:#3e5768;font-size:13px;line-height:1.4}
+.jt-moving-review svg{flex:none;color:#087f68}
+.jt-moving-actions{display:flex;justify-content:flex-end;gap:12px;align-items:center;margin-top:24px}
+.jt-moving-actions button{display:flex;align-items:center;gap:9px;justify-content:center;border-radius:100px;padding:13px 22px;font-size:14px;font-weight:750;cursor:pointer}
+.jt-moving-actions .jt-moving-next{background:#172078;border:1px solid #172078;color:#fff}
+.jt-moving-actions .jt-moving-next:hover{background:#29368d}
+.jt-moving-actions .jt-moving-back{background:#fff;border:1px solid #d2dce2;color:#18344d}
+.jt-moving-actions button:disabled{opacity:.6;cursor:not-allowed}
+.jt-moving-error{background:#fff1f1;border:1px solid #f0caca;color:#9e2525;padding:12px;border-radius:10px;font-size:13px}
+.jt-moving-receipt{text-align:center;padding:25px 4px}
+.jt-moving-receipt>svg{color:#00a16c}
+.jt-moving-receipt h2{font-size:26px;color:#16354a}
+.jt-moving-receipt p{color:#637b89}
+.jt-moving-receipt strong{color:#172078}
+@media(max-width:540px){.jt-moving-page{padding-top:20px}.jt-moving-card{padding:17px}.jt-moving-stage-title h2{font-size:21px}.jt-moving-heading{margin-bottom:13px}.jt-truck-node{width:37px;height:37px}.jt-truck-progress li:not(:last-child)::after{top:18px;left:calc(50% + 24px);right:calc(-50% + 24px)}.jt-moving-actions .jt-moving-next{flex:1}.jt-moving-cols{gap:9px}}
