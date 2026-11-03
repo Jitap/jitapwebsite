@@ -319,3 +319,11 @@
 .jt-profile-panel p{color:#516e7b;line-height:1.6}
 .jt-profile-disclaimer{font-size:12px;margin:23px 0}
 @media(max-width:600px){.jt-matches-wrap{padding:16px}.jt-matches-quote{flex-direction:column;align-items:stretch}.jt-profile-panel{grid-template-columns:1fr;padding:22px}.jt-profile-panel .td-pro-avatar{width:70px;height:70px}}
+
+/* Streamlined contact capture, limited to customer service requests. */
+.jt-compact-intake .form-grid{display:block}
+.jt-compact-intake .field{margin-bottom:18px}
+.jt-compact-intake .field input[type="tel"]{font-size:16px}
+.jt-compact-intake .row-buttons{justify-content:center}
+.jt-compact-intake .row-buttons .button{background:#172078;border-color:#172078;color:#fff;border-radius:999px;padding:13px 38px;font-weight:760;min-width:190px;justify-content:center}
+.jt-compact-intake .row-buttons .button:hover{background:#2c3c9a;border-color:#2c3c9a}
