@@ -58,7 +58,7 @@ export function FundiDirectory(){
 }
 
 export function matchesFor(category:string,area:string,specialty?:string){
- if(specialty==='tv-mounting')return fundiListings.filter(p=>p.areas.includes(area)&&/\\b(?:tv\\s*mount|television\\s*mount|tv\\s*installation)\\b/i.test([p.name,...p.categories].join(' ')));
+ if(specialty==='tv-mounting')return fundiListings.filter(p=>p.areas.includes(area)&&/\b(?:tv\s*mount|television\s*mount|tv\s*installation)\b/i.test([p.name,...p.categories].join(' ')));
  const serviceNames:Record<string,string[]>={
   plumbing:['plumbing'],electrical:['electrical'],cleaning:['cleaning'],
   carpentry:['carpentry'],painting:['painting'],'appliance-repair':['appliance repair'],
