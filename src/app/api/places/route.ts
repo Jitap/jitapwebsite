@@ -37,7 +37,7 @@ export async function POST(req:NextRequest){
    ...(p.data.action==='suggest'?{body:JSON.stringify({
     input:p.data.query,sessionToken:p.data.sessionToken,
     includedRegionCodes:['ke'],
-    locationBias:{circle:{center:{latitude:-4.045,longitude:39.675},radius:110000}}
+    locationBias:{circle:{center:{latitude:-4.045,longitude:39.675},radius:40000}}
    })}:{}),
    cache:'no-store',signal:controller.signal
   });
