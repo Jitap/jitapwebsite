@@ -52,7 +52,7 @@ export async function POST(req:NextRequest){
  try{
   const r=await fetch(url,{
    method:suggest||nearby?'POST':'GET',
-   headers:{'X-Goog-Api-Key':key,...(suggest?{'Content-Type':'application/json','X-Goog-FieldMask':'suggestions.placePrediction.placeId,suggestions.placePrediction.text.text,suggestions.placePrediction.structuredFormat'}:nearby?{'Content-Type':'application/json','X-Goog-FieldMask':'places.displayName,places.formattedAddress'}:{'X-Goog-FieldMask':'id,formattedAddress,location,displayName'})},
+   headers:{'X-Goog-Api-Key':key,...(suggest?{'Content-Type':'application/json','X-Goog-FieldMask':'suggestions.placePrediction.placeId,suggestions.placePrediction.text.text,suggestions.placePrediction.structuredFormat'}:nearby?{'Content-Type':'application/json','X-Goog-FieldMask':'places.displayName,places.formattedAddress'}:{'X-Goog-FieldMask':'id,formattedAddress,location,displayName,types'})},
    ...(p.data.action==='suggest'?{body:JSON.stringify({
     input:p.data.query,sessionToken:p.data.sessionToken,
     includedRegionCodes:['ke'],
@@ -79,6 +79,9 @@ export async function POST(req:NextRequest){
   }
   const lat=data.location?.latitude,lng=data.location?.longitude;
   if(typeof lat!=='number'||typeof lng!=='number'||lat< -5||lat>5||lng<33||lng>42)return NextResponse.json({error:'Location could not be confirmed in Kenya'},{status:422,headers:noStore});
+  const broadTypes=['locality','administrative_area_level_1','administrative_area_level_2','country'];
+  if(Array.isArray(data.types)&&data.types.some((type:string)=>broadTypes.includes(type))&&!data.types.some((type:string)=>['street_address','route','premise','establishment','point_of_interest'].includes(type)))
+   return NextResponse.json({error:'Please choose a street, building or landmark, not just a city.'},{status:422,headers:noStore});
   const original=data.formattedAddress||data.displayName?.text||'';
   let label=clean(original);
   if(plusCode.test(original)||!label||/^(mombasa,? kenya)$/i.test(label)){
