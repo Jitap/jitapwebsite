@@ -117,7 +117,7 @@ export function MovingRequest(){
     <MovingLocationPicker title="Moving from" value={info.pickup} selected={info.pickupLocation} onChange={v=>typeLocation('pickup',v)} onSelect={v=>chooseLocation('pickup',v)}/>
     <MovingLocationPicker title="Moving to" value={info.dropoff} selected={info.dropoffLocation} onChange={v=>typeLocation('dropoff',v)} onSelect={v=>chooseLocation('dropoff',v)}/>
     <label>Preferred moving date <input type="date" min={today()} value={info.movingDate} onChange={e=>edit('movingDate',e.target.value)} required/></label>
-    <p className="jt-moving-note"><MapPin size={15} aria-hidden="true"/> Where Google routing is available, JiTap shares the pickup and destination with Google Maps to calculate road distance. If no route is found, you can still request a quote. <Link href="/privacy">Privacy</Link></p>
+    <p className="jt-moving-note"><MapPin size={15} aria-hidden="true"/> Your selected locations help JiTap calculate the road distance for your moving estimate.</p>
    </section>}
    {stage>1&&<div className={'jt-moving-route-result'+(distanceVerified?' verified':'')} role="status">
     <MapPin size={16} aria-hidden="true"/>
@@ -137,7 +137,7 @@ export function MovingRequest(){
    </section>}
    {stage===4&&<section className="jt-moving-step">
     <div className="jt-moving-stage-title"><Phone/><div><h2>Review your move</h2><p>Share a number JiTap can reach.</p></div></div>
-    <div className="jt-moving-estimate"><span>Provisional moving estimate</span><strong>{estimate===null?'Quote pending':fmt(estimate)}</strong><small>Not a confirmed mover quote. {distanceVerified?'Driving distance calculated by Google Routes.':'Road distance and extra-distance charges are not yet included.'} Final price depends on scope, access and provider confirmation.</small></div>
+    <div className="jt-moving-estimate"><span>Moving estimate</span><strong>{estimate===null?'Quote pending':fmt(estimate)}</strong></div>
     <div className="jt-moving-review"><p><MapPin size={16}/> {info.pickup} → {info.dropoff}</p><p><CalendarDays size={16}/> {info.movingDate} · {homeLabels[info.homeSize]}</p><p><Package size={16}/> {packingLabels[info.packing]}{info.special?' · Special items':''}</p></div>
     <label>Mobile number <input required inputMode="tel" autoComplete="tel" type="tel" placeholder="0712345678" value={info.phone} onChange={e=>edit('phone',e.target.value)}/></label>
     <label>Email <small>(optional)</small><input type="email" autoComplete="email" value={info.email} onChange={e=>edit('email',e.target.value)} placeholder="you@example.com"/></label>
