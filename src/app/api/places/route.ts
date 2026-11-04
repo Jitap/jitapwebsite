@@ -7,7 +7,7 @@ const noStore={'Cache-Control':'no-store'};
 const limit=new Map<string,{start:number,count:number}>();
 const schema=z.discriminatedUnion('action',[
  z.object({action:z.literal('suggest'),query:z.string().trim().min(3).max(90),sessionToken:z.string().uuid()}),
- z.object({action:z.literal('details'),placeId:z.string().regex(/^[A-Za-z0-9_:-]{4,250}$/),sessionToken:z.string().uuid()})
+ z.object({action:z.literal('details'),placeId:z.string().regex(/^[A-Za-z0-9_:-]{4,250}$/),sessionToken:z.string().uuid(),selectedName:z.string().trim().min(2).max(160).optional()})
 ]);
 const plusCode=/^[A-Z0-9]{4,8}\+[A-Z0-9]{2,}(?:,|\s|$)/i;
 const isUseful=(name:string)=>!!name&&!plusCode.test(name)&&!/^(mombasa|kenya|coast province)$/i.test(name.trim());
@@ -62,7 +62,10 @@ export async function POST(req:NextRequest){
   // The picker may prefer the user's exact autocomplete selection (e.g. Vescon 1).
   const displayName=typeof data.displayName?.text==='string'?data.displayName.text.trim():'';
   const formattedAddress=typeof data.formattedAddress==='string'?data.formattedAddress.trim():'';
-  const label=isUseful(displayName)?displayName:(!plusCode.test(formattedAddress)&&formattedAddress?formattedAddress:'');
+  // Preserve the exact named autocomplete result the user chose. Google may return
+  // a plus code as formattedAddress even for a correctly named apartment/estate.
+  const chosenName=p.data.selectedName?.trim()||'';
+  const label=isUseful(chosenName)?chosenName:isUseful(displayName)?displayName:(!plusCode.test(formattedAddress)&&isUseful(formattedAddress)?formattedAddress:'');
   if(!label)return NextResponse.json({error:'This map result has no identifiable place name. Search for the exact building or choose a named pin.'},{status:422,headers:noStore});
   return NextResponse.json({place:{label,placeId:data.id,lat,lng}},{headers:noStore});
  }catch{return NextResponse.json({error:'Location service unavailable; select a map pin or type the address'},{status:503,headers:noStore})}
