@@ -9,7 +9,7 @@ const schema=z.discriminatedUnion('action',[
  z.object({action:z.literal('suggest'),query:z.string().trim().min(3).max(90),sessionToken:z.string().uuid()}),
  z.object({action:z.literal('details'),placeId:z.string().regex(/^[A-Za-z0-9_:-]{4,250}$/),sessionToken:z.string().uuid()})
 ]);
-const plusCode=/^[A-Z0-9]{4,8}\\+[A-Z0-9]{2,}(?:,|\\s|$)/i;
+const plusCode=/^[A-Z0-9]{4,8}\+[A-Z0-9]{2,}(?:,|\s|$)/i;
 const isUseful=(name:string)=>!!name&&!plusCode.test(name)&&!/^(mombasa|kenya|coast province)$/i.test(name.trim());
 function sameOrigin(req:NextRequest){
  const origin=req.headers.get('origin');
