@@ -27,6 +27,10 @@ export function understandJob(text:string):JobIntent|null {
   make('deviceNeed','What help do you need for the device?',['Repair a fault','Diagnose a fault','Find a replacement part','Find a screen','Not sure']),
   make('deviceModel','Which device is it?',['Laptop / MacBook','Desktop / motherboard','Projector','Camera','Game console','Phone'])
  ]);
+ if(/\b(mechanic|mechanics|fundi wa gari|fundi wa pikipiki|garage|engine repair|car repair|vehicle repair|auto repair|fundi wa motor)\b/.test(t))return result('other-services','vehicle-mechanic','Diagnose, service or repair a vehicle',[
+  make('vehicleType','Which vehicle needs a mechanic?',['Car','Motorcycle / boda boda','Van / pickup','Truck','Other vehicle / not sure']),
+  make('mechanicJob','What help does the vehicle need?',['Engine or starting fault','Brakes / suspension','Routine service / oil change','Electrical / battery issue','Unusual noise or other fault','Inspection / not sure'])
+ ]);
  if(/\b(exhaust|muffler)\b/.test(t))return result('other-services','vehicle-exhaust','Find or repair an exhaust',[
   make('vehicleType','Which vehicle is this for?',['Car','Motorcycle','Van or pickup','Not sure']),
   make('exhaustTask','What do you need?',['Buy an exhaust','Repair existing exhaust','Install or replace','Compare prices'])
