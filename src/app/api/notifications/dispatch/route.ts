@@ -24,7 +24,7 @@ async function rest(path:string,method:string,body?:unknown){
  if(!url||!key)throw new Error('private_database_not_configured');
  const result=await fetch(url+'/rest/v1/'+path,{
   method,
-  headers:{apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json',Prefer:'return=minimal'},
+  headers:{apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json',...(path.startsWith('rpc/')?{}:{Prefer:'return=minimal'})},
   ...(body===undefined?{}:{body:JSON.stringify(body)}),
   cache:'no-store',signal:AbortSignal.timeout(12000)
  });
