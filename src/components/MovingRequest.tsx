@@ -5,16 +5,23 @@ import {Truck,Check,ArrowLeft,ArrowRight,MapPin,House,Package,Phone,CalendarDays
 import {MovingLocationPicker,type MoveLocation} from '@/components/MovingLocationPicker';
 
 type MoveInfo={
- pickup:string;dropoff:string;pickupArea:string;movingDate:string;distanceKm:string;
+ pickup:string;dropoff:string;pickupArea:string;movingDate:string;movingTime:string;distanceKm:string;
  pickupLocation:MoveLocation|null;dropoffLocation:MoveLocation|null;
  homeSize:'bedsitter'|'1-bed'|'2-bed'|'3-bed';
  pickupFloor:number;dropoffFloor:number;liftPickup:boolean;liftDropoff:boolean;
  packing:'self-packing'|'fragile-only'|'full-packing';special:boolean;phone:string;email:string;consent:boolean
 };
-const initial:MoveInfo={pickup:'',dropoff:'',pickupLocation:null,dropoffLocation:null,pickupArea:'Mombasa',movingDate:'',distanceKm:'',homeSize:'1-bed',pickupFloor:0,dropoffFloor:0,liftPickup:false,liftDropoff:false,packing:'self-packing',special:false,phone:'',email:'',consent:false};
+const initial:MoveInfo={pickup:'',dropoff:'',pickupLocation:null,dropoffLocation:null,pickupArea:'Mombasa',movingDate:'',movingTime:'',distanceKm:'',homeSize:'1-bed',pickupFloor:0,dropoffFloor:0,liftPickup:false,liftDropoff:false,packing:'self-packing',special:false,phone:'',email:'',consent:false};
 const labels=['Route','Home','Items','Contact'];
 const fmt=(n:number)=>'KES '+n.toLocaleString('en-KE');
 const today=()=>{const parts=new Intl.DateTimeFormat('en-GB',{timeZone:'Africa/Nairobi',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());const get=(key:string)=>parts.find(p=>p.type===key)?.value||'';return get('year')+'-'+get('month')+'-'+get('day')};
+const isValidTime=(value:string)=>/^([01]\\d|2[0-3]):[0-5]\\d$/.test(value);
+const formatMovingTime=(value:string)=>{
+ if(!isValidTime(value))return value;
+ const [hour,minute]=value.split(':').map(Number);
+ return String(hour%12||12)+':'+String(minute).padStart(2,'0')+(hour>=12?' PM':' AM');
+};
+const currentKenyaTime=()=>new Intl.DateTimeFormat('en-GB',{timeZone:'Africa/Nairobi',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date());
 const homeLabels:Record<string,string>={'bedsitter':'Bedsitter / studio','1-bed':'1 bedroom','2-bed':'2 bedrooms','3-bed':'3 bedrooms'};
 const packingLabels:Record<string,string>={'self-packing':'I will pack','fragile-only':'Fragile items only','full-packing':'Pack everything'};
 type Saved={id:string;secret:string;stage:number;info:MoveInfo;estimate:number|null;distanceVerified?:boolean};
@@ -30,14 +37,14 @@ export function MovingRequest(){
  const [receipt,setReceipt]=useState('');
  useEffect(()=>{
   try{const raw=sessionStorage.getItem('jitap:moving-draft');if(!raw)return;const saved=JSON.parse(raw) as Saved;
-   if(saved.id&&saved.secret&&saved.stage>=1&&saved.stage<=4){setLeadId(saved.id);setSecret(saved.secret);const modern=typeof saved.distanceVerified==='boolean';setInfo({...saved.info,pickupLocation:saved.info.pickupLocation||null,dropoffLocation:saved.info.dropoffLocation||null,distanceKm:modern&&saved.distanceVerified?saved.info.distanceKm:''});setStage(modern?saved.stage:1);setEstimate(modern?saved.estimate:null);setDistanceVerified(saved.distanceVerified===true)}}
+   if(saved.id&&saved.secret&&saved.stage>=1&&saved.stage<=4){setLeadId(saved.id);setSecret(saved.secret);const modern=typeof saved.distanceVerified==='boolean';setInfo({...saved.info,movingTime:saved.info.movingTime||'',pickupLocation:saved.info.pickupLocation||null,dropoffLocation:saved.info.dropoffLocation||null,distanceKm:modern&&saved.distanceVerified?saved.info.distanceKm:''});setStage(modern&&isValidTime(saved.info.movingTime||'')?saved.stage:1);setEstimate(modern?saved.estimate:null);setDistanceVerified(saved.distanceVerified===true)}}
   catch{}
  },[]);
  function edit<K extends keyof MoveInfo>(name:K,value:MoveInfo[K]){setInfo(x=>({...x,[name]:value}));setError('')}
  function chooseLocation(which:'pickup'|'dropoff',selected:MoveLocation){setInfo(x=>({...x,[which]:selected.label,[which==='pickup'?'pickupLocation':'dropoffLocation']:selected,distanceKm:''}));setDistanceVerified(false);setEstimate(null);setError('')}
  function typeLocation(which:'pickup'|'dropoff',value:string){setInfo(x=>({...x,[which]:value,[which==='pickup'?'pickupLocation':'dropoffLocation']:null,distanceKm:''}));setDistanceVerified(false);setEstimate(null);setError('')}
  function stagePayload(s:number){
-  if(s===1)return {pickup:info.pickup.trim(),dropoff:info.dropoff.trim(),pickupArea:info.pickupArea,movingDate:info.movingDate,pickupLocation:info.pickupLocation,dropoffLocation:info.dropoffLocation};
+  if(s===1)return {pickup:info.pickup.trim(),dropoff:info.dropoff.trim(),pickupArea:info.pickupArea,movingDate:info.movingDate,movingTime:info.movingTime,pickupLocation:info.pickupLocation,dropoffLocation:info.dropoffLocation};
   if(s===2)return {homeSize:info.homeSize,pickupFloor:info.pickupFloor,dropoffFloor:info.dropoffFloor,liftPickup:info.liftPickup,liftDropoff:info.liftDropoff};
   return {packing:info.packing,special:info.special};
  }
@@ -60,7 +67,9 @@ export function MovingRequest(){
   if(s===1){
    if(info.pickup.trim().length<3||info.dropoff.trim().length<3)return 'Choose a pickup and destination.';
    if(!info.pickupLocation||!info.dropoffLocation)return 'Select a suggested place, use the typed address, or choose a map pin for both locations.';
-   if(!info.movingDate||info.movingDate<today())return 'Choose a future moving date.';
+   if(!info.movingDate||info.movingDate<today())return 'Choose today or a future moving date.';
+   if(!isValidTime(info.movingTime))return 'Choose your preferred moving time.';
+   if(info.movingDate===today()&&info.movingTime<=currentKenyaTime())return 'Choose a future time for today\'s move.';
 
   }
   return '';
@@ -79,7 +88,7 @@ export function MovingRequest(){
   setBusy(true);setError('');
   const requestDescription=[
    'Moving from '+info.pickup+' to '+info.dropoff+'.',
-   'Move date: '+info.movingDate+'.',
+   'Preferred move: '+info.movingDate+' at '+formatMovingTime(info.movingTime)+' (Africa/Nairobi).',
    'House: '+homeLabels[info.homeSize]+'.',
    'Floors: pickup '+info.pickupFloor+(info.liftPickup?' (lift)':' (stairs)')+', drop-off '+info.dropoffFloor+(info.liftDropoff?' (lift)':' (stairs)')+'.',
    'Packing: '+packingLabels[info.packing]+'.',
@@ -90,7 +99,7 @@ export function MovingRequest(){
   const phone=info.phone.replace(/[\s().-]/g,''); const daysAway=Math.round((Date.parse(info.movingDate+'T00:00:00Z')-Date.parse(today()+'T00:00:00Z'))/86400000); const timing=daysAway<=1?'today':daysAway<=7?'this-week':'flexible';
   try{
    const response=await fetch('/api/intake/request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-    phone,consent:true,category:'moving',area:'Mombasa',timing,description:requestDescription,
+    phone,consent:true,category:'moving',area:'Mombasa',timing,description:requestDescription,preferredDate:info.movingDate,preferredTime:info.movingTime,
     // Reuse the confirmed pickup Place ID / pin. The customer already provided this at Route.
     locationLabel:info.pickupLocation?.label||info.pickup,
     ...(info.pickupLocation?.placeId?{locationPlaceId:info.pickupLocation.placeId}:{}),
@@ -124,7 +133,10 @@ export function MovingRequest(){
     <div className="jt-moving-stage-title"><MapPin/><div><h2>Where are you moving?</h2><p>Use neighbourhoods, streets or nearby landmarks.</p></div></div>
     <MovingLocationPicker title="Moving from" value={info.pickup} selected={info.pickupLocation} onChange={v=>typeLocation('pickup',v)} onSelect={v=>chooseLocation('pickup',v)}/>
     <MovingLocationPicker title="Moving to" value={info.dropoff} selected={info.dropoffLocation} onChange={v=>typeLocation('dropoff',v)} onSelect={v=>chooseLocation('dropoff',v)}/>
-    <label>Preferred moving date <input type="date" min={today()} value={info.movingDate} onChange={e=>edit('movingDate',e.target.value)} required/></label>
+    <div className="jt-moving-date-time">
+     <label>Preferred moving date <input type="date" min={today()} value={info.movingDate} onChange={e=>edit('movingDate',e.target.value)} required/></label>
+     <label>Preferred moving time <input type="time" step={1800} value={info.movingTime} onChange={e=>edit('movingTime',e.target.value)} required/></label>
+    </div>
     <p className="jt-moving-note"><MapPin size={15} aria-hidden="true"/> Your selected locations help JiTap calculate the road distance for your moving estimate.</p>
    </section>}
    {stage>1&&<div className={'jt-moving-route-result'+(distanceVerified?' verified':'')} role="status">
@@ -146,7 +158,7 @@ export function MovingRequest(){
    {stage===4&&<section className="jt-moving-step">
     <div className="jt-moving-stage-title"><Phone/><div><h2>Review your move</h2><p>Share a number JiTap can reach.</p></div></div>
     <div className="jt-moving-estimate"><span>Moving estimate</span><strong>{estimate===null?'Quote pending':fmt(estimate)}</strong></div>
-    <div className="jt-moving-review"><p><MapPin size={16}/> {info.pickup} → {info.dropoff}</p><p><CalendarDays size={16}/> {info.movingDate} · {homeLabels[info.homeSize]}</p><p><Package size={16}/> {packingLabels[info.packing]}{info.special?' · Special items':''}</p></div>
+    <div className="jt-moving-review"><p><MapPin size={16}/> {info.pickup} → {info.dropoff}</p><p><CalendarDays size={16}/> {info.movingDate} at {formatMovingTime(info.movingTime)} · {homeLabels[info.homeSize]}</p><p><Package size={16}/> {packingLabels[info.packing]}{info.special?' · Special items':''}</p></div>
     <label>Mobile number <input required inputMode="tel" autoComplete="tel" type="tel" placeholder="0712345678" value={info.phone} onChange={e=>edit('phone',e.target.value)}/></label>
     <label>Email <small>(optional)</small><input type="email" autoComplete="email" value={info.email} onChange={e=>edit('email',e.target.value)} placeholder="you@example.com"/></label>
     <label className="jt-moving-check"><input type="checkbox" required checked={info.consent} onChange={e=>edit('consent',e.target.checked)}/> I agree to JiTap processing these details to respond to my request. <Link href="/privacy">Privacy</Link></label>
