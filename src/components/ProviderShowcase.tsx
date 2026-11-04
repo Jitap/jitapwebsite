@@ -4,9 +4,19 @@ import Link from 'next/link';
 import {BriefcaseBusiness,Layers,MapPin,Star,Truck,ArrowRight,Clock3} from 'lucide-react';
 export type Profile={id:string;display_name:string;business_name:string;service_categories:string[];service_areas:string[];base_area:string|null;description:string|null;logo_url:string|null;rating:number|null;review_count:number|null;years_experience:number|null;similar_jobs_completed:number|null;verified_at:string|null;is_online:boolean};
 const fallback:Profile={id:'fund-022',display_name:'URBAN MOVERS AND RELOCATIONS',business_name:'URBAN MOVERS AND RELOCATIONS',service_categories:['Moving / Delivery','Relocation'],service_areas:['Bamburi','Nyali','Mtwapa','Tudor'],base_area:'Bamburi',description:'House moving, relocation and interior decor services.',logo_url:null,rating:null,review_count:null,years_experience:null,similar_jobs_completed:null,verified_at:null,is_online:false};
-export function ProviderShowcase({detail=false}:{detail?:boolean}){
- const [p,setP]=useState<Profile>(fallback);
- useEffect(()=>{const controller=new AbortController();fetch('/api/providers/public',{signal:controller.signal}).then(r=>r.ok?r.json():null).then(data=>{if(data?.profiles?.[0])setP(data.profiles[0])}).catch(()=>{});return()=>controller.abort()},[]);
+export function ProviderShowcase({detail=false,profile,profileId='fund-022'}:{detail?:boolean;profile?:Profile;profileId?:string}){
+ const [loaded,setLoaded]=useState<Profile|null>(null);
+ useEffect(()=>{
+  if(profile)return;
+  const controller=new AbortController();
+  fetch('/api/providers/public',{signal:controller.signal}).then(r=>r.ok?r.json():null).then(data=>{
+   const found=data?.profiles?.find((item:Profile)=>item.id===profileId);
+   if(found)setLoaded(found);
+  }).catch(()=>{});
+  return()=>controller.abort();
+ },[profile,profileId]);
+ const p=profile||loaded||(profileId==='fund-022'?fallback:null);
+ if(!p)return <p>Provider profile unavailable.</p>;
  const request='/request?category=moving&description='+encodeURIComponent('I would like a moving or relocation quote from '+p.business_name);
  return <article className={'jt-provider-feature'+(detail?' jt-provider-feature-detail':'')}>
   <div className="jt-provider-logo-panel">{p.logo_url?<img src={p.logo_url} alt={p.business_name+' logo'}/>:<div className="jt-provider-logo-placeholder"><Truck size={42}/><strong>{p.business_name}</strong><small>Moving &amp; Relocation</small></div>}</div>
