@@ -11,7 +11,7 @@ type MoveInfo={
  pickupFloor:number;dropoffFloor:number;liftPickup:boolean;liftDropoff:boolean;
  packing:'self-packing'|'fragile-only'|'full-packing';special:boolean;phone:string;email:string;consent:boolean
 };
-const initial:MoveInfo={pickup:'',dropoff:'',pickupLocation:null,dropoffLocation:null,pickupArea:'Bamburi',movingDate:'',distanceKm:'',homeSize:'1-bed',pickupFloor:0,dropoffFloor:0,liftPickup:false,liftDropoff:false,packing:'self-packing',special:false,phone:'',email:'',consent:false};
+const initial:MoveInfo={pickup:'',dropoff:'',pickupLocation:null,dropoffLocation:null,pickupArea:'Mombasa',movingDate:'',distanceKm:'',homeSize:'1-bed',pickupFloor:0,dropoffFloor:0,liftPickup:false,liftDropoff:false,packing:'self-packing',special:false,phone:'',email:'',consent:false};
 const labels=['Route','Home','Items','Contact'];
 const fmt=(n:number)=>'KES '+n.toLocaleString('en-KE');
 const today=()=>{const parts=new Intl.DateTimeFormat('en-GB',{timeZone:'Africa/Nairobi',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());const get=(key:string)=>parts.find(p=>p.type===key)?.value||'';return get('year')+'-'+get('month')+'-'+get('day')};
@@ -90,7 +90,7 @@ export function MovingRequest(){
   const phone=info.phone.replace(/[\s().-]/g,''); const daysAway=Math.round((Date.parse(info.movingDate+'T00:00:00Z')-Date.parse(today()+'T00:00:00Z'))/86400000); const timing=daysAway<=1?'today':daysAway<=7?'this-week':'flexible';
   try{
    const response=await fetch('/api/intake/request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-    phone,consent:true,category:'moving',area:info.pickupArea,timing,description:requestDescription,
+    phone,consent:true,category:'moving',area:'Mombasa',timing,description:requestDescription,
     // Reuse the confirmed pickup Place ID / pin. The customer already provided this at Route.
     locationLabel:info.pickupLocation?.label||info.pickup,
     ...(info.pickupLocation?.placeId?{locationPlaceId:info.pickupLocation.placeId}:{}),
@@ -98,7 +98,10 @@ export function MovingRequest(){
       ?{locationLat:info.pickupLocation.lat,locationLng:info.pickupLocation.lng}:{})
    })});
    const payload=await response.json();
-   if(!response.ok||!payload.ok||!payload.reference)throw new Error(payload.error||'JiTap could not receive this request.');
+   if(!response.ok||!payload.ok||!payload.reference){
+    const issues=payload.issues&&typeof payload.issues==='object'?Object.values(payload.issues).flat().filter((v):v is string=>typeof v==='string'):[];
+    throw new Error(issues[0]||payload.error||'JiTap could not receive this request.');
+   }
    setReceipt('JT-SRV-'+String(payload.reference).replace(/-/g,'').slice(0,12).toUpperCase());setStage(5);
    try{await saveStage(4,{phone,email:info.email.trim(),intakeReference:String(payload.reference)});}
    catch{console.error('Moving progress sync failed after successful service intake')}
