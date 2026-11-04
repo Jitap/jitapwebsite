@@ -3,7 +3,7 @@ import {useEffect,useState,type FormEvent} from 'react';
 import Link from 'next/link';
 import {Truck,Check,ArrowLeft,ArrowRight,MapPin,House,Package,Phone,CalendarDays} from 'lucide-react';
 import {MovingLocationPicker,type MoveLocation} from '@/components/MovingLocationPicker';
-import {ProviderShowcase} from '@/components/ProviderShowcase';
+import {MovingMatches} from '@/components/MovingMatches';
 
 type MoveInfo={
  pickup:string;dropoff:string;pickupArea:string;movingDate:string;movingTime:string;distanceKm:string;
@@ -122,7 +122,7 @@ export function MovingRequest(){
  }
  return <div className="container jt-moving-page">
   <div className="jt-moving-heading"><span className="th-overline">JITAP MOVING SERVICES</span><h1>Move with less hassle.</h1><p>Tell JiTap what you're moving. We'll help coordinate a mover and a quote.</p></div>
-  <section aria-label="Moving and relocation provider profiles"><ProviderShowcase/></section>
+  <MovingMatches/>
   <div className="jt-moving-card">
    <nav className="jt-truck-progress" aria-label="Moving request progress"><ol>{labels.map((name,index)=>{
     const number=index+1;const done=number<stage;const active=number===stage;
