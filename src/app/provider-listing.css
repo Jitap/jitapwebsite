@@ -10,3 +10,6 @@
 @media(max-width:530px){.jt-provider-feature{grid-template-columns:1fr;gap:12px;padding:18px}.jt-provider-logo-panel{border-right:0;border-bottom:1px solid #e2e7eb;padding:0 0 12px;min-height:100px}.jt-provider-logo-placeholder svg{width:30px;height:30px}.jt-provider-feature-actions,.jt-provider-feature-detail .jt-provider-feature-actions{grid-column:1;justify-self:stretch}.jt-provider-profile-button{width:100%}.jt-provider-feature-content h2{font-size:19px}.jt-provider-metrics p{font-size:14px}}
 
 .jt-moving-matches{margin:22px 0 28px}.jt-moving-matches-heading{margin:0 0 16px}.jt-moving-matches-heading h2{font-size:clamp(23px,3vw,32px);font-weight:800;color:#061126;margin:6px 0}.jt-moving-matches-heading p{color:#536778;margin:0 0 15px}.jt-moving-matches>.jt-provider-feature{margin-bottom:15px}
+
+.jt-provider-verified-shield{width:38px;height:38px;object-fit:contain;flex-shrink:0;border-radius:4px}
+@media(max-width:530px){.jt-provider-verified-shield{width:30px;height:30px}}
