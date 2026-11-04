@@ -112,7 +112,7 @@ export async function POST(req:NextRequest){
    console.error('JiTap AI classification request unsuccessful',{provider:usingGemini?'gemini':'openai',status:res.status,type:errorType,code:errorCode});
    return answer({error:'AI classification temporarily unavailable'},503);
   }
-  const result=await res.json() as {output?:{content?:{type?:string;text?:string}[]}[]};candidates?:{content?:{parts?:{text?:string}[]}}[]};
+  const result=await res.json() as {output?:{content?:{type?:string;text?:string}[]}[];candidates?:{content?:{parts?:{text?:string}[]}}[]};
   const text=usingGemini?result.candidates?.[0]?.content?.parts?.map(part=>part.text||'').join(''):result.output?.flatMap(item=>item.content||[]).find(item=>item.type==='output_text')?.text;
   if(!text)return answer({error:'AI response unavailable'},503);
   let data:unknown;try{data=JSON.parse(text)}catch{return answer({error:'AI response invalid'},503)}
