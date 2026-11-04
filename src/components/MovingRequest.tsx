@@ -2,7 +2,6 @@
 import {useEffect,useState,type FormEvent} from 'react';
 import Link from 'next/link';
 import {Truck,Check,ArrowLeft,ArrowRight,MapPin,House,Package,Phone,CalendarDays} from 'lucide-react';
-import {areas} from '@/lib/data';
 import {MovingLocationPicker,type MoveLocation} from '@/components/MovingLocationPicker';
 
 type MoveInfo={
@@ -90,7 +89,14 @@ export function MovingRequest(){
   ].join(' ');
   const phone=info.phone.replace(/[\s().-]/g,''); const daysAway=Math.round((Date.parse(info.movingDate+'T00:00:00Z')-Date.parse(today()+'T00:00:00Z'))/86400000); const timing=daysAway<=1?'today':daysAway<=7?'this-week':'flexible';
   try{
-   const response=await fetch('/api/intake/request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,consent:true,category:'moving',area:info.pickupArea,timing,description:requestDescription})});
+   const response=await fetch('/api/intake/request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+    phone,consent:true,category:'moving',area:info.pickupArea,timing,description:requestDescription,
+    // Reuse the confirmed pickup Place ID / pin. The customer already provided this at Route.
+    locationLabel:info.pickupLocation?.label||info.pickup,
+    ...(info.pickupLocation?.placeId?{locationPlaceId:info.pickupLocation.placeId}:{}),
+    ...(typeof info.pickupLocation?.lat==='number'&&typeof info.pickupLocation?.lng==='number'
+      ?{locationLat:info.pickupLocation.lat,locationLng:info.pickupLocation.lng}:{})
+   })});
    const payload=await response.json();
    if(!response.ok||!payload.ok||!payload.reference)throw new Error(payload.error||'JiTap could not receive this request.');
    setReceipt('JT-SRV-'+String(payload.reference).replace(/-/g,'').slice(0,12).toUpperCase());setStage(5);
@@ -113,7 +119,6 @@ export function MovingRequest(){
    <form onSubmit={submit}>
    {stage===1&&<section className="jt-moving-step">
     <div className="jt-moving-stage-title"><MapPin/><div><h2>Where are you moving?</h2><p>Use neighbourhoods, streets or nearby landmarks.</p></div></div>
-    <label>Pickup area <select value={info.pickupArea} onChange={e=>edit('pickupArea',e.target.value)}>{areas.map(a=><option key={a}>{a}</option>)}</select></label>
     <MovingLocationPicker title="Moving from" value={info.pickup} selected={info.pickupLocation} onChange={v=>typeLocation('pickup',v)} onSelect={v=>chooseLocation('pickup',v)}/>
     <MovingLocationPicker title="Moving to" value={info.dropoff} selected={info.dropoffLocation} onChange={v=>typeLocation('dropoff',v)} onSelect={v=>chooseLocation('dropoff',v)}/>
     <label>Preferred moving date <input type="date" min={today()} value={info.movingDate} onChange={e=>edit('movingDate',e.target.value)} required/></label>
