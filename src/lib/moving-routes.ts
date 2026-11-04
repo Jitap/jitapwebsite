@@ -10,7 +10,7 @@ export async function calculateDrivingRoute(pickup:string,dropoff:string,pickupA
  const qualify=(input:string,area?:string)=>{
   const value=input.trim();
   const suffix=/\bkenya\b/i.test(value)?'':', Kenya';
-  const context=area&&!value.toLowerCase().includes(area.toLowerCase())?', '+area+', Mombasa':'';
+  const context=area&&!value.toLowerCase().includes(area.toLowerCase())?(area.toLowerCase()==='mombasa'?', Mombasa':', '+area+', Mombasa'):'';
   return value+context+suffix;
  };
  const waypoint=(input:string,choice:LocationChoice,area?:string)=>{
