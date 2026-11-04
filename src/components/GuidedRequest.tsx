@@ -190,8 +190,11 @@ export function GuidedRequest(){
  <h3>Preferred date</h3>
  <div className="jt-date-options" role="group" aria-label="Preferred service date">{days.map((day,i)=><button type="button" key={day.value} className={'jt-date-chip'+(preferredDate===day.value?' selected':'')} aria-pressed={preferredDate===day.value} onClick={()=>{setPreferredDate(day.value);setPreferredTime('');setClock(nairobiNow())}}><small>{i===0?'Today':i===1?'Tomorrow':day.day}</small><strong>{day.number}</strong><small>{day.month}</small></button>)}</div>
  <label className="jt-later-date" htmlFor="jt-preferred-date">Or choose another date <input id="jt-preferred-date" type="date" min={clock.date} max={furthestDate(clock.date)} value={preferredDate} onChange={e=>{setPreferredDate(e.target.value);setPreferredTime('');setClock(nairobiNow())}}/></label>
- <h3>Preferred time <small>East Africa Time (EAT)</small></h3>
- <div className="jt-time-options" role="group" aria-label="Preferred service time">{preferredTimes.map(([value,label])=>{const past=preferredDate===clock.date&&(Number(value.slice(0,2))*60+Number(value.slice(3,5))<=clock.minutes);return <button type="button" key={value} className={'jt-time-chip'+(preferredTime===value?' selected':'')} aria-pressed={preferredTime===value} disabled={!validDate||past} onClick={()=>{setClock(nairobiNow());setPreferredTime(value)}}>{label}</button>})}</div>
+ <label className="jt-time-select-label" htmlFor="jt-preferred-time">Preferred time <small>East Africa Time (EAT)</small></label>
+ <select className="jt-time-select" id="jt-preferred-time" value={preferredTime} disabled={!validDate} onChange={e=>{setClock(nairobiNow());setPreferredTime(e.target.value)}}>
+  <option value="">Select a time</option>
+  {preferredTimes.map(([value,label])=>{const past=preferredDate===clock.date&&(Number(value.slice(0,2))*60+Number(value.slice(3,5))<=clock.minutes);return <option key={value} value={value} disabled={past}>{label}</option>})}
+ </select>
  <p className="jt-time-note">These are your preferred times, not confirmed provider availability. JiTap will coordinate the actual appointment.</p>
  </div>:onMamaFua?<div className="jt-mamafua">
  <p className="jt-mamafua-guidance">Indicative prices · Select one or more services.</p>
