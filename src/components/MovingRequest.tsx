@@ -13,6 +13,7 @@ type MoveInfo={
 };
 const initial:MoveInfo={pickup:'',dropoff:'',pickupLocation:null,dropoffLocation:null,pickupArea:'Mombasa',movingDate:'',movingTime:'',distanceKm:'',homeSize:'1-bed',pickupFloor:0,dropoffFloor:0,liftPickup:false,liftDropoff:false,packing:'self-packing',special:false,phone:'',email:'',consent:false};
 const labels=['Route','Home','Items','Contact'];
+const preferredTimes=[['08:00','8:00 AM'],['09:30','9:30 AM'],['11:00','11:00 AM'],['13:00','1:00 PM'],['15:00','3:00 PM'],['17:00','5:00 PM']] as const;
 const fmt=(n:number)=>'KES '+n.toLocaleString('en-KE');
 const today=()=>{const parts=new Intl.DateTimeFormat('en-GB',{timeZone:'Africa/Nairobi',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());const get=(key:string)=>parts.find(p=>p.type===key)?.value||'';return get('year')+'-'+get('month')+'-'+get('day')};
 const isValidTime=(value:string)=>/^([01]\d|2[0-3]):[0-5]\d$/.test(value);
@@ -68,7 +69,7 @@ export function MovingRequest(){
    if(info.pickup.trim().length<3||info.dropoff.trim().length<3)return 'Choose a pickup and destination.';
    if(!info.pickupLocation||!info.dropoffLocation)return 'Select a suggested place, use the typed address, or choose a map pin for both locations.';
    if(!info.movingDate||info.movingDate<today())return 'Choose today or a future moving date.';
-   if(!isValidTime(info.movingTime))return 'Choose your preferred moving time.';
+   if(!preferredTimes.some(([value])=>value===info.movingTime))return 'Choose your preferred moving time.';
    if(info.movingDate===today()&&info.movingTime<=currentKenyaTime())return 'Choose a future time for today\'s move.';
 
   }
@@ -135,7 +136,10 @@ export function MovingRequest(){
     <MovingLocationPicker title="Moving to" value={info.dropoff} selected={info.dropoffLocation} onChange={v=>typeLocation('dropoff',v)} onSelect={v=>chooseLocation('dropoff',v)}/>
     <div className="jt-moving-date-time">
      <label>Preferred moving date <input type="date" min={today()} value={info.movingDate} onChange={e=>edit('movingDate',e.target.value)} required/></label>
-     <label>Preferred moving time <input type="time" step={1800} value={info.movingTime} onChange={e=>edit('movingTime',e.target.value)} required/></label>
+     <label htmlFor="jt-moving-preferred-time">Preferred moving time <select id="jt-moving-preferred-time" value={info.movingTime} onChange={e=>edit('movingTime',e.target.value)} required>
+      <option value="">Select a time</option>
+      {preferredTimes.map(([value,label])=><option key={value} value={value} disabled={info.movingDate===today()&&value<=currentKenyaTime()}>{label}</option>)}
+     </select></label>
     </div>
     <p className="jt-moving-note"><MapPin size={15} aria-hidden="true"/> Your selected locations help JiTap calculate the road distance for your moving estimate.</p>
    </section>}

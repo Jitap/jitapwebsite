@@ -570,3 +570,11 @@
 .jt-moving-date-time>label{min-width:0}
 .jt-moving-date-time input{max-width:100%;min-width:0}
 @media(max-width:560px){.jt-moving-date-time{grid-template-columns:1fr;gap:14px}}
+
+/* Single, consistent preferred-time selector across JiTap services and Moving. */
+.jt-time-select-label{display:flex;align-items:baseline;flex-wrap:wrap;gap:8px;margin:20px 0 9px;color:#173648;font-weight:750;font-size:17px}
+.jt-time-select-label small{font-size:12px;color:#7a8a91;font-weight:400}
+.jt-time-picker .jt-time-select{width:100%;min-height:52px;border:1px solid #d1dbdf;border-radius:13px;background:#fff;color:#153648;padding:12px 15px;font-size:16px;cursor:pointer}
+.jt-time-picker .jt-time-select:focus-visible{outline:2px solid #172078;outline-offset:2px}
+.jt-time-picker .jt-time-select:disabled{opacity:.6;cursor:not-allowed}
+.jt-moving-date-time select{max-width:100%;min-width:0}
