@@ -10,9 +10,9 @@ type MoveInfo={
  pickupLocation:MoveLocation|null;dropoffLocation:MoveLocation|null;
  homeSize:'bedsitter'|'1-bed'|'2-bed'|'3-bed';
  pickupFloor:number;dropoffFloor:number;liftPickup:boolean;liftDropoff:boolean;
- packing:'self-packing'|'fragile-only'|'full-packing';special:boolean;phone:string;email:string;consent:boolean
+ packing:'self-packing'|'fragile-only'|'full-packing';special:boolean;phone:string;email:string;consent:boolean;notifyOptIn:boolean
 };
-const initial:MoveInfo={pickup:'',dropoff:'',pickupLocation:null,dropoffLocation:null,pickupArea:'Mombasa',movingDate:'',movingTime:'',distanceKm:'',homeSize:'1-bed',pickupFloor:0,dropoffFloor:0,liftPickup:false,liftDropoff:false,packing:'self-packing',special:false,phone:'',email:'',consent:false};
+const initial:MoveInfo={pickup:'',dropoff:'',pickupLocation:null,dropoffLocation:null,pickupArea:'Mombasa',movingDate:'',movingTime:'',distanceKm:'',homeSize:'1-bed',pickupFloor:0,dropoffFloor:0,liftPickup:false,liftDropoff:false,packing:'self-packing',special:false,phone:'',email:'',consent:false,notifyOptIn:false};
 const labels=['Route','Home','Items','Contact'];
 const preferredTimes=[['08:00','8:00 AM'],['09:30','9:30 AM'],['11:00','11:00 AM'],['13:00','1:00 PM'],['15:00','3:00 PM'],['17:00','5:00 PM']] as const;
 const fmt=(n:number)=>'KES '+n.toLocaleString('en-KE');
@@ -101,7 +101,7 @@ export function MovingRequest(){
   const phone=info.phone.replace(/[\s().-]/g,''); const daysAway=Math.round((Date.parse(info.movingDate+'T00:00:00Z')-Date.parse(today()+'T00:00:00Z'))/86400000); const timing=daysAway<=1?'today':daysAway<=7?'this-week':'flexible';
   try{
    const response=await fetch('/api/intake/request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-    phone,consent:true,category:'moving',area:'Mombasa',timing,description:requestDescription,preferredDate:info.movingDate,preferredTime:info.movingTime,
+    phone,consent:true,notifyOptIn:info.notifyOptIn,category:'moving',area:'Mombasa',timing,description:requestDescription,preferredDate:info.movingDate,preferredTime:info.movingTime,
     // Reuse the confirmed pickup Place ID / pin. The customer already provided this at Route.
     locationLabel:info.pickupLocation?.label||info.pickup,
     ...(info.pickupLocation?.placeId?{locationPlaceId:info.pickupLocation.placeId}:{}),
@@ -167,6 +167,7 @@ export function MovingRequest(){
     <div className="jt-moving-review"><p><MapPin size={16}/> {info.pickup} → {info.dropoff}</p><p><CalendarDays size={16}/> {info.movingDate} at {formatMovingTime(info.movingTime)} · {homeLabels[info.homeSize]}</p><p><Package size={16}/> {packingLabels[info.packing]}{info.special?' · Special items':''}</p></div>
     <label>Mobile number <input required inputMode="tel" autoComplete="tel" type="tel" placeholder="0712345678" value={info.phone} onChange={e=>edit('phone',e.target.value)}/></label>
     <label>Email <small>(optional)</small><input type="email" autoComplete="email" value={info.email} onChange={e=>edit('email',e.target.value)} placeholder="you@example.com"/></label>
+    <label className="jt-moving-check"><input type="checkbox" checked={info.notifyOptIn} onChange={e=>edit('notifyOptIn',e.target.checked)}/> Send me SMS or WhatsApp updates about my moving request (optional)</label>
     <label className="jt-moving-check"><input type="checkbox" required checked={info.consent} onChange={e=>edit('consent',e.target.checked)}/> I agree to JiTap processing these details to respond to my request. <Link href="/privacy">Privacy</Link></label>
    </section>}
    {error&&<p className="jt-moving-error" role="alert">{error}</p>}
