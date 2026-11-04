@@ -68,7 +68,7 @@ export async function POST(req:NextRequest){
    },required:['category','questions']
   };
   const usingGemini=!!geminiKey;
-  const res=usingGemini?await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent',{
+  const res=usingGemini?await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent',{
    method:'POST',
    headers:{'x-goog-api-key':geminiKey!,'Content-Type':'application/json'},
    body:JSON.stringify({
