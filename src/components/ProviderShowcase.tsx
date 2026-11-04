@@ -1,7 +1,7 @@
 'use client';
 import {useEffect,useState} from 'react';
 import Link from 'next/link';
-import {BadgeCheck,BriefcaseBusiness,Layers,MapPin,Star,Truck,ArrowRight,Clock3} from 'lucide-react';
+import {BriefcaseBusiness,Layers,MapPin,Star,Truck,ArrowRight,Clock3} from 'lucide-react';
 export type Profile={id:string;display_name:string;business_name:string;service_categories:string[];service_areas:string[];base_area:string|null;description:string|null;logo_url:string|null;rating:number|null;review_count:number|null;years_experience:number|null;similar_jobs_completed:number|null;verified_at:string|null;is_online:boolean};
 const fallback:Profile={id:'fund-022',display_name:'URBAN MOVERS AND RELOCATIONS',business_name:'URBAN MOVERS AND RELOCATIONS',service_categories:['Moving / Delivery','Relocation'],service_areas:['Bamburi','Nyali','Mtwapa','Tudor'],base_area:'Bamburi',description:'House moving, relocation and interior decor services.',logo_url:null,rating:null,review_count:null,years_experience:null,similar_jobs_completed:null,verified_at:null,is_online:false};
 export function ProviderShowcase({detail=false}:{detail?:boolean}){
@@ -10,7 +10,7 @@ export function ProviderShowcase({detail=false}:{detail?:boolean}){
  const request='/request?category=moving&description='+encodeURIComponent('I would like a moving or relocation quote from '+p.business_name);
  return <article className={'jt-provider-feature'+(detail?' jt-provider-feature-detail':'')}>
   <div className="jt-provider-logo-panel">{p.logo_url?<img src={p.logo_url} alt={p.business_name+' logo'}/>:<div className="jt-provider-logo-placeholder"><Truck size={42}/><strong>{p.business_name}</strong><small>Moving &amp; Relocation</small></div>}</div>
-  <div className="jt-provider-feature-content"><h2>{p.business_name}{p.verified_at&&<BadgeCheck className="jt-provider-verified" aria-label="Verified by JiTap" size={30}/>}</h2>
+  <div className="jt-provider-feature-content"><h2>{p.business_name}{p.verified_at&&<img className="jt-provider-verified-shield" src="/images/verified-shield.svg" alt="JiTap verified business" width={38} height={38}/>}</h2>
    <div className="jt-provider-metrics">
     {p.rating!==null&&p.review_count!==null&&p.review_count>0&&<p className="jt-provider-rating"><Star fill="currentColor" size={21}/> <strong>{Number(p.rating).toFixed(1)} stars</strong> <span>({p.review_count} reviews)</span></p>}
     {p.years_experience!==null&&<p><BriefcaseBusiness size={21}/>{p.years_experience} years of experience</p>}
