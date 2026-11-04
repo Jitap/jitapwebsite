@@ -564,3 +564,9 @@
 .jt-contact-location .jt-location-private{font-size:12px;line-height:1.5;color:#546d77;background:#f2f7f6;padding:11px 13px;border-radius:10px}
 .jt-contact-location .jt-location-suggestions{z-index:45}
 @media(max-width:540px){.jt-contact-location{padding-top:16px}.jt-contact-location h3{font-size:18px}}
+
+/* Moving route: date and preferred start time */
+.jt-moving-date-time{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:end}
+.jt-moving-date-time>label{min-width:0}
+.jt-moving-date-time input{max-width:100%;min-width:0}
+@media(max-width:560px){.jt-moving-date-time{grid-template-columns:1fr;gap:14px}}
