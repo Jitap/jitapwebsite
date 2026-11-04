@@ -31,7 +31,8 @@ function deliveryResult(httpStatus:number,data:unknown):DeliveryResult{
  const recipients=Array.isArray(result.recipients)?result.recipients:[];
  const first=recipients[0]&&typeof recipients[0]==='object'?recipients[0] as Record<string,unknown>:{};
  const id=typeof first.id==='string'?first.id:typeof result.id==='string'?result.id:undefined;
- return {accepted:httpStatus>=200&&httpStatus<300&&result.success!==false,httpStatus,providerMessageId:id,errorCode:httpStatus>=200&&httpStatus<300?undefined:'provider_http_'+httpStatus};
+ const providerFailed=typeof first.status==='string'&&/^(failed|rejected|error)$/i.test(first.status);
+ return {accepted:httpStatus>=200&&httpStatus<300&&result.success!==false&&!providerFailed,httpStatus,providerMessageId:id,errorCode:httpStatus>=200&&httpStatus<300?(providerFailed?'recipient_rejected':undefined):'provider_http_'+httpStatus};
 }
 async function send(url:string,body:unknown):Promise<DeliveryResult>{
  if(process.env.JITAP_NOTIFICATIONS_ENABLED!=='true')throw new Error('notifications_disabled');
@@ -43,7 +44,17 @@ export async function sendJiTapSms(destination:string,message:string):Promise<De
  const source=process.env.SMSLEOPARD_SENDER_ID?.trim();
  if(!source)throw new Error('sms_sender_id_missing');
  if(!message.trim()||message.length>600)throw new Error('invalid_sms_message');
- return send('https://api.smsleopard.com/v1/sms/send',{source,message,destination:[{number:normalizeKenyanMobile(destination)}]});
+ if(process.env.JITAP_NOTIFICATIONS_ENABLED!=='true')throw new Error('notifications_disabled');
+ const url=new URL('https://api.smsleopard.com/v1/sms/send');
+ url.searchParams.set('source',source);
+ url.searchParams.set('message',message);
+ url.searchParams.set('destination',normalizeKenyanMobile(destination));
+ const response=await fetch(url.toString(),{
+  method:'GET',headers:{Authorization:credentials(),Accept:'application/json'},
+  cache:'no-store',signal:AbortSignal.timeout(10000)
+ });
+ const data:unknown=await response.json().catch(()=>null);
+ return deliveryResult(response.status,data);
 }
 export async function sendJiTapWhatsApp(template:WhatsAppTemplate):Promise<DeliveryResult>{
  if(!template.templateId||!template.phoneNumberId||!template.variables.every(x=>typeof x==='string'))throw new Error('invalid_whatsapp_template');
