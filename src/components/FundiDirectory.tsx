@@ -4,8 +4,9 @@ import Link from 'next/link';
 import {ArrowRight,MapPin,Search,SlidersHorizontal} from 'lucide-react';
 import {areas} from '@/lib/data';
 import {fundiListings} from '@/lib/fundis-public';
+import {ProviderShowcase} from '@/components/ProviderShowcase';
 
-const filters=['All services','Plumbing','Electrical','Cleaning','Carpentry','Painting','Appliance Repair','IT / Phone / Computer Services','Other'];
+const filters=['All services','Plumbing','Electrical','Cleaning','Carpentry','Painting','Appliance Repair','IT / Phone / Computer Services','Moving / Relocation','Other'];
 export const slugFor=(cats:string[]):string=>{
  const joined=cats.join(' ').toLowerCase();
  if(joined.includes('plumbing'))return 'plumbing';
@@ -14,6 +15,7 @@ export const slugFor=(cats:string[]):string=>{
  if(joined.includes('carpentry'))return 'carpentry';
  if(joined.includes('painting'))return 'painting';
  if(joined.includes('appliance'))return 'appliance-repair';
+ if(joined.includes('moving')||joined.includes('relocation'))return 'moving';
  return 'other-services';
 };
 export function FundiDirectory(){
@@ -22,9 +24,9 @@ export function FundiDirectory(){
  const [query,setQuery]=useState('');
  const shown=useMemo(()=>fundiListings.filter(p=>{
   const areaOk=area==='All areas'||p.areas.includes(area);
-  const catOk=category==='All services'||(category==='Other'?p.categories.some(c=>c==='Other'):p.categories.some(c=>c.toLowerCase().includes(category.toLowerCase())));
+  const catOk=category==='All services'||(category==='Other'?p.categories.some(c=>c==='Other'):category==='Moving / Relocation'?p.categories.some(c=>/moving|relocation/i.test(c)):p.categories.some(c=>c.toLowerCase().includes(category.toLowerCase())));
   const term=query.trim().toLowerCase();
-  const mamaFua=/(?:mama[\s-]*fua|mamafua|kufua|laundry|house.?cleaner|house.?keeper|house cleaning)/i.test(term);const textOk=!term||(mamaFua&&p.categories.some(c=>c.toLowerCase().includes('cleaning')))||[p.name,...p.categories,...p.areas].join(' ').toLowerCase().includes(term);
+  const mamaFua=/(?:mama[\s-]*fua|mamafua|kufua|laundry|house.?cleaner|house.?keeper|house cleaning)/i.test(term);const textOk=!term||(mamaFua&&p.categories.some(c=>c.toLowerCase().includes('cleaning')))||[p.name,...p.categories,...p.areas,...(p.id==='fund-022'?['urban movers and relocations','moving','relocation','house moving']:[])].join(' ').toLowerCase().includes(term);
   return areaOk&&catOk&&textOk;
  }),[area,category,query]);
  return <section className="td-directory" aria-labelledby="td-directory-title">
@@ -46,7 +48,7 @@ export function FundiDirectory(){
       const label=p.name.split(/\s+/).map(s=>s[0]||'').slice(0,2).join('').toUpperCase()||'JF';
       const description='I would like help with '+p.categories.join(', ')+' from '+p.name+'. Please review my request.';
       const url='/request?category='+encodeURIComponent(categorySlug)+'&area='+encodeURIComponent(selectedArea)+'&description='+encodeURIComponent(description);
-      return <article className="td-pro-card" key={p.id}>
+      return p.id==='fund-022'?<ProviderShowcase key={p.id}/>:<article className="td-pro-card" key={p.id}>
         <div className={'td-pro-avatar td-avatar-'+(i%5)} aria-hidden="true">{label}</div>
         <div className="td-pro-detail"><h3>{p.name}</h3><p className="td-pro-cats">{p.categories.join(' · ')}</p><div className="td-pro-areas"><MapPin size={15}/>{p.areas.join(' · ')}</div></div>
         <div className="td-pro-action"><Link href={"/fundis/"+encodeURIComponent(p.id)} className="td-outline-button">View profile</Link></div>
@@ -63,7 +65,7 @@ export function matchesFor(category:string,area:string,specialty?:string){
  const serviceNames:Record<string,string[]>={
   plumbing:['plumbing'],electrical:['electrical'],cleaning:['cleaning'],
   carpentry:['carpentry'],painting:['painting'],'appliance-repair':['appliance repair'],
-  'general-repairs':['carpentry','electrical','plumbing'],'other-services':['it / phone / computer services','other']
+  'general-repairs':['carpentry','electrical','plumbing'],moving:['moving / delivery'],'other-services':['it / phone / computer services','other']
  };
  const names=serviceNames[category]||serviceNames['other-services'];
  return fundiListings.filter(p=>p.areas.includes(area)&&p.categories.some(c=>names.some(n=>c.toLowerCase().includes(n))));
@@ -74,7 +76,7 @@ export function MatchedFundis({category,area,onQuotes,specialty}:{category:strin
  return <section className="jt-matches" aria-label="Matching local service providers">
   <div className="jt-matches-title"><span className="th-overline">LOCAL SERVICE MATCHES</span><h2>{matched.length} {matched.length===1?'matching profile':'matching profiles'} in {area}</h2><p>Based on listed services and service areas. Availability and quotations are confirmed after a request is submitted.</p></div>
   {matched.length>0?<><div className="jt-matches-quote"><div><strong>Request quotes from local professionals</strong><p>Share your job details with JiTap to request pricing and availability. No quote has been issued yet.</p></div><button type="button" className="td-outline-button" onClick={onQuotes}>Request {matched.length===1?'a quote':'quotes'}</button></div>
-  <div className="td-pro-list">{visible.map((p,i)=><article className="td-pro-card" key={p.id}>
+  <div className="td-pro-list">{visible.map((p,i)=>p.id==='fund-022'?<ProviderShowcase key={p.id}/>:<article className="td-pro-card" key={p.id}>
    <div className={'td-pro-avatar td-avatar-'+(i%5)} aria-hidden="true">{p.name.split(/\s+/).map(w=>w[0]||'').slice(0,2).join('').toUpperCase()}</div>
    <div className="td-pro-detail"><h3>{p.name}</h3><p className="td-pro-cats">{p.categories.join(' · ')}</p><div className="td-pro-areas"><MapPin size={15}/>{p.areas.join(' · ')}</div></div>
    <div className="td-pro-action"><Link className="td-outline-button" href={'/fundis/'+encodeURIComponent(p.id)}>View profile</Link></div>
@@ -85,6 +87,7 @@ export function MatchedFundis({category,area,onQuotes,specialty}:{category:strin
 export function FundiProfile({id}:{id:string}){
  const p=fundiListings.find(x=>x.id===id);
  if(!p)return null;
+ if(id==='fund-022')return <section className="container jt-profile"><Link href="/fundis" className="jt-profile-back">← Back to local professionals</Link><ProviderShowcase detail/></section>;
  const category=slugFor(p.categories),area=p.areas[0]||'Bamburi';
  const job='I would like a quote for '+p.categories.join(', ')+' from '+p.name+'.';
  const href='/request?category='+encodeURIComponent(category)+'&area='+encodeURIComponent(area)+'&description='+encodeURIComponent(job);
