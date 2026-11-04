@@ -15,7 +15,7 @@ const initial:MoveInfo={pickup:'',dropoff:'',pickupLocation:null,dropoffLocation
 const labels=['Route','Home','Items','Contact'];
 const fmt=(n:number)=>'KES '+n.toLocaleString('en-KE');
 const today=()=>{const parts=new Intl.DateTimeFormat('en-GB',{timeZone:'Africa/Nairobi',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());const get=(key:string)=>parts.find(p=>p.type===key)?.value||'';return get('year')+'-'+get('month')+'-'+get('day')};
-const isValidTime=(value:string)=>/^([01]\\d|2[0-3]):[0-5]\\d$/.test(value);
+const isValidTime=(value:string)=>/^([01]\d|2[0-3]):[0-5]\d$/.test(value);
 const formatMovingTime=(value:string)=>{
  if(!isValidTime(value))return value;
  const [hour,minute]=value.split(':').map(Number);
