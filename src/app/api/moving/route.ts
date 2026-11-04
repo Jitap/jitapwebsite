@@ -21,7 +21,7 @@ const locationChoice=z.object({
 }).nullable().optional();
 const discovery=z.object({
  pickup:z.string().trim().min(3).max(200),dropoff:z.string().trim().min(3).max(200),
- movingDate:z.string().regex(/^\d{4}-\d{2}-\d{2}$/),pickupArea:z.string().trim().min(2).max(80),
+ movingDate:z.string().regex(/^\d{4}-\d{2}-\d{2}$/),movingTime:z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),pickupArea:z.string().trim().min(2).max(80),
  pickupLocation:locationChoice,dropoffLocation:locationChoice
 });
 const home=z.object({homeSize:z.enum(['bedsitter','1-bed','2-bed','3-bed']),pickupFloor:z.number().int().min(0).max(40),dropoffFloor:z.number().int().min(0).max(40),liftPickup:z.boolean(),liftDropoff:z.boolean()});
@@ -44,6 +44,17 @@ export async function POST(req:NextRequest){
  const {leadId,secret,stage}=b.data;
  const schema=stage===1?discovery:stage===2?home:stage===3?inventory:contact;
  const p=schema.safeParse(b.data.payload);if(!p.success)return respond('Please check the highlighted moving details.',422);
+ if(stage===1){
+  const loc=discovery.parse(p.data);
+  // Enforce Nairobi-local future date/time on the server, not only in the browser.
+  const formatter=new Intl.DateTimeFormat('en-GB',{timeZone:'Africa/Nairobi',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
+  const parts=formatter.formatToParts(new Date());
+  const get=(key:string)=>parts.find(part=>part.type===key)?.value||'';
+  const currentDate=get('year')+'-'+get('month')+'-'+get('day');
+  const currentTime=get('hour')+':'+get('minute');
+  if(loc.movingDate<currentDate||(loc.movingDate===currentDate&&loc.movingTime<=currentTime))
+   return respond('Select a future date and time for your move.',422);
+ }
  const url=process.env.SUPABASE_URL?.replace(/\/$/,'');
  const key=process.env.SUPABASE_ANON_KEY;const token=process.env.INTAKE_RPC_TOKEN;const salt=process.env.INTAKE_HASH_SECRET;
  if(!url||!key||!token||!salt)return respond('Moving requests are temporarily unavailable',503);
@@ -64,7 +75,7 @@ export async function POST(req:NextRequest){
    const verified=await fetch(url+'/rest/v1/rpc/save_moving_lead_authorized',{
     method:'POST',headers:{apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json'},
     body:JSON.stringify({p_token:token,p_lead_id:saved.leadId,p_session_secret:secret,p_stage:1,p_payload:{
-     pickup:loc.pickup,dropoff:loc.dropoff,movingDate:loc.movingDate,
+     pickup:loc.pickup,dropoff:loc.dropoff,movingDate:loc.movingDate,movingTime:loc.movingTime,
      distanceKm:route.distanceKm,routeStatus:route.status
     },p_source_hash:source}),
     cache:'no-store',signal:AbortSignal.timeout(12000)
