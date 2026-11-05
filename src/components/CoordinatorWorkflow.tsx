@@ -17,7 +17,7 @@ function toKenyanWhatsApp(phone:string){
  return /^254[17]\d{8}$/.test(number)?number:null;
 }
 function makeProviderBuzz(c:Case,provider:string){
- const brief=c.description.trim().replace(/\s+/g,' ').slice(0,270)||c.category;
+ const brief=c.description.trim().replace(/(?:\+?254|0)[17]\d{8}/g,'[phone withheld]').replace(/\s+/g,' ').slice(0,270)||c.category;
  const place=c.locationLabel||c.area||'Confirm location';
  const date=[c.preferredDate,c.preferredTime].filter(Boolean).join(' at ')||'Confirm schedule';
  return ('JiTap BUZZ for '+provider+'. JT-'+c.reference+'. Job: '+brief+'. Location: '+place+'. Preferred: '+date+'. Please reply to JiTap SOC to accept, decline or clarify. Booking not confirmed.').slice(0,600);
@@ -182,6 +182,7 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
     <div className="coordinator-provider-buzz">
       <h4>Provider BUZZ — review message</h4>
       <p className="coordinator-help">JiTap automatically uses the provider's saved private SMS contact. Review and save the brief before sending.</p>
+      {smsAttempts.some(s=>s.assignment_id===a.id)&&providerDrafts.find(d=>d.assignment_id===a.id)&&<p className="coordinator-provider-buzz-sent">{providerDrafts.find(d=>d.assignment_id===a.id)?.message}</p>}
       {!smsAttempts.some(s=>s.assignment_id===a.id)&&<>
         <button type="button" disabled={busy} onClick={()=>setBuzzText(x=>({...x,[a.id]:makeProviderBuzz(caseItem,p?.business_name||'provider')}))}>Generate BUZZ draft</button>
         <textarea aria-label="Provider BUZZ draft" rows={5} maxLength={600}
