@@ -57,3 +57,22 @@ Access `https://jitap.app/coordinator`, enter the exact allowlisted email and re
 - Periodically examine RLS advisors. `rls_enabled_no_policy` is intentional for private server-only coordinator tables. 
 
 No historical source record was deleted or modified during the backfill, and the transaction validation rolled back its synthetic test row.
+
+
+## Provider assignment + human intervention (November 2026)
+
+New private RLS tables:
+- `coordinator_provider_assignments`: one provider proposal per case/provider, tracked as Proposed → Contacted → Accepted / Declined / Needs clarification / Quote requested / Quote received. Prevents two concurrently accepted providers on one case. Records quoted KES, response notes, actor and timestamps.
+- `coordinator_customer_updates`: drafts prepared by staff, manually sent confirmation and sending channel. Keeps history private. There is NO automatic SMS/WhatsApp delivery yet.
+- `coordinator_workflow_action`: atomic server-only RPC, accessible to service_role, validates active JiTap staff and eligible existing case/provider IDs, logs every update in coordinator_activity.
+
+New coordinator UI sections:
+- Assign a verified, public JiTap provider to a request (initially Urban Movers where relevant).
+- Log a provider's acceptance, decline, information request and quotation.
+- Declined or unclear provider responses change the request to Needs sourcing for human follow-up.
+- Compose, edit, save and copy customer updates. Click Open WhatsApp only if the coordinator chooses; that opens a draft in WhatsApp and **does not send it**. 'Confirm sent' requires an explicit coordinator acknowledgment after actual delivery.
+- Human sourcing for service types without onboarded verified providers remains driven by Needs sourcing, coordinator notes, priorities and follow-up dates.
+
+**Important limitations:** The provider directory is not a verified private provider-contact roster. Before automatic provider outreach, onboard private provider phone/consent records and have Meta approve the pending JiTap WhatsApp templates; do not expose provider numbers in public listings. SMSLeopard dispatch remains disabled.
+
+**Validation:** PostgreSQL RLS and private RPC privileges reviewed; Next.js production build checked. Real customer messaging and a real provider response have not been executed in an automated test.
