@@ -129,7 +129,6 @@ export function GuidedRequest(){
  setHydrated(true);
  },[]);
  const [aiQuestions,setAiQuestions]=useState<Question[]|null>(null);
- const [aiBusy,setAiBusy]=useState(false);
  const [aiResolvedKey,setAiResolvedKey]=useState('');
  const [hydrated,setHydrated]=useState(false);
  const understood=useMemo(()=>understandJob(description),[description]);
@@ -159,10 +158,9 @@ export function GuidedRequest(){
  useEffect(()=>{
   // Tailor the job brief while still at the first question. Never interrupt an in-progress questionnaire.
   if(ready||showMatches||stage!==0||tvMount||context||category==='cleaning'||category==='moving'||description.trim().length<8||aiResolvedKey===category+'|'+area+'|'+description.trim()){
-   setAiBusy(false);return;
+   return;
   }
   setAiQuestions(null);
-  setAiBusy(true);
   let cancelled=false;
   const controller=new AbortController();
   const timer=setTimeout(async()=>{
@@ -184,7 +182,6 @@ export function GuidedRequest(){
      throw new Error('AI returned a different service category');
     }
    }catch{if(!cancelled){setAiQuestions(null);setAiResolvedKey(category+'|'+area+'|'+description.trim());}}
-   finally{if(!cancelled)setAiBusy(false)}
   },650);
   return ()=>{cancelled=true;clearTimeout(timer);controller.abort()};
  },[description,category,area,ready,showMatches,stage,tvMount,context,aiResolvedKey]);
