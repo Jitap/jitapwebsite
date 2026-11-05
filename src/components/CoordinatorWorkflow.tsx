@@ -16,6 +16,12 @@ function toKenyanWhatsApp(phone:string){
  const number=n.startsWith('0')?'254'+n.slice(1):n;
  return /^254[17]\d{8}$/.test(number)?number:null;
 }
+function makeProviderBuzz(c:Case,provider:string){
+ const brief=c.description.trim().replace(/\s+/g,' ').slice(0,270)||c.category;
+ const place=c.locationLabel||c.area||'Confirm location';
+ const date=[c.preferredDate,c.preferredTime].filter(Boolean).join(' at ')||'Confirm schedule';
+ return ('JiTap BUZZ for '+provider+'. JT-'+c.reference+'. Job: '+brief+'. Location: '+place+'. Preferred: '+date+'. Please reply to JiTap SOC to accept, decline or clarify. Booking not confirmed.').slice(0,600);
+}
 function makeMessage(c:Case,kind:string,providerName?:string){
  const ref='JT-'+c.reference;
  const area=c.locationLabel||c.area||'your area';
