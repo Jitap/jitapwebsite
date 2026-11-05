@@ -29,7 +29,7 @@ export function ProviderShowcase({detail=false,profile,profileId='fund-022'}:{de
     {p.similar_jobs_completed!==null&&<p><Layers size={21}/>{p.similar_jobs_completed} similar jobs completed</p>}
     <p><MapPin size={21}/>{p.base_area||p.service_areas[0]||'Mombasa'}</p>
    </div>
-   {detail&&<div className="jt-provider-feature-extra"><p>{p.description||(isTech?'Computer services and IT support.':'House moving and relocation services.')}</p><h3>Service coverage</h3><p>{p.service_areas.join(' · ')}</p></div>}
+   {detail&&<div className="jt-provider-feature-extra"><p>{p.description||(isTech?'Computer services and IT support.':'House moving and relocation services.')}</p><h3>Service coverage</h3><p>{p.service_areas.join(' · ')}</p>{isTech&&<p><a href="https://share.google/sw7NGTin3byTlEmrD" target="_blank" rel="noopener noreferrer">View Google listing and reviews</a></p>}</div>}
   </div>
   <div className="jt-provider-feature-actions">{detail?<Link href={request} className="jt-provider-profile-button">{isTech?'Request IT support':'Request moving quote'} <ArrowRight size={18}/></Link>:<Link href={'/fundis/'+encodeURIComponent(p.id)} className="jt-provider-profile-button">View profile</Link>}</div>
  </article>;
