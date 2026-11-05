@@ -53,7 +53,8 @@ export async function POST(req:NextRequest){
      })});
  }catch{return reply({error:'SMS blocked: confirm a reviewed draft, recipient consent, and that this assignment was not already sent.'},409)}
  const responseUrl=responseToken?'https://jitap.app/buzz#'+responseToken:null;
- const outboundMessage=responseUrl?claim.message.slice(0,600-responseUrl.length-2).trimEnd()+'\\n'+responseUrl:claim.message;
+ const replyFooter=responseUrl?'No booking until JiTap confirms. Respond: '+responseUrl:null;
+ const outboundMessage=replyFooter?claim.message.slice(0,600-replyFooter.length-1).trimEnd()+String.fromCharCode(10)+replyFooter:claim.message;
  // Record the exact gateway before calling it, preserving SMSLeopard history.
  try{
   await supabasePrivate<null>('coordinator_sms_attempts?id=eq.'+encodeURIComponent(claim.attemptId),{
