@@ -10,7 +10,7 @@ export async function GET(){
    headers:{apikey:key,Authorization:'Bearer '+key},cache:'no-store',signal:AbortSignal.timeout(6000)});
   if(!response.ok)throw new Error('Provider directory unavailable');
   const rows:unknown=await response.json();
-  const profiles=Array.isArray(rows)?rows.filter((p)=>p&&typeof p==='object'&&Array.isArray(p.service_categories)&&p.service_categories.some((category:unknown)=>typeof category==='string'&&/moving|relocat/i.test(category))):[];
+  const profiles=Array.isArray(rows)?rows.filter((p)=>p&&typeof p==='object'&&Array.isArray(p.service_categories)):[];
   return NextResponse.json({profiles},{headers:{'Cache-Control':'public, max-age=0, s-maxage=60'}});
  }catch{return NextResponse.json({profiles:[]},{headers:{'Cache-Control':'no-store'}})}
 }
