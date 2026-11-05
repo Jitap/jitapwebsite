@@ -38,14 +38,14 @@ export async function isAllowedStaff(email:string):Promise<Staff|null>{
 }
 export async function requireCoordinator(req:NextRequest):Promise<Staff|null>{
  const token=req.cookies.get(accessCookie)?.value;
- if(!token||!URL||!ANON)return null;
- const response=await fetch(URL+'/auth/v1/user',{headers:{apikey:ANON,Authorization:'Bearer '+token},cache:'no-store',signal:AbortSignal.timeout(8000)});
+ if(!token||!SUPABASE_BASE_URL||!ANON)return null;
+ const response=await fetch(SUPABASE_BASE_URL+'/auth/v1/user',{headers:{apikey:ANON,Authorization:'Bearer '+token},cache:'no-store',signal:AbortSignal.timeout(8000)});
  if(!response.ok)return null;
  const user=await response.json() as {email?:string;email_confirmed_at?:string};
  if(!user.email||!user.email_confirmed_at)return null;
  return isAllowedStaff(user.email);
 }
 export function authConfig(){
- if(!URL||!ANON||!SECRET)throw new Error('Coordinator authentication not configured');
+ if(!SUPABASE_BASE_URL||!ANON||!SECRET)throw new Error('Coordinator authentication not configured');
  return {url:SUPABASE_BASE_URL,anon:ANON};
 }
