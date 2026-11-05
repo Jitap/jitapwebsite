@@ -177,12 +177,12 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
   })}</div>:<p className="coordinator-help">No provider proposed yet. Requests without a confirmed provider remain available for manual sourcing.</p>}
   <h3><MessageSquare size={18}/> Customer updates</h3>
   <div className="coordinator-sms-health">
-   <button disabled={checkingSms||busy} onClick={checkSmsDiagnostics}>{checkingSms?'Checking Wasiliana…':'Check SMSLeopard balance & connection (no SMS sent)'}</button>
+   <button disabled={checkingSms||busy} onClick={checkSmsDiagnostics}>{checkingSms?'Checking Wasiliana…':'Check Wasiliana setup (no SMS sent)'}</button>
    {smsDiagnostics&&<p role="status">{smsDiagnostics.ok?
-    'SMSLeopard connected. Sender: '+(smsDiagnostics.senderId||'not configured')+'. Balance: '+(typeof smsDiagnostics.balanceKes==='number'?'KES '+smsDiagnostics.balanceKes.toFixed(2):'not available'):
-    'SMSLeopard diagnostic failed (HTTP '+(smsDiagnostics.httpStatus||'unknown')+'). '+(smsDiagnostics.errorCode||smsDiagnostics.error||'Check API credentials.')}</p>}
+    'Wasiliana configuration detected. Sender: '+(smsDiagnostics.senderId||'not configured')+'. Balance must be checked in Wasiliana dashboard.':
+    'Wasiliana setup incomplete: '+(smsDiagnostics.error||'Check the API key and Sender ID in Vercel.')}</p>}
   </div>
-  <p className="coordinator-help">Step 1: Generate and save the message draft. Step 2: In the saved draft below, press <strong>Send SMS now</strong> to actually submit it to SMSLeopard. Saving a draft alone does NOT send a text.</p>
+  <p className="coordinator-help">Step 1: Generate and save the message draft. Step 2: In the saved draft below, press <strong>Send SMS now</strong> to actually submit it to Wasiliana. Saving a draft alone does NOT send a text.</p>
   {!caseItem.canContact&&<p className="coordinator-help"><AlertCircle size={15}/> Customer phone is missing; confirm contact details before messaging.</p>}
   <label>Update type<select value={kind} onChange={e=>{setKind(e.target.value);setMessage('')}}>{updateKinds.map(([k,l])=><option key={k} value={k}>{l}</option>)}</select></label>
   <label>Channel<select value={channel} onChange={e=>setChannel(e.target.value as 'whatsapp'|'sms'|'phone')}><option value="whatsapp">WhatsApp (manual)</option><option value="sms">SMS via Wasiliana</option><option value="phone">Phone call (log only)</option></select></label>
@@ -195,8 +195,8 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
    <p>{u.message}</p>{u.state==='draft'&&u.channel==='sms'&&<p className="coordinator-sms-unsent">NOT SENT — this message is saved as a draft only. Press Send SMS now below.</p>}<small>{u.channel} · {new Date(u.created_at).toLocaleString('en-KE',{timeZone:'Africa/Nairobi'})}</small>
    {u.state==='draft'&&<div className="coordinator-update-actions">
     <button disabled={busy} onClick={()=>copyUpdate(u.message)}><Copy size={14}/> Copy message</button>
-    {u.channel==='sms'&&<>{!caseItem.notifyOptIn&&<small>Customer has not opted in to SMS notifications.</small>}{smsAttempts.filter(s=>s.customer_update_id===u.id).map(s=><small key={s.id}>SMS API: {s.state} (HTTP {s.http_status||'unknown'}) · attempt {s.id.slice(0,8)}</small>)}
-    {!smsAttempts.some(s=>s.customer_update_id===u.id)&&<button className="coordinator-send-sms" disabled={busy||!smsEnabled||!smsReady||!caseItem.notifyOptIn||!caseItem.canContact} onClick={()=>sendSms('customer',u.id)}>Send SMS now — via SMSLeopard</button>}</>}
+    {u.channel==='sms'&&<>{!caseItem.notifyOptIn&&<small>Customer has not opted in to SMS notifications.</small>}{smsAttempts.filter(s=>s.customer_update_id===u.id).map(s=><small key={s.id}>{s.gateway==='wasiliana'?'Wasiliana':'SMSLeopard'} API: {s.state} (HTTP {s.http_status||'unknown'}) · attempt {s.id.slice(0,8)}</small>)}
+    {!smsAttempts.some(s=>s.customer_update_id===u.id)&&<button className="coordinator-send-sms" disabled={busy||!smsEnabled||!smsReady||!caseItem.notifyOptIn||!caseItem.canContact} onClick={()=>sendSms('customer',u.id)}>Send SMS now — via Wasiliana</button>}</>}
     {u.channel==='whatsapp'&&caseItem.canContact&&<button disabled={busy} onClick={()=>openWhatsApp(u.message)}><ExternalLink size={14}/> Open WhatsApp</button>}
     {u.channel!=='sms'&&<button disabled={busy} onClick={()=>{if(window.confirm('Have you actually delivered this update to the customer using '+u.channel+'?'))action({action:'customer_update_mark_sent',updateId:u.id},'Manual customer update recorded')}}>Confirm manual delivery</button>}
    </div>}
