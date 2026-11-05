@@ -136,7 +136,8 @@ export async function POST(req:NextRequest){
   });
   const usingGemini=!!geminiKey;
   let responseProvider:'gemini'|'openai'=usingGemini?'gemini':'openai';
-  let res=usingGemini?await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent',{
+  let res:Response;
+  try{res=usingGemini?await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent',{
    method:'POST',
    headers:{'x-goog-api-key':geminiKey!,'Content-Type':'application/json'},
    body:JSON.stringify({
@@ -145,6 +146,12 @@ export async function POST(req:NextRequest){
     generationConfig:{responseMimeType:'application/json',responseSchema:geminiSchema,maxOutputTokens:850,temperature:0.2}
    }),cache:'no-store',signal:AbortSignal.timeout(9000)
   }):await openaiRequest();
+  }catch(error){
+   if(!usingGemini||!openaiKey)throw error;
+   console.warn('JiTap Gemini connection failed; attempting OpenAI fallback');
+   responseProvider='openai';
+   res=await openaiRequest();
+  }
   // Upstream Gemini capacity errors are common; use the already configured OpenAI key
   // only on failure. Never send both requests when Gemini succeeds.
   if(!res.ok&&usingGemini&&openaiKey){
