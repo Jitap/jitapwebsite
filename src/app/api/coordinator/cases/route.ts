@@ -13,6 +13,7 @@ function normalizedRecord(c:CaseRow,source?:Intake|Move){
  const description=isRequest?safeText(payload.description,1600):[move?.home_size?'Move: '+move.home_size:'Moving enquiry',move?.pickup_address?'from '+move.pickup_address:'',move?.dropoff_address?'to '+move.dropoff_address:''].filter(Boolean).join(' ');
  return {
   ...c,reference:c.source_id.slice(0,8).toUpperCase(),
+  notifyOptIn:isRequest?payload.notifyOptIn===true:false,
   category:isRequest?safeText(payload.category,70)||'other-services':'moving',
   area:isRequest?safeText(payload.area,120):safeText(move?.pickup_address,120),
   description,name:isRequest?safeText(payload.name,120):'',
