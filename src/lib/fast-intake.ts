@@ -14,6 +14,15 @@ const question=(id:string,title:string,options:string[],hint?:string):FastIntake
 export function fastIntakeQuestions(category:string,description:string):FastIntakeQuestion[]|null {
  const text=description.toLowerCase().trim().replace(/\s+/g,' ');
  if(text.length<8||text.length>180)return null;
+ // These are confirmed job types with specific, meaningful intake choices.
+ if(/\b(tailor|tailoring|seamstress|dressmaker|fundi wa nguo|kushona|mshonaji)\b/.test(text))return [
+  question('tailorWork','What do you need the tailor to do?',['Make a new outfit','Alter or resize clothes','Repair torn clothes or a zip','School or work uniform','Other tailoring work']),
+  question('garmentType','What type of clothing?',['Dress or skirt','Shirt or trousers','Suit or jacket','Uniform','Other clothing'])
+ ];
+ if(/\b(mason|masonry|bricklayer|brick laying|fundi wa mawe|fundi wa ujenzi|plastering|kujenga ukuta)\b/.test(text))return [
+  question('masonryWork','What kind of masonry work do you need?',['Build or repair a wall','Plaster or render a surface','Concrete or floor screeding','Tiles or paving','Other masonry work']),
+  question('masonrySize','How much work is involved?',['Small repair','One room or a short wall','Several rooms or a large area','New construction','Not sure yet'])
+ ];
  if(category==='plumbing'){
   const leaks=/\b(leak|leaking|drip|dripping|inavuja|imevuja|kuvuja|vuja)\b/.test(text);
   const blocked=/\b(block|blocked|clog|clogged|imeziba|ziba|drainage)\b/.test(text);
@@ -56,4 +65,25 @@ export function fastIntakeQuestions(category:string,description:string):FastInta
   ];
  }
  return null;
+}
+
+/** Context-aware path for unfamiliar jobs when AI is delayed or unavailable.
+ * Never invent a service type or offer unrelated categories. Preserve the original
+ * description for JiTap's operations coordinator even if no provider is listed.
+ */
+export function safeIntakeQuestions(category:string,description:string):FastIntakeQuestion[] {
+ const specific=fastIntakeQuestions(category,description);
+ if(specific?.length)return specific;
+ const request=description.trim().replace(/\s+/g,' ').slice(0,90);
+ const name={
+  plumbing:'plumbing',electrical:'electrical work',painting:'painting',
+  carpentry:'carpentry work','appliance-repair':'appliance repair',
+  'general-repairs':'repairs','other-services':'your service request'
+ }[category]||'your service request';
+ return [
+  question('requestScope',
+   request?'What kind of help do you need with your request?':'What kind of service do you need?',
+   ['I need someone to carry out the work I described','I need an inspection or assessment first','I need a quote for this work','I need JiTap to clarify the work with me'],
+   'JiTap will review your exact description'+(request?' ('+request+')':'')+' and coordinate the right next step for '+name+'.')
+ ];
 }
