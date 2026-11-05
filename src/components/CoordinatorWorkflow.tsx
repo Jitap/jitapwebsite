@@ -4,8 +4,9 @@ import {Copy,ExternalLink,RefreshCw,MessageSquare,UserRoundCheck,AlertCircle} fr
 
 type Provider={id:string;business_name:string;service_categories:string[];service_areas:string[];base_area:string|null};
 type Assignment={id:string;provider_id:string;state:string;quoted_amount_kes:number|null;notes:string|null;assigned_at:string;responded_at:string|null};
+type SmsAttempt={id:string;customer_update_id:string|null;assignment_id:string|null;recipient_kind:string;state:string;requested_at:string;http_status:number|null;provider_message_id:string|null};
 type Update={id:string;kind:string;channel:'whatsapp'|'sms'|'phone';message:string;state:'draft'|'sent_manually'|'cancelled';created_at:string;sent_at:string|null};
-type Case={id:string;reference:string;category:string;description:string;area:string;phone:string;status:string;canContact:boolean;source_kind:string;name:string;locationLabel:string};
+type Case={id:string;reference:string;category:string;description:string;area:string;phone:string;status:string;canContact:boolean;source_kind:string;name:string;locationLabel:string;notifyOptIn:boolean};
 const responseStates=[['contacted','Contacted'],['accepted','Accepted'],['declined','Declined'],['needs_clarification','Needs clarification'],['quote_requested','Quote requested'],['quote_received','Quote received'],['cancelled','Cancelled']] as const;
 const updateKinds=[['request_received','Request received'],['provider_search','Searching for provider'],['provider_found','Provider found'],['quote_update','Quotation update'],['scheduled','Scheduled'],['progress','Job progress'],['completion','Completion'],['clarification','Clarification needed']] as const;
 function toKenyanWhatsApp(phone:string){
@@ -31,6 +32,8 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
  const [providers,setProviders]=useState<Provider[]>([]);
  const [assignments,setAssignments]=useState<Assignment[]>([]);
  const [updates,setUpdates]=useState<Update[]>([]);
+ const [smsAttempts,setSmsAttempts]=useState<SmsAttempt[]>([]);
+ const [smsEnabled,setSmsEnabled]=useState(false);
  const [providerId,setProviderId]=useState('');
  const [providerNote,setProviderNote]=useState('');
  const [responses,setResponses]=useState<Record<string,string>>({});
@@ -46,7 +49,7 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
   const res=await fetch('/api/coordinator/workflow?caseId='+encodeURIComponent(caseItem.id),{cache:'no-store'});
   if(!res.ok)throw new Error('Unable to load workflow');
   const data=await res.json();
-  setProviders(data.providers||[]);setAssignments(data.assignments||[]);setUpdates(data.updates||[]);
+  setProviders(data.providers||[]);setAssignments(data.assignments||[]);setUpdates(data.updates||[]);setSmsAttempts(data.smsAttempts||[]);setSmsEnabled(data.smsEnabled===true);
  },[caseItem.id]);
  useEffect(()=>{
   let alive=true;
@@ -71,6 +74,22 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
   }catch(e){setFeedback(e instanceof Error?e.message:'Operation failed')}
   finally{setBusy(false)}
  }
+ async function sendSms(recipientKind:'customer'|'provider',id:string){
+  const recipient=recipientKind==='customer'?caseItem.phone:'the opted-in provider contact';
+  if(!window.confirm('Send a real SMS via SMSLeopard to '+recipient+'? This will use JiTap SMS credits. Make sure the recipient has consented.'))return;
+  setBusy(true);setFeedback('');
+  try{
+   const res=await fetch('/api/coordinator/sms',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+    caseId:caseItem.id,recipientKind,confirm:true,
+    ...(recipientKind==='customer'?{updateId:id}:{assignmentId:id})
+   })});
+   const data=await res.json();
+   if(!res.ok)throw new Error(data.error||'SMS was not accepted');
+   await load();await onChanged();
+   setFeedback('SMS submitted to SMSLeopard. Delivery to the handset is not yet confirmed. Attempt: '+data.attemptId.slice(0,8));
+  }catch(e){await load().catch(()=>{});setFeedback(e instanceof Error?e.message:'Unable to submit SMS')}
+  finally{setBusy(false)}
+ }
  async function copyUpdate(body:string){
   try{await navigator.clipboard.writeText(body);setFeedback('Message copied. Send it manually, then confirm it was sent.')}
   catch{setFeedback('Clipboard unavailable. Select the message text and copy it manually.')}
@@ -82,6 +101,7 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
  }
  if(loading)return <section className="coordinator-workflow">Loading provider workflow…</section>;
  return <section className="coordinator-workflow">
+  <div className="coordinator-contact-summary"><h3>Customer contact</h3><dl><dt>Name</dt><dd>{caseItem.name||'Not supplied (historical enquiry)'}</dd><dt>Mobile</dt><dd>{caseItem.phone||'Not supplied'}</dd><dt>Service location</dt><dd>{caseItem.locationLabel||caseItem.area||'Not supplied'}</dd><dt>SMS updates</dt><dd>{caseItem.notifyOptIn?'Opted in':'Not opted in / not recorded'}</dd></dl></div>
   <h3><UserRoundCheck size={18}/> Provider assignment</h3>
   <p className="coordinator-help">Only verified providers already in JiTap's database can be assigned. An assignment is a proposal, not an accepted booking.</p>
   <label>Choose verified provider
@@ -107,13 +127,16 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
     {(responses[a.id]||a.state)==='quote_received'&&<label>Quoted amount (KES)<input type="number" min="0" max="100000000" value={quote[a.id]||''} onChange={e=>setQuote(s=>({...s,[a.id]:e.target.value}))} placeholder="Enter provider's quotation"/></label>}
     <input aria-label="Response notes" maxLength={1000} placeholder="Provider reply or clarification (private)" value={responseNotes[a.id]||''} onChange={e=>setResponseNotes(s=>({...s,[a.id]:e.target.value}))}/>
     <button disabled={busy||!responses[a.id]||responses[a.id]===a.state} onClick={()=>action({action:'provider_response',assignmentId:a.id,state:responses[a.id],quote:responses[a.id]==='quote_received'&&quote[a.id]!==''?Number(quote[a.id]):null,note:responseNotes[a.id]||''},'Provider response saved')}>Record provider response</button>
+    {smsAttempts.filter(s=>s.assignment_id===a.id).map(s=><small key={s.id}>Provider SMS: {s.state} · {new Date(s.requested_at).toLocaleString('en-KE')}</small>)}
+    {!smsAttempts.some(s=>s.assignment_id===a.id)&&<button disabled={busy||!smsEnabled||!['proposed','contacted','needs_clarification','quote_requested'].includes(a.state)} onClick={()=>sendSms('provider',a.id)}>Send provider SMS</button>}
+    {!smsEnabled&&<small>Coordinator SMS sending is not activated.</small>}
    </div>
   })}</div>:<p className="coordinator-help">No provider proposed yet. Requests without a confirmed provider remain available for manual sourcing.</p>}
   <h3><MessageSquare size={18}/> Customer updates</h3>
-  <p className="coordinator-help">Prepare an accurate update here. Messages are never sent automatically from this screen. Send only through an appropriate authorized channel, then mark them as sent.</p>
+  <p className="coordinator-help">Generate a message, review it and save the draft. SMS drafts can be sent through SMSLeopard when enabled and the customer opted in. WhatsApp remains a manual handoff until templates are approved.</p>
   {!caseItem.canContact&&<p className="coordinator-help"><AlertCircle size={15}/> Customer phone is missing; confirm contact details before messaging.</p>}
   <label>Update type<select value={kind} onChange={e=>{setKind(e.target.value);setMessage('')}}>{updateKinds.map(([k,l])=><option key={k} value={k}>{l}</option>)}</select></label>
-  <label>Channel<select value={channel} onChange={e=>setChannel(e.target.value as 'whatsapp'|'sms'|'phone')}><option value="whatsapp">WhatsApp (manual)</option><option value="sms">SMS (manual)</option><option value="phone">Phone call (log only)</option></select></label>
+  <label>Channel<select value={channel} onChange={e=>setChannel(e.target.value as 'whatsapp'|'sms'|'phone')}><option value="whatsapp">WhatsApp (manual)</option><option value="sms">SMS via SMSLeopard</option><option value="phone">Phone call (log only)</option></select></label>
   <button className="coordinator-secondary" onClick={()=>setMessage(makeMessage(caseItem,kind,acceptedName))}>Generate update draft</button>
   <textarea rows={5} maxLength={1200} value={message} onChange={e=>setMessage(e.target.value)} placeholder="Write a factual update to the customer. Do not promise availability or a booking unless it is confirmed."/>
   <button disabled={busy||message.trim().length<10||!caseItem.canContact} onClick={()=>action({action:'customer_update_draft',kind,channel,message},'Customer update draft saved')}>Save update draft</button>
@@ -122,10 +145,13 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
    <p>{u.message}</p><small>{u.channel} · {new Date(u.created_at).toLocaleString('en-KE',{timeZone:'Africa/Nairobi'})}</small>
    {u.state==='draft'&&<div className="coordinator-update-actions">
     <button disabled={busy} onClick={()=>copyUpdate(u.message)}><Copy size={14}/> Copy message</button>
+    {u.channel==='sms'&&<>{smsAttempts.filter(s=>s.customer_update_id===u.id).map(s=><small key={s.id}>SMS API: {s.state} (HTTP {s.http_status||'unknown'}) · attempt {s.id.slice(0,8)}</small>)}
+    {!smsAttempts.some(s=>s.customer_update_id===u.id)&&<button disabled={busy||!smsEnabled||!caseItem.notifyOptIn||!caseItem.canContact} onClick={()=>sendSms('customer',u.id)}>Send SMS now</button>}</>}
     {u.channel==='whatsapp'&&caseItem.canContact&&<button disabled={busy} onClick={()=>openWhatsApp(u.message)}><ExternalLink size={14}/> Open WhatsApp</button>}
     <button disabled={busy} onClick={()=>{if(window.confirm('Have you actually delivered this update to the customer using '+u.channel+'?'))action({action:'customer_update_mark_sent',updateId:u.id},'Manual customer update recorded')}}>Confirm sent</button>
    </div>}
   </div>)}</div>}
+  {!smsEnabled&&<p className="coordinator-help">SMS sending is configured for staff-controlled testing but not yet enabled. No messages will be sent until the coordinator SMS switch is activated.</p>}
   {feedback&&<p className="coordinator-feedback" role="status">{feedback}</p>}
  </section>;
 }
