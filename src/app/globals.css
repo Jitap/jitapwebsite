@@ -505,8 +505,11 @@ body{color:#232c49}
 }
 @media(prefers-reduced-motion:reduce){.ref-category-card,.ref-task-card{transition:none}}
 
-/* Minimal branded AI intake loading: no overlay, copy, or orbit. */
-.jt-ai-intake-loading{display:flex;align-items:center;justify-content:center;min-height:118px;padding:18px 0;border:0;background:transparent}
-.jt-ai-intake-loading .jt-ai-signal-icon{display:block;width:72px;height:54px;object-fit:contain;transform-origin:center;animation:jt-ai-icon-rotate 1.65s linear infinite}
-@keyframes jt-ai-icon-rotate{to{transform:rotate(360deg)}}
-@media(prefers-reduced-motion:reduce){.jt-ai-intake-loading .jt-ai-signal-icon{animation:none}}
+/* Compact three-dot AI typing indicator with no icon, text or background. */
+.jt-ai-intake-loading{display:flex;align-items:center;justify-content:center;min-height:100px;padding:18px 0;border:0;background:transparent}
+.jt-ai-typing-dots{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:24px}
+.jt-ai-typing-dots>span{display:block;width:9px;height:9px;border-radius:50%;background:#12a774;opacity:.35;transform:translateY(0);animation:jt-ai-dot-bounce 1.12s ease-in-out infinite}
+.jt-ai-typing-dots>span:nth-child(2){animation-delay:.14s}
+.jt-ai-typing-dots>span:nth-child(3){animation-delay:.28s}
+@keyframes jt-ai-dot-bounce{0%,60%,100%{transform:translateY(0);opacity:.35}28%{transform:translateY(-6px);opacity:1}}
+@media(prefers-reduced-motion:reduce){.jt-ai-typing-dots>span{animation:none;opacity:.75}}
