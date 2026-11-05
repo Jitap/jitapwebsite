@@ -1,6 +1,7 @@
 import {NextRequest} from 'next/server';
 import {z} from 'zod';
 import {reply,requireCoordinator,supabasePrivate,validOrigin} from '@/lib/coordinator-server';
+import {wasilianaSettings} from '@/lib/wasiliana';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
 const uuid=z.string().uuid();
@@ -13,7 +14,7 @@ const request=z.discriminatedUnion('action',[
 type Assignment={id:string;case_id:string;provider_id:string;state:string;quoted_amount_kes:number|null;notes:string|null;assigned_at:string;responded_at:string|null;updated_at:string};
 type Provider={id:string;business_name:string;service_categories:string[];service_areas:string[];base_area:string|null};
 type ProviderContact={provider_id:string;phone_e164:string;sms_opt_in:boolean;opted_out_at:string|null};
-type SmsAttempt={id:string;customer_update_id:string|null;assignment_id:string|null;recipient_kind:string;state:string;requested_at:string;http_status:number|null;provider_message_id:string|null};
+type SmsAttempt={id:string;customer_update_id:string|null;assignment_id:string|null;recipient_kind:string;gateway:string;state:string;requested_at:string;http_status:number|null;provider_message_id:string|null};
 type CustomerUpdate={id:string;case_id:string;kind:string;channel:string;message:string;state:string;prepared_by:string;sent_by:string|null;sent_at:string|null;created_at:string};
 export async function GET(req:NextRequest){
  try{
@@ -28,9 +29,9 @@ export async function GET(req:NextRequest){
   const [assignments,updates,smsAttempts]=await Promise.all([
    supabasePrivate<Assignment[]>('coordinator_provider_assignments?select=id,case_id,provider_id,state,quoted_amount_kes,notes,assigned_at,responded_at,updated_at&case_id=eq.'+caseId+'&order=assigned_at.desc&limit=100'),
    supabasePrivate<CustomerUpdate[]>('coordinator_customer_updates?select=id,case_id,kind,channel,message,state,prepared_by,sent_by,sent_at,created_at&case_id=eq.'+caseId+'&order=created_at.desc&limit=100'),
-   supabasePrivate<SmsAttempt[]>('coordinator_sms_attempts?select=id,customer_update_id,assignment_id,recipient_kind,state,requested_at,http_status,provider_message_id&case_id=eq.'+caseId+'&order=requested_at.desc&limit=100')
+   supabasePrivate<SmsAttempt[]>('coordinator_sms_attempts?select=id,customer_update_id,assignment_id,recipient_kind,gateway,state,requested_at,http_status,provider_message_id&case_id=eq.'+caseId+'&order=requested_at.desc&limit=100')
   ]);
-  return reply({ok:true,providers,assignments,updates,smsAttempts,providerSmsContacts,staffRole:staff.role,smsEnabled:process.env.JITAP_COORDINATOR_SMS_ENABLED==='true'});
+  return reply({ok:true,providers,assignments,updates,smsAttempts,providerSmsContacts,staffRole:staff.role,smsReady:wasilianaSettings().configured&&wasilianaSettings().senderConfigured,smsEnabled:process.env.JITAP_COORDINATOR_SMS_ENABLED==='true'});
  }catch{return reply({error:'Unable to load provider workflow'},503)}
 }
 export async function POST(req:NextRequest){
