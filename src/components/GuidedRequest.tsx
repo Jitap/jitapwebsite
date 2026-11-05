@@ -4,6 +4,8 @@ import Link from 'next/link';
 import {ArrowLeft,ArrowRight,ChevronLeft,X,Sparkles,Shirt,Footprints,House,BedDouble,Layers,Droplets,Brush} from 'lucide-react';
 import {areas,categories,inferService} from '@/lib/data';
 import {understandJob} from '@/lib/job-intelligence';
+import {fastIntakeQuestions} from '@/lib/fast-intake';
+import {track} from '@/lib/analytics';
 import {IntakeForm} from '@/components/Interactive';
 import {MatchedFundis} from '@/components/FundiDirectory';
 import {MovingRequest} from '@/components/MovingRequest';
@@ -134,7 +136,8 @@ export function GuidedRequest(){
  const understood=useMemo(()=>understandJob(description),[description]);
  const context=understood&&understood.category===category?understood:null;
  const tvMount=isTvMounting(description)&&['general-repairs','other-services'].includes(category);
- const questions=useMemo(()=>tvMount?tvMountingQuestions:context?[...context.questions,time]:category!=='cleaning'&&category!=='moving'&&aiQuestions?.length?[...aiQuestions,time]:category==='plumbing'?plumbingQuestions(description):byCategory[category]||byCategory['other-services'],[category,description,tvMount,aiQuestions,context]);
+ const fastQuestions=useMemo(()=>fastIntakeQuestions(category,description),[category,description]);
+ const questions=useMemo(()=>tvMount?tvMountingQuestions:context?[...context.questions,time]:fastQuestions?[...fastQuestions,time]:category!=='cleaning'&&category!=='moving'&&aiQuestions?.length?[...aiQuestions,time]:category==='plumbing'?plumbingQuestions(description):byCategory[category]||byCategory['other-services'],[category,description,tvMount,aiQuestions,context,fastQuestions]);
  const question=questions[stage];
  const answer=question?answers[question.id]||'':'';
  const onMamaFua=category==='cleaning'&&question?.id==='cleanServices';
@@ -147,7 +150,7 @@ export function GuidedRequest(){
  const validTime=preferredTimes.some(([time])=>time===preferredTime)&&!(preferredDate===clock.date&&Number(preferredTime.slice(0,2))*60+Number(preferredTime.slice(3,5))<=clock.minutes);
  const stageNames:string[]=category==='cleaning'?['Need','Time','Total','Contact']:[...questions.map((q,i)=>q.id==='timing'?'Time':q.id==='screenSize'?'TV size':q.id==='wallType'?'Wall':q.id==='bracket'?'Bracket':q.id==='frequency'?'Frequency':q.id==='size'?'Space':q.id==='cleanType'?'Type':i===0?'Need':'Details'),'Matches','Contact'];
  const aiRequestKey=category+'|'+area+'|'+description.trim();
- const shouldAwaitAI=hydrated&&stage===0&&!ready&&!showMatches&&!tvMount&&!context&&category!=='cleaning'&&category!=='moving'&&description.trim().length>=8;
+ const shouldAwaitAI=hydrated&&stage===0&&!ready&&!showMatches&&!tvMount&&!context&&!fastQuestions&&category!=='cleaning'&&category!=='moving'&&description.trim().length>=8;
  const aiWaiting=!hydrated||(shouldAwaitAI&&aiResolvedKey!==aiRequestKey);
  const label=tvMount?'TV Mounting':context?({ 'fan-repair':'Fan Repair','socket-repair':'Electrical Socket Repair','tv-repair':'TV Repair','microwave-repair':'Microwave Repair','computer-electronics':'Electronics Service','vehicle-exhaust':'Vehicle Exhaust','photography':'Photography','vehicle-mechanic':'Vehicle Mechanic' } as Record<string,string>)[context.subcategory]||categories.find(x=>x.slug===category)?.name||'Local service':categories.find(x=>x.slug===category)?.name||'Local service';
  const finished=()=>{const details=category==='cleaning'
@@ -157,13 +160,14 @@ export function GuidedRequest(){
  function skip(){if(onTime)return;if(stage>=questions.length-1)finished();else setStage(n=>n+1)}
  useEffect(()=>{
   // Tailor the job brief while still at the first question. Never interrupt an in-progress questionnaire.
-  if(ready||showMatches||stage!==0||tvMount||context||category==='cleaning'||category==='moving'||description.trim().length<8||aiResolvedKey===category+'|'+area+'|'+description.trim()){
+  if(ready||showMatches||stage!==0||tvMount||context||fastQuestions||category==='cleaning'||category==='moving'||description.trim().length<8||aiResolvedKey===category+'|'+area+'|'+description.trim()){
    return;
   }
   setAiQuestions(null);
   let cancelled=false;
   const controller=new AbortController();
   const timer=setTimeout(async()=>{
+   const started=performance.now();
    try{
     const res=await fetch('/api/ai/intake',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
      description:description.trim().slice(0,600),area,categoryHint:category
@@ -171,6 +175,7 @@ export function GuidedRequest(){
     if(!res.ok)throw new Error('AI intake unavailable');
     const data=await res.json();
     if(cancelled)return;
+    track('ai_intake_timing',{source:res.headers.get('X-JiTap-Intake-Source')||'model',durationMs:Math.round(performance.now()-started),category});
     if(!data.ok||!Array.isArray(data.questions)||!data.questions.length)throw new Error('No tailored questions returned');
     // Only free-text/Other Services may be reclassified. Never silently override a service chosen by the customer.
     if(category==='other-services'&&typeof data.category==='string'&&data.category!=='other-services'&&categories.some(x=>x.slug===data.category)){
@@ -181,10 +186,10 @@ export function GuidedRequest(){
     }else{
      throw new Error('AI returned a different service category');
     }
-   }catch{if(!cancelled){setAiQuestions(null);setAiResolvedKey(category+'|'+area+'|'+description.trim());}}
+   }catch{if(!cancelled){track('ai_intake_timing',{source:'fallback',durationMs:Math.round(performance.now()-started),category});setAiQuestions(null);setAiResolvedKey(category+'|'+area+'|'+description.trim());}}
   },120);
   return ()=>{cancelled=true;clearTimeout(timer);controller.abort()};
- },[description,category,area,ready,showMatches,stage,tvMount,context,aiResolvedKey]);
+ },[description,category,area,ready,showMatches,stage,tvMount,context,fastQuestions,aiResolvedKey]);
  if(category==='moving')return <MovingRequest/>;
  return <div className="th-request-flow">
   <div className="container th-request-layout">
