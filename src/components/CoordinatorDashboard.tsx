@@ -5,7 +5,7 @@ import {CoordinatorWorkflow} from '@/components/CoordinatorWorkflow';
 type Staff={email:string;role:'admin'|'coordinator'};
 type Case={
  id:string;reference:string;source_kind:string;source_id:string;status:string;priority:string;assigned_to:string|null;next_followup_at:string|null;created_at:string;
- category:string;area:string;description:string;name:string;phone:string;preferredDate:string;preferredTime:string;locationLabel:string;destination:string;needsLocation:boolean;needsPhone:boolean;needsSchedule:boolean;canContact:boolean;
+ category:string;area:string;description:string;name:string;phone:string;preferredDate:string;preferredTime:string;locationLabel:string;destination:string;needsLocation:boolean;needsPhone:boolean;needsSchedule:boolean;canContact:boolean;notifyOptIn:boolean;
 };
 type Activity={action:string;actor_email:string;note:string|null;old_value:string|null;new_value:string|null;created_at:string};
 const statuses=[
