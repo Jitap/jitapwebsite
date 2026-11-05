@@ -20,7 +20,7 @@ function makeProviderBuzz(c:Case,provider:string){
  const brief=c.description.trim().replace(/(?:\+?254|0)[17]\d{8}/g,'[phone withheld]').replace(/\s+/g,' ').slice(0,270)||c.category;
  const place=c.locationLabel||c.area||'Confirm location';
  const date=[c.preferredDate,c.preferredTime].filter(Boolean).join(' at ')||'Confirm schedule';
- return ('JiTap BUZZ for '+provider+'. JT-'+c.reference+'. Job: '+brief+'. Location: '+place+'. Preferred: '+date+'. Please reply to JiTap SOC to accept, decline or clarify. Booking not confirmed.').slice(0,600);
+ return ('JiTap BUZZ for '+provider+'. JT-'+c.reference+'. Job: '+brief+'. Location: '+place+'. Preferred: '+date+'. Open the secure response link at the end of this SMS to accept, decline or ask a question. Booking not confirmed.').slice(0,600);
 }
 function makeMessage(c:Case,kind:string,providerName?:string){
  const ref='JT-'+c.reference;
@@ -181,7 +181,7 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
     <button disabled={busy||!responses[a.id]||responses[a.id]===a.state} onClick={()=>action({action:'provider_response',assignmentId:a.id,state:responses[a.id],quote:responses[a.id]==='quote_received'&&quote[a.id]!==''?Number(quote[a.id]):null,note:responseNotes[a.id]||''},'Provider response saved')}>Record provider response</button>
     <div className="coordinator-provider-buzz">
       <h4>Provider BUZZ — review message</h4>
-      <p className="coordinator-help">JiTap automatically uses the provider's saved private SMS contact. Review and save the brief before sending.</p>
+      <p className="coordinator-help">JiTap uses the provider's saved private SMS contact. A unique secure response link is added automatically when sending. Review and save this service brief first.</p>
       {smsAttempts.some(s=>s.assignment_id===a.id)&&providerDrafts.find(d=>d.assignment_id===a.id)&&<p className="coordinator-provider-buzz-sent">{providerDrafts.find(d=>d.assignment_id===a.id)?.message}</p>}
       {!smsAttempts.some(s=>s.assignment_id===a.id)&&<>
         <button type="button" disabled={busy} onClick={()=>setBuzzText(x=>({...x,[a.id]:makeProviderBuzz(caseItem,p?.business_name||'provider')}))}>Generate BUZZ draft</button>
