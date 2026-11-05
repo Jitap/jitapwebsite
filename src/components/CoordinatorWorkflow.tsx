@@ -178,6 +178,18 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
     {(responses[a.id]||a.state)==='quote_received'&&<label>Quoted amount (KES)<input type="number" min="0" max="100000000" value={quote[a.id]||''} onChange={e=>setQuote(s=>({...s,[a.id]:e.target.value}))} placeholder="Enter provider's quotation"/></label>}
     <input aria-label="Response notes" maxLength={1000} placeholder="Provider reply or clarification (private)" value={responseNotes[a.id]||''} onChange={e=>setResponseNotes(s=>({...s,[a.id]:e.target.value}))}/>
     <button disabled={busy||!responses[a.id]||responses[a.id]===a.state} onClick={()=>action({action:'provider_response',assignmentId:a.id,state:responses[a.id],quote:responses[a.id]==='quote_received'&&quote[a.id]!==''?Number(quote[a.id]):null,note:responseNotes[a.id]||''},'Provider response saved')}>Record provider response</button>
+    <div className="coordinator-provider-buzz">
+      <h4>Provider BUZZ — review message</h4>
+      <p className="coordinator-help">JiTap automatically uses the provider's saved private SMS contact. Review and save the brief before sending.</p>
+      {!smsAttempts.some(s=>s.assignment_id===a.id)&&<>
+        <button type="button" disabled={busy} onClick={()=>setBuzzText(x=>({...x,[a.id]:makeProviderBuzz(caseItem,p?.business_name||'provider')}))}>Generate BUZZ draft</button>
+        <textarea aria-label="Provider BUZZ draft" rows={5} maxLength={600}
+          value={buzzText[a.id]??providerDrafts.find(x=>x.assignment_id===a.id)?.message??makeProviderBuzz(caseItem,p?.business_name||'provider')}
+          onChange={e=>setBuzzText(x=>({...x,[a.id]:e.target.value}))}/>
+        <button type="button" disabled={busy} onClick={()=>action({action:'provider_sms_draft',assignmentId:a.id,message:buzzText[a.id]??providerDrafts.find(x=>x.assignment_id===a.id)?.message??makeProviderBuzz(caseItem,p?.business_name||'provider')},'Provider BUZZ draft saved.')}>Save BUZZ draft — do not send</button>
+        {providerDrafts.some(x=>x.assignment_id===a.id)&&<small>Saved draft ready. Save again after any edit before sending.</small>}
+      </>}
+    </div>
     {smsAttempts.filter(s=>s.assignment_id===a.id).map(s=><small key={s.id}>Provider SMS: {s.state} · {new Date(s.requested_at).toLocaleString('en-KE')}</small>)}
     {!smsAttempts.some(s=>s.assignment_id===a.id)&&<button disabled={busy||!smsEnabled||!smsReady||!providerSmsContacts.some(p=>p.providerId===a.provider_id&&p.enabled)||!['proposed','contacted','needs_clarification','quote_requested'].includes(a.state)} onClick={()=>sendSms('provider',a.id)}>Send provider SMS via Wasiliana</button>}
     {!providerSmsContacts.some(p=>p.providerId===a.provider_id&&p.enabled)&&<small>Provider SMS requires documented opt-in and a private mobile number.</small>}
