@@ -71,7 +71,7 @@ export async function POST(req:NextRequest){
  }
  if(state!=='submitted'){
   const error=state==='unknown'?'Wasiliana submission status is uncertain. Do not retry this draft until reconciled.':
-   'Wasiliana SMS not accepted (HTTP '+(result.httpStatus||'unknown')+'). '+(result.providerReason||'Check the Sender ID, account permissions, and Wasiliana dashboard.');
+   'Wasiliana SMS not accepted (HTTP '+(result.httpStatus||'unknown')+'). '+(result.httpStatus===401&&/app does not match your api key/i.test(result.providerReason||'')?'The Sender ID / app does not belong to the application associated with WASILIANA_API_KEY. Check both under the same Wasiliana application.':(result.providerReason||'Check the Sender ID, account permissions, and Wasiliana dashboard.'));
   return reply({ok:false,attemptId:claim.attemptId,status:state,
    httpStatus:result.httpStatus||null,errorCode:result.errorCode||null,error},502);
  }
