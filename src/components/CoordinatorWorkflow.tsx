@@ -40,6 +40,8 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
  const [consentSource,setConsentSource]=useState('');
  const [providerConsent,setProviderConsent]=useState(false);
  const [smsEnabled,setSmsEnabled]=useState(false);
+ const [smsDiagnostics,setSmsDiagnostics]=useState<{ok:boolean;httpStatus?:number;balanceKes?:number;senderId?:string;errorCode?:string;error?:string}|null>(null);
+ const [checkingSms,setCheckingSms]=useState(false);
  const [providerId,setProviderId]=useState('');
  const [providerNote,setProviderNote]=useState('');
  const [responses,setResponses]=useState<Record<string,string>>({});
@@ -93,6 +95,16 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
    setFeedback('Private provider SMS contact saved with documented consent.');
   }catch(e){setFeedback(e instanceof Error?e.message:'Could not save provider contact')}
   finally{setBusy(false)}
+ }
+ async function checkSmsDiagnostics(){
+  setCheckingSms(true);setFeedback('');
+  try{
+   const res=await fetch('/api/coordinator/sms',{cache:'no-store'});
+   const body=await res.json();
+   setSmsDiagnostics(body);
+   if(!res.ok)setFeedback(body.error||'SMS account diagnostic request failed.');
+  }catch{setSmsDiagnostics({ok:false,error:'Could not connect to the SMS diagnostic endpoint'});}
+  finally{setCheckingSms(false)}
  }
  async function sendSms(recipientKind:'customer'|'provider',id:string){
   const recipient=recipientKind==='customer'?caseItem.phone:'the opted-in provider contact';
@@ -163,6 +175,12 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
    </div>
   })}</div>:<p className="coordinator-help">No provider proposed yet. Requests without a confirmed provider remain available for manual sourcing.</p>}
   <h3><MessageSquare size={18}/> Customer updates</h3>
+  <div className="coordinator-sms-health">
+   <button disabled={checkingSms||busy} onClick={checkSmsDiagnostics}>{checkingSms?'Checking SMSLeopard…':'Check SMSLeopard balance & connection (no SMS sent)'}</button>
+   {smsDiagnostics&&<p role="status">{smsDiagnostics.ok?
+    'SMSLeopard connected. Sender: '+(smsDiagnostics.senderId||'not configured')+'. Balance: '+(typeof smsDiagnostics.balanceKes==='number'?'KES '+smsDiagnostics.balanceKes.toFixed(2):'not available'):
+    'SMSLeopard diagnostic failed (HTTP '+(smsDiagnostics.httpStatus||'unknown')+'). '+(smsDiagnostics.errorCode||smsDiagnostics.error||'Check API credentials.')}</p>}
+  </div>
   <p className="coordinator-help">Step 1: Generate and save the message draft. Step 2: In the saved draft below, press <strong>Send SMS now</strong> to actually submit it to SMSLeopard. Saving a draft alone does NOT send a text.</p>
   {!caseItem.canContact&&<p className="coordinator-help"><AlertCircle size={15}/> Customer phone is missing; confirm contact details before messaging.</p>}
   <label>Update type<select value={kind} onChange={e=>{setKind(e.target.value);setMessage('')}}>{updateKinds.map(([k,l])=><option key={k} value={k}>{l}</option>)}</select></label>
