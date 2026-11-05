@@ -1,6 +1,7 @@
 'use client';
 import {useCallback,useEffect,useMemo,useState} from 'react';
 import {CheckCircle2,RefreshCw,LogOut,MapPin,Phone,CalendarClock,Search,AlertTriangle,ClipboardList,Users,Clock3} from 'lucide-react';
+import {CoordinatorWorkflow} from '@/components/CoordinatorWorkflow';
 type Staff={email:string;role:'admin'|'coordinator'};
 type Case={
  id:string;reference:string;source_kind:string;source_id:string;status:string;priority:string;assigned_to:string|null;next_followup_at:string|null;created_at:string;
@@ -156,6 +157,7 @@ export function CoordinatorDashboard(){
     <h3>Coordinate the request</h3><div className="coordinator-editor"><label>Status<select disabled={busy} value={active.status} onChange={e=>update('status_changed',e.target.value)}>{statuses.map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label><label>Priority<select disabled={busy} value={active.priority} onChange={e=>update('priority_changed',e.target.value)}>{['low','normal','high','urgent'].map(p=><option key={p}>{p}</option>)}</select></label></div>
     <label className="coordinator-followup">Next follow-up (EAT / local)<input type="datetime-local" value={followup} onChange={e=>setFollowup(e.target.value)}/></label><button className="coordinator-secondary" disabled={busy} onClick={()=>update('followup_changed',followup?new Date(followup).toISOString():null)}><CalendarClock size={15}/> Save follow-up</button>
     <div className="coordinator-quick-actions"><button disabled={busy} onClick={()=>update('status_changed','needs_sourcing')}>Needs sourcing</button><button disabled={busy} onClick={()=>update('status_changed','provider_contacted')}>Provider contacted</button><button disabled={busy} onClick={()=>update('status_changed','completed')}>Mark completed</button></div>
+    <CoordinatorWorkflow key={active.id} caseItem={active} onChanged={async()=>{await load();await loadDetail(active.id);}}/>
     <h3>Coordinator notes</h3><textarea rows={3} maxLength={2000} value={note} onChange={e=>setNote(e.target.value)} placeholder="What did the customer/provider say? What is the next action?"/><button disabled={busy||note.trim().length<2} onClick={()=>update('note_added',null,note)}>Save note</button>
     <h3>Activity history</h3><div className="coordinator-activity">{activity.length?activity.map((a,i)=><div key={i}><strong>{a.action.replaceAll('_',' ')}</strong><small>{formatDate(a.created_at)} · {a.actor_email}</small>{a.note&&<p>{a.note}</p>}{a.new_value&&<p>{a.new_value}</p>}</div>):<p>No activity recorded yet.</p>}</div>
    </>:<div className="coordinator-select">Select a case to review its details and update the workflow.</div>}
