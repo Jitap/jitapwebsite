@@ -43,7 +43,7 @@ export async function POST(req:NextRequest){
    p_assignment_id:input.recipientKind==='provider'?input.assignmentId:null
   })});
  }catch{return reply({error:'SMS blocked: confirm customer notification consent, an opted-in provider, and that this message was not already attempted.'},409)}
- let result:{accepted:boolean;httpStatus?:number;providerMessageId?:string;errorCode?:string}={accepted:false};
+ let result:{accepted:boolean;httpStatus?:number;providerMessageId?:string;errorCode?:string;providerReason?:string}={accepted:false};
  let state:'submitted'|'rejected'|'unknown'='unknown';
  try{
   result=await sendJiTapSms(claim.recipient,claim.message,'coordinator');
@@ -56,7 +56,7 @@ export async function POST(req:NextRequest){
   await supabasePrivate<boolean>('rpc/coordinator_finish_sms',{method:'POST',body:JSON.stringify({
    p_attempt_id:claim.attemptId,p_actor_email:staff.email,p_state:state,
    p_http_status:result.httpStatus||null,
-   p_provider_message_id:result.providerMessageId||null,p_error_code:result.errorCode||null
+   p_provider_message_id:result.providerMessageId||null,p_error_code:[result.errorCode,result.providerReason].filter(Boolean).join(': ').slice(0,100)||null
   })});
  }catch{
   return reply({ok:false,attemptId:claim.attemptId,error:'SMS result could not be recorded. Do not retry; ask JiTap operations to reconcile the attempt.'},503);
@@ -77,7 +77,7 @@ export async function POST(req:NextRequest){
     :result.errorCode==='restricted_send_time'
      ?'SMSLeopard says sending is restricted at this time.'
     :'SMSLeopard returned HTTP '+(result.httpStatus||'unknown')+'. Run the read-only SMS diagnostics to check account balance and credentials.';
-  return reply({ok:false,attemptId:claim.attemptId,status:state,httpStatus:result.httpStatus||null,errorCode:result.errorCode||null,error},502);
+  return reply({ok:false,attemptId:claim.attemptId,status:state,httpStatus:result.httpStatus||null,errorCode:result.errorCode||null,providerReason:result.providerReason||null,error},502);
  }
  return reply({ok:true,attemptId:claim.attemptId,status:'submitted',message:'SMSLeopard accepted the submission. Handset delivery is not yet verified.'});
 }
