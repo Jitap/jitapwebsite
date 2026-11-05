@@ -27,7 +27,7 @@ export async function sendWasilianaSms(destination:string,message:string):Promis
  // Do not guess or borrow SMSLeopard's unrelated sender ID.
  if(!sender)throw new Error('wasiliana_sender_id_not_configured');
  if(!message.trim()||message.length>600)throw new Error('invalid_sms_message');
- const body={phone_number:[normalizeKenyanMobile(destination)],message,from:sender,is_otp:false};
+ const body={recipients:[normalizeKenyanMobile(destination)],message,from:sender,is_otp:false};
  const response=await fetch('https://api.wasiliana.com/api/v1/send/sms',{
   method:'POST',
   headers:{apiKey:key,'Content-Type':'application/json',Accept:'application/json'},
