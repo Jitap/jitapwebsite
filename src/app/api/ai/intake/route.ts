@@ -81,6 +81,8 @@ export async function POST(req:NextRequest){
   'Mechanic, garage, fundi wa gari or fundi wa motor means a vehicle mechanic, not delivery, catering or event planning.',
   'For a mechanic request without a vehicle type, first ask car vs motorcycle vs truck; then ask the kind of vehicle fault or service.',
   'For a fan repair request, ask fan type and fault, not broad services.',
+  'For tailor, tailoring, seamstress, dressmaker, kushona nguo or fundi wa nguo, choose other-services and ask what clothing or alteration is needed and whether it is a new garment or repair.',
+  'If the request is simply I need a tailor, ask about clothing type and the kind of tailoring work. NEVER suggest mounting, delivery, installation or generic categories.',
   'Do not invent a provider, assert availability, promise prices or claim a job is confirmed.',
   'For ALL categories except moving and cleaning, return 1 or 2 specific multiple-choice questions tailored to the actual problem described, not broad category lists.',
   'For leaks: ask exactly where the water escapes and how serious it is. For blocked plumbing: ask which fixture and whether it drains. For other jobs: ask about the exact item, fault, size, or installation required.',
@@ -103,16 +105,7 @@ export async function POST(req:NextRequest){
     }}
    },required:['category','questions']
   };
-  const usingGemini=!!geminiKey;
-  const res=usingGemini?await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent',{
-   method:'POST',
-   headers:{'x-goog-api-key':geminiKey!,'Content-Type':'application/json'},
-   body:JSON.stringify({
-    systemInstruction:{parts:[{text:system}]},
-    contents:[{role:'user',parts:[{text:'Customer service request: '+safeDescription+'\\nArea: '+parsed.data.area+'\\nSelected category: '+(parsed.data.categoryHint||'not yet known')}]}],
-    generationConfig:{responseMimeType:'application/json',responseSchema:geminiSchema,maxOutputTokens:850,temperature:0.2}
-   }),cache:'no-store',signal:AbortSignal.timeout(9000)
-  }):await fetch('https://api.openai.com/v1/responses',{
+  const openaiRequest=()=>fetch('https://api.openai.com/v1/responses',{
    method:'POST',headers:{Authorization:'Bearer '+openaiKey,'Content-Type':'application/json'},
    body:JSON.stringify({
     model:process.env.OPENAI_MODEL||'gpt-4.1-mini',
@@ -141,15 +134,33 @@ export async function POST(req:NextRequest){
     store:false
    }),cache:'no-store',signal:AbortSignal.timeout(10000)
   });
+  const usingGemini=!!geminiKey;
+  let responseProvider:'gemini'|'openai'=usingGemini?'gemini':'openai';
+  let res=usingGemini?await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent',{
+   method:'POST',
+   headers:{'x-goog-api-key':geminiKey!,'Content-Type':'application/json'},
+   body:JSON.stringify({
+    systemInstruction:{parts:[{text:system}]},
+    contents:[{role:'user',parts:[{text:'Customer service request: '+safeDescription+'\\nArea: '+parsed.data.area+'\\nSelected category: '+(parsed.data.categoryHint||'not yet known')}]}],
+    generationConfig:{responseMimeType:'application/json',responseSchema:geminiSchema,maxOutputTokens:850,temperature:0.2}
+   }),cache:'no-store',signal:AbortSignal.timeout(9000)
+  }):await openaiRequest();
+  // Upstream Gemini capacity errors are common; use the already configured OpenAI key
+  // only on failure. Never send both requests when Gemini succeeds.
+  if(!res.ok&&usingGemini&&openaiKey){
+   console.warn('JiTap Gemini unavailable; attempting OpenAI fallback',{status:res.status});
+   responseProvider='openai';
+   res=await openaiRequest();
+  }
   if(!res.ok){
    // API error types are safe to log; never log customer prompts, keys or full response bodies.
    let errorType='unknown',errorCode='unknown';
    try{const diagnostic=await res.json() as {error?:{type?:string;code?:string}};errorType=String(diagnostic.error?.type||'unknown').slice(0,90);errorCode=String(diagnostic.error?.code||'unknown').slice(0,90)}catch{}
-   console.error('JiTap AI classification request unsuccessful',{provider:usingGemini?'gemini':'openai',status:res.status,type:errorType,code:errorCode});
+   console.error('JiTap AI classification request unsuccessful',{provider:responseProvider,status:res.status,type:errorType,code:errorCode});
    return answer({error:'AI classification temporarily unavailable'},503);
   }
   const result=await res.json() as {output?:{content?:{type?:string;text?:string}[]}[];candidates?:{content?:{parts?:{text?:string}[]}}[]};
-  const text=usingGemini?result.candidates?.[0]?.content?.parts?.map(part=>part.text||'').join(''):result.output?.flatMap(item=>item.content||[]).find(item=>item.type==='output_text')?.text;
+  const text=responseProvider==='gemini'?result.candidates?.[0]?.content?.parts?.map(part=>part.text||'').join(''):result.output?.flatMap(item=>item.content||[]).find(item=>item.type==='output_text')?.text;
   if(!text)return answer({error:'AI response unavailable'},503);
   let data:unknown;try{data=JSON.parse(text)}catch{return answer({error:'AI response invalid'},503)}
   const validated=parsedSchema.safeParse(data);if(!validated.success||!categorySlugs.includes(validated.data?.category||''))return answer({error:'AI category unavailable'},503);
