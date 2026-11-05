@@ -181,8 +181,10 @@ export function GuidedRequest(){
     if(category==='other-services'&&typeof data.category==='string'&&data.category!=='other-services'&&categories.some(x=>x.slug===data.category)){
      setCategory(data.category);setAiQuestions(data.questions);setAiResolvedDescription(description.trim());setAnswers({});return;
     }
-    if(data.category===category&&Array.isArray(data.questions)&&data.questions.length>0){
+    if(data.category===category){
      setAiQuestions(data.questions);setAiResolvedDescription(description.trim());setAnswers({});
+    }else{
+     throw new Error('AI returned a different service category');
     }
    }catch{if(!cancelled)setAiError(true)}
    finally{if(!cancelled)setAiBusy(false)}
