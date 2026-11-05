@@ -1,5 +1,5 @@
 'use client';
-import {useCallback,useEffect,useMemo,useState} from 'react';
+import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {Copy,ExternalLink,RefreshCw,MessageSquare,UserRoundCheck,AlertCircle} from 'lucide-react';
 
 type Provider={id:string;business_name:string;service_categories:string[];service_areas:string[];base_area:string|null};
@@ -63,6 +63,8 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
  const [busy,setBusy]=useState(false);
  const [feedback,setFeedback]=useState('');
  const [loading,setLoading]=useState(true);
+ const onChangedRef=useRef(onChanged);
+ onChangedRef.current=onChanged;
  const load=useCallback(async()=>{
   const res=await fetch('/api/coordinator/workflow?caseId='+encodeURIComponent(caseItem.id),{cache:'no-store'});
   if(!res.ok)throw new Error('Unable to load workflow');
@@ -74,6 +76,14 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
   setLoading(true);setFeedback('');
   load().catch(()=>{if(alive)setFeedback('Unable to load provider assignments.')}).finally(()=>{if(alive)setLoading(false)});
   return()=>{alive=false};
+ },[load]);
+ // Refresh active requests so incoming provider replies show in SOD without a page reload.
+ useEffect(()=>{
+  const interval=window.setInterval(()=>{
+   if(document.visibilityState!=='visible')return;
+   load().then(()=>onChangedRef.current()).catch(()=>{});
+  },30000);
+  return()=>window.clearInterval(interval);
  },[load]);
  const accepted=assignments.find(x=>x.state==='accepted');
  const acceptedName=providers.find(p=>p.id===accepted?.provider_id)?.business_name;
