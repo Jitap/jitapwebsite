@@ -505,22 +505,8 @@ body{color:#232c49}
 }
 @media(prefers-reduced-motion:reduce){.ref-category-card,.ref-task-card{transition:none}}
 
-/* AI-led service intake: do not reveal generic question cards while analysis is pending. */
-.jt-ai-intake-loading{min-height:270px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:13px;text-align:center;padding:32px 20px;color:#103349;border:1px solid #d9e9e6;border-radius:22px;background:linear-gradient(145deg,#f5fcfa,#f8fbff)}
-.jt-ai-intake-loading>svg{color:#159f78}
-.jt-ai-intake-loading h2{margin:2px 0 0;font-size:clamp(20px,2.5vw,27px);line-height:1.2}
-.jt-ai-intake-loading p{margin:0;max-width:350px;color:#566a76;line-height:1.55}
-.jt-ai-intake-spinner{width:36px;height:36px;border-radius:50%;border:3px solid #d4ece6;border-top-color:#139e7b;animation:jt-ai-intake-spin .85s linear infinite}
-.jt-ai-intake-loading button{border:1px solid #0a6958;border-radius:999px;padding:10px 19px;color:#075c4d;background:#fff;font-weight:700;cursor:pointer}
-.jt-ai-intake-loading button:hover{background:#eaf7f3}
-@keyframes jt-ai-intake-spin{to{transform:rotate(360deg)}}
-@media(prefers-reduced-motion:reduce){.jt-ai-intake-spinner{animation:none}}
-
-/* JiTap signal-brand AI loading animation: rotating ring and gentle pulse. */
-.jt-ai-signal-stage{position:relative;display:grid;place-items:center;width:190px;height:190px;isolation:isolate;flex:none}
-.jt-ai-signal-orbit{position:absolute;inset:3px;border-radius:50%;border:11px solid #edf0ee;border-top-color:#c9ecd8;border-right-color:#27bb74;animation:jt-ai-signal-turn 2.2s linear infinite}
-.jt-ai-signal-icon{position:relative;z-index:1;width:173px;height:130px;object-fit:contain;mix-blend-mode:multiply;animation:jt-ai-signal-breathe 2.2s ease-in-out infinite;will-change:transform}
-@keyframes jt-ai-signal-turn{to{transform:rotate(360deg)}}
-@keyframes jt-ai-signal-breathe{0%,100%{transform:scale(.92)}50%{transform:scale(1.035)}}
-@media(prefers-reduced-motion:reduce){.jt-ai-signal-orbit,.jt-ai-signal-icon{animation:none}.jt-ai-signal-icon{will-change:auto}}
-@media(max-width:520px){.jt-ai-signal-stage{width:165px;height:165px}.jt-ai-signal-icon{width:151px;height:113px}.jt-ai-signal-orbit{border-width:9px}}
+/* Minimal branded AI intake loading: no overlay, copy, or orbit. */
+.jt-ai-intake-loading{display:flex;align-items:center;justify-content:center;min-height:118px;padding:18px 0;border:0;background:transparent}
+.jt-ai-intake-loading .jt-ai-signal-icon{display:block;width:72px;height:54px;object-fit:contain;transform-origin:center;animation:jt-ai-icon-rotate 1.65s linear infinite}
+@keyframes jt-ai-icon-rotate{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.jt-ai-intake-loading .jt-ai-signal-icon{animation:none}}
