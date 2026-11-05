@@ -53,3 +53,14 @@
  }
  .coordinator-layout{align-items:stretch}
 }
+
+.coordinator-contact-summary{background:#f6fbf9;border:1px solid #d3e9df;border-radius:13px;padding:14px;margin:12px 0 18px}
+.coordinator-contact-summary h3{margin:0 0 12px}
+.coordinator-contact-summary dl{display:grid;grid-template-columns:110px minmax(0,1fr);gap:9px;margin:0;padding:0;border:0}
+.coordinator-contact-summary dt{font-size:12px;color:#5e7580;font-weight:700}
+.coordinator-contact-summary dd{font-size:13px;overflow-wrap:anywhere}
+.coordinator-provider-contact{border:1px dashed #b4d6c8;padding:13px;border-radius:11px;margin:12px 0;background:#fafffc}
+.coordinator-provider-contact h4{margin:2px 0 10px;font-size:14px}
+.coordinator-provider-contact .coordinator-check{display:flex;flex-direction:row;gap:9px;align-items:flex-start;font-weight:500}
+.coordinator-provider-contact .coordinator-check input{width:16px;min-width:16px;height:16px}
+@media(max-width:580px){.coordinator-contact-summary dl{grid-template-columns:90px minmax(0,1fr)}}
