@@ -43,7 +43,7 @@ export async function POST(req:NextRequest){
  const cfg=authConfig();
  if(body.action==='send'){
   try{
-   const res=await fetch(cfg.url+'/auth/v1/otp',{method:'POST',headers:{apikey:cfg.anon,'Content-Type':'application/json'},body:JSON.stringify({email,create_user:true,redirect_to:'https://jitap.app/coordinator',data:{}}),cache:'no-store',signal:AbortSignal.timeout(10000)});
+   const res=await fetch(cfg.url+'/auth/v1/otp?redirect_to='+encodeURIComponent('https://jitap.app/coordinator'),{method:'POST',headers:{apikey:cfg.anon,'Content-Type':'application/json'},body:JSON.stringify({email,create_user:true}),cache:'no-store',signal:AbortSignal.timeout(10000)});
    if(!res.ok)console.warn('Coordinator OTP provider error',{status:res.status});
   }catch{console.warn('Coordinator OTP transport failed')}
   return reply(generic);
