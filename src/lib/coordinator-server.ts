@@ -1,7 +1,7 @@
 import 'server-only';
 import {NextRequest,NextResponse} from 'next/server';
 
-const URL=process.env.SUPABASE_URL?.replace(/\/$/,'');
+const SUPABASE_BASE_URL=process.env.SUPABASE_URL?.replace(/\/$/,'');
 const SECRET=process.env.SUPABASE_SERVICE_ROLE_KEY;
 const ANON=process.env.SUPABASE_ANON_KEY;
 export const accessCookie='jitap_coordinator_access';
@@ -18,8 +18,8 @@ export function validOrigin(request:NextRequest){
  }catch{return false}
 }
 export async function supabasePrivate<T>(path:string,init:RequestInit={}):Promise<T>{
- if(!URL||!SECRET)throw new Error('Coordinator database not configured');
- const response=await fetch(URL+'/rest/v1/'+path,{
+ if(!SUPABASE_BASE_URL||!SECRET)throw new Error('Coordinator database not configured');
+ const response=await fetch(SUPABASE_BASE_URL+'/rest/v1/'+path,{
   ...init,headers:{apikey:SECRET,Authorization:'Bearer '+SECRET,
    'Content-Type':'application/json',...init.headers},
   cache:'no-store',signal:AbortSignal.timeout(12000)
@@ -47,5 +47,5 @@ export async function requireCoordinator(req:NextRequest):Promise<Staff|null>{
 }
 export function authConfig(){
  if(!URL||!ANON||!SECRET)throw new Error('Coordinator authentication not configured');
- return {url:URL,anon:ANON};
+ return {url:SUPABASE_BASE_URL,anon:ANON};
 }
