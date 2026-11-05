@@ -130,9 +130,7 @@ export function GuidedRequest(){
  },[]);
  const [aiQuestions,setAiQuestions]=useState<Question[]|null>(null);
  const [aiBusy,setAiBusy]=useState(false);
- const [aiError,setAiError]=useState(false);
- const [aiResolvedDescription,setAiResolvedDescription]=useState('');
- const [allowStandard,setAllowStandard]=useState(false);
+ const [aiResolvedKey,setAiResolvedKey]=useState('');
  const [hydrated,setHydrated]=useState(false);
  const understood=useMemo(()=>understandJob(description),[description]);
  const context=understood&&understood.category===category?understood:null;
@@ -149,9 +147,9 @@ export function GuidedRequest(){
  const validDate=preferredDate>=clock.date&&preferredDate<=furthestDate(clock.date);
  const validTime=preferredTimes.some(([time])=>time===preferredTime)&&!(preferredDate===clock.date&&Number(preferredTime.slice(0,2))*60+Number(preferredTime.slice(3,5))<=clock.minutes);
  const stageNames:string[]=category==='cleaning'?['Need','Time','Total','Contact']:[...questions.map((q,i)=>q.id==='timing'?'Time':q.id==='screenSize'?'TV size':q.id==='wallType'?'Wall':q.id==='bracket'?'Bracket':q.id==='frequency'?'Frequency':q.id==='size'?'Space':q.id==='cleanType'?'Type':i===0?'Need':'Details'),'Matches','Contact'];
- const shouldAwaitAI=hydrated&&stage===0&&!ready&&!showMatches&&!tvMount&&!context&&category!=='cleaning'&&category!=='moving'&&description.trim().length>=8&&!allowStandard;
- const aiWaiting=!hydrated||(shouldAwaitAI&&(aiBusy||(!aiError&&aiResolvedDescription!==description.trim())));
- const aiFailed=shouldAwaitAI&&aiError&&!aiBusy;
+ const aiRequestKey=category+'|'+area+'|'+description.trim();
+ const shouldAwaitAI=hydrated&&stage===0&&!ready&&!showMatches&&!tvMount&&!context&&category!=='cleaning'&&category!=='moving'&&description.trim().length>=8;
+ const aiWaiting=!hydrated||(shouldAwaitAI&&aiResolvedKey!==aiRequestKey);
  const label=tvMount?'TV Mounting':context?({ 'fan-repair':'Fan Repair','socket-repair':'Electrical Socket Repair','tv-repair':'TV Repair','microwave-repair':'Microwave Repair','computer-electronics':'Electronics Service','vehicle-exhaust':'Vehicle Exhaust','photography':'Photography','vehicle-mechanic':'Vehicle Mechanic' } as Record<string,string>)[context.subcategory]||categories.find(x=>x.slug===category)?.name||'Local service':categories.find(x=>x.slug===category)?.name||'Local service';
  const finished=()=>{const details=category==='cleaning'
  ? cleaningLineItems.map(item=>item.label+' x '+item.quantity+' '+item.unit+(item.quantity===1?'':'s')+' (reference '+money(item.price*item.quantity)+')').join('; ')+'; Reference estimate: '+money(cleaningTotal)+' (not a confirmed quote)'
@@ -160,11 +158,10 @@ export function GuidedRequest(){
  function skip(){if(onTime)return;if(stage>=questions.length-1)finished();else setStage(n=>n+1)}
  useEffect(()=>{
   // Tailor the job brief while still at the first question. Never interrupt an in-progress questionnaire.
-  if(ready||showMatches||stage!==0||tvMount||context||category==='cleaning'||category==='moving'||description.trim().length<8||(aiQuestions?.length&&aiResolvedDescription===description.trim())){
+  if(ready||showMatches||stage!==0||tvMount||context||category==='cleaning'||category==='moving'||description.trim().length<8||aiResolvedKey===category+'|'+area+'|'+description.trim()){
    setAiBusy(false);return;
   }
   setAiQuestions(null);
-  setAiError(false);
   setAiBusy(true);
   let cancelled=false;
   const controller=new AbortController();
@@ -179,18 +176,18 @@ export function GuidedRequest(){
     if(!data.ok||!Array.isArray(data.questions)||!data.questions.length)throw new Error('No tailored questions returned');
     // Only free-text/Other Services may be reclassified. Never silently override a service chosen by the customer.
     if(category==='other-services'&&typeof data.category==='string'&&data.category!=='other-services'&&categories.some(x=>x.slug===data.category)){
-     setCategory(data.category);setAiQuestions(data.questions);setAiResolvedDescription(description.trim());setAnswers({});return;
+     setCategory(data.category);setAiQuestions(data.questions);setAiResolvedKey(data.category+'|'+area+'|'+description.trim());setAnswers({});return;
     }
     if(data.category===category){
      setAiQuestions(data.questions);setAiResolvedDescription(description.trim());setAnswers({});
     }else{
      throw new Error('AI returned a different service category');
     }
-   }catch{if(!cancelled)setAiError(true)}
+   }catch{if(!cancelled){setAiQuestions(null);setAiResolvedKey(category+'|'+area+'|'+description.trim());}}
    finally{if(!cancelled)setAiBusy(false)}
   },650);
   return ()=>{cancelled=true;clearTimeout(timer);controller.abort()};
- },[description,category,area,ready,showMatches,stage,tvMount,context,aiResolvedDescription]);
+ },[description,category,area,ready,showMatches,stage,tvMount,context,aiResolvedKey]);
  if(category==='moving')return <MovingRequest/>;
  return <div className="th-request-flow">
   <div className="container th-request-layout">
@@ -198,7 +195,7 @@ export function GuidedRequest(){
    {ready?<div className="th-request-final"><div className="jt-segment-progress th-request-stage-progress jt-named-progress" role="progressbar" aria-label="Service request progress" aria-valuemin={1} aria-valuemax={stageNames.length} aria-valuenow={stageNames.length}>{stageNames.map((name,index)=><div key={name+'-'+index} className="jt-progress-unit"><span className="is-active"/><small>{name}</small></div>)}</div><div className="th-request-final-title"><span className="th-overline">FINAL STEP</span><h2>How can JiTap reach you, and where is the job?</h2><p>Share your mobile number and choose the service location before submitting your request.</p><p className="jt-request-schedule"><strong>Preferred time:</strong> {preferredDate} · {preferredTimes.find(([time])=>time===preferredTime)?.[1]} EAT</p><button type="button" onClick={()=>setReady(false)}><ChevronLeft size={18}/> Edit job details</button></div><IntakeForm kind="request" initialCategory={category} initialArea={area} initialTiming={answers.timing==="today"||answers.timing==="this-week"?answers.timing:"flexible"} initialDescription={finalDescription} initialPreferredDate={preferredDate} initialPreferredTime={preferredTime}/></div>:showMatches?<div className="th-request-final jt-matches-wrap"><div className="jt-segment-progress th-request-stage-progress jt-named-progress" role="progressbar" aria-label="Service request progress" aria-valuemin={1} aria-valuemax={stageNames.length} aria-valuenow={questions.length+1}>{stageNames.map((name,index)=><div key={name+'-'+index} className="jt-progress-unit"><span className={index<=questions.length?'is-active':''}/><small>{name}</small></div>)}</div><button type="button" className="jt-profile-back" onClick={()=>setShowMatches(false)}>← Edit service brief</button>{category==='cleaning'&&<section className="jt-cleaning-total" aria-label="Cleaning reference total"><div className="jt-cleaning-total-head"><div><span className="th-overline">YOUR CLEANING ESTIMATE</span><h2>Review your total</h2></div><strong>{money(cleaningTotal)}</strong></div><div className="jt-cleaning-total-lines">{cleaningLineItems.map(item=><div key={item.value}><span>{item.label} <small>× {item.quantity} {item.unit}{item.quantity===1?'':'s'}</small></span><strong>{money(item.price*item.quantity)}</strong></div>)}</div><p>Reference estimate only. JiTap will confirm availability, scope and the final quote with a cleaner. Extra hours or supplies may affect the price.</p></section>}<MatchedFundis category={category} area={area} specialty={tvMount?'tv-mounting':context?.subcategory} onQuotes={()=>setReady(true)}/></div>:
    <div className="th-questions" role="region" aria-label="Service request questions"><div className="th-question-nav"><button type="button" onClick={()=>stage>0?setStage(n=>n-1):window.location.assign('/services')} aria-label="Back"><ArrowLeft size={20}/></button><div><strong>{label}</strong><span>{stage+1} of {questions.length} · Tell us about your job</span></div><Link href="/" aria-label="Close questionnaire"><X size={20}/></Link></div>
     <div className="jt-segment-progress th-request-segments jt-named-progress" role="progressbar" aria-label="Service brief progress" aria-valuemin={1} aria-valuemax={stageNames.length} aria-valuenow={stage+1}>{stageNames.map((name,index)=><div className="jt-progress-unit" key={name+'-'+index}><span className={index<=stage?'is-active':''}/><small className={index===stage?'is-current':''}>{name}</small></div>)}</div>
-    <div className="th-question-body"><div className="th-edit-brief"><label htmlFor="brief">Your description</label><textarea id="brief" value={description} rows={2} onChange={e=>{const next=e.target.value;setDescription(next);const inferred=inferService(next);if(category==='other-services'&&inferred&&inferred!=='other-services'){setCategory(inferred);setStage(0);setAnswers({});setAiQuestions(null)}}} placeholder="e.g. my sink is leaking in Nyali"/></div><label className="th-question-area" htmlFor="areaSelect">Service area <select id="areaSelect" value={area} onChange={e=>setArea(e.target.value)}>{areas.map(a=><option key={a}>{a}</option>)}</select></label>{aiWaiting?<div className="jt-ai-intake-loading" role="status" aria-live="polite"><span className="jt-ai-signal-stage" aria-hidden="true"><span className="jt-ai-signal-orbit"/><img className="jt-ai-signal-icon" src="/images/jitap-signal-loader.svg" alt="" width={200} height={150}/></span><h2>JiTap is understanding your request…</h2><p>Preparing questions specific to the help you need.</p></div>:aiFailed?<div className="jt-ai-intake-loading" role="alert"><h2>JiTap couldn't prepare your questions</h2><p>Check your connection or choose to continue using standard questions.</p><button type="button" onClick={()=>{setAiError(false);setAiResolvedDescription('');setDescription(s=>s+' ');}}>Try again</button><button type="button" onClick={()=>setAllowStandard(true)}>Use standard questions</button></div>:<><h2>{question.title}</h2>{question.hint&&<p className="th-question-hint">{question.hint}</p>}{onTime?<div className="jt-time-picker">
+    <div className="th-question-body"><div className="th-edit-brief"><label htmlFor="brief">Your description</label><textarea id="brief" value={description} rows={2} onChange={e=>{const next=e.target.value;setDescription(next);const inferred=inferService(next);if(category==='other-services'&&inferred&&inferred!=='other-services'){setCategory(inferred);setStage(0);setAnswers({});setAiQuestions(null)}}} placeholder="e.g. my sink is leaking in Nyali"/></div><label className="th-question-area" htmlFor="areaSelect">Service area <select id="areaSelect" value={area} onChange={e=>setArea(e.target.value)}>{areas.map(a=><option key={a}>{a}</option>)}</select></label>{aiWaiting?<div className="jt-ai-intake-loading" role="status" aria-live="polite" aria-label="JiTap is preparing your service questions"><img className="jt-ai-signal-icon" src="/images/jitap-signal-loader.svg" alt="" width={72} height={72}/></div><><h2>{question.title}</h2>{question.hint&&<p className="th-question-hint">{question.hint}</p>}{onTime?<div className="jt-time-picker">
  <h3>Preferred date</h3>
  <div className="jt-date-options" role="group" aria-label="Preferred service date">{days.map((day,i)=><button type="button" key={day.value} className={'jt-date-chip'+(preferredDate===day.value?' selected':'')} aria-pressed={preferredDate===day.value} onClick={()=>{setPreferredDate(day.value);setPreferredTime('');setClock(nairobiNow())}}><small>{i===0?'Today':i===1?'Tomorrow':day.day}</small><strong>{day.number}</strong><small>{day.month}</small></button>)}</div>
  <label className="jt-later-date" htmlFor="jt-preferred-date">Or choose another date <input id="jt-preferred-date" type="date" min={clock.date} max={furthestDate(clock.date)} value={preferredDate} onChange={e=>{setPreferredDate(e.target.value);setPreferredTime('');setClock(nairobiNow())}}/></label>
@@ -222,7 +219,7 @@ export function GuidedRequest(){
  <div className="jt-cleaning-inline-total"><span>Reference total</span><strong>{money(cleaningTotal)}</strong></div>
  <p className="jt-mamafua-guidance">Final price is confirmed by JiTap and the cleaner. Visit minimums, extra hours or materials may change the quote.</p>
  </div>:<div className="th-choice-list">{question.options.map(x=><button key={x.value} type="button" className={'th-choice'+(answer===x.value?' selected':'')} aria-pressed={answer===x.value} onClick={()=>setAnswers(y=>({...y,[question.id]:x.value}))}><span className="th-radio-indicator"/><span><strong>{x.label}</strong>{x.hint&&<small>{x.hint}</small>}</span></button>)}</div>}</>}</div>
-    {!aiWaiting&&!aiFailed&&<div className="th-question-actions">{!onTime&&!onMamaFua&&<button type="button" className="th-skip" onClick={skip}>Skip</button>}<button type="button" className="th-next" onClick={next} disabled={onTime?(!validDate||!validTime):!answer}> {onTime?'Continue':onMamaFua?'Continue':'Next'} <ArrowRight size={18}/></button></div>}
+    {!aiWaiting&&<div className="th-question-actions">{!onTime&&!onMamaFua&&<button type="button" className="th-skip" onClick={skip}>Skip</button>}<button type="button" className="th-next" onClick={next} disabled={onTime?(!validDate||!validTime):!answer}> {onTime?'Continue':onMamaFua?'Continue':'Next'} <ArrowRight size={18}/></button></div>}
    </div>}
   </div>
  </div>;
