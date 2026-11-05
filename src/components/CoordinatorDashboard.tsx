@@ -47,6 +47,28 @@ export function CoordinatorDashboard(){
   let mounted=true;
   (async()=>{
    try{
+    // Supabase may use an email magic link instead of a numeric OTP.
+    // Remove the access token from the address bar immediately and exchange it
+    // for JiTap's secure, HttpOnly staff session cookie.
+    const hash=window.location.hash;
+    const params=hash.startsWith('#')?new URLSearchParams(hash.slice(1)):null;
+    const token=params?.get('access_token');
+    if(hash&&(token||params?.has('error'))){
+     window.history.replaceState(null,'',window.location.pathname+window.location.search);
+    }
+    if(token){
+     const linked=await fetch('/api/coordinator/auth',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'link',accessToken:token}),
+      cache:'no-store'
+     });
+     const payload=await linked.json();
+     if(!mounted)return;
+     if(linked.ok){setStaff(payload.staff);await load();return}
+     setAuthMessage(payload.error||'This sign-in link could not be verified. Request a new email.');
+    }else if(params?.has('error')){
+     setAuthMessage('This sign-in link expired or was rejected. Request a new email.');
+    }
     const res=await fetch('/api/coordinator/auth',{cache:'no-store'});
     if(!mounted)return;
     if(res.ok){
@@ -65,7 +87,7 @@ export function CoordinatorDashboard(){
    const res=await fetch('/api/coordinator/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,email,token:code})});
    const body=await res.json();
    if(!res.ok){setAuthMessage(body.error||'Sign-in could not be completed');return}
-   if(action==='send'){setSent(true);setAuthMessage('If this email is authorized, a sign-in code has been sent.')}
+   if(action==='send'){setSent(true);setAuthMessage('If this email is authorized, check your inbox for a JiTap sign-in link or verification code.')}
    else {setStaff(body.staff);setSent(false);setCode('');await load()}
   }catch{setAuthMessage('Could not reach the sign-in service')}
   finally{setLogging(false)}
