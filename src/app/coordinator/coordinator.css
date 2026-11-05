@@ -64,3 +64,7 @@
 .coordinator-provider-contact .coordinator-check{display:flex;flex-direction:row;gap:9px;align-items:flex-start;font-weight:500}
 .coordinator-provider-contact .coordinator-check input{width:16px;min-width:16px;height:16px}
 @media(max-width:580px){.coordinator-contact-summary dl{grid-template-columns:90px minmax(0,1fr)}}
+
+.coordinator-sms-unsent{font-size:12px;font-weight:750;color:#965400;background:#fff7e6;border:1px solid #f0d8a0;border-radius:9px;padding:10px 12px}
+.coordinator-update-actions .coordinator-send-sms{background:#087b58;color:#fff;border-color:#087b58;font-weight:800}
+.coordinator-update-actions .coordinator-send-sms:hover:not(:disabled){background:#075c45;color:#fff}
