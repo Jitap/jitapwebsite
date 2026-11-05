@@ -44,8 +44,20 @@ export async function POST(req:NextRequest){
  if(body.action==='send'){
   try{
    const res=await fetch(cfg.url+'/auth/v1/otp?redirect_to='+encodeURIComponent('https://jitap.app/coordinator'),{method:'POST',headers:{apikey:cfg.anon,'Content-Type':'application/json'},body:JSON.stringify({email,create_user:true}),cache:'no-store',signal:AbortSignal.timeout(10000)});
-   if(!res.ok)console.warn('Coordinator OTP provider error',{status:res.status});
-  }catch{console.warn('Coordinator OTP transport failed')}
+   if(res.status===429){
+    console.warn('Coordinator sign-in email rate limited',{status:429});
+    const seconds=Number(res.headers.get('retry-after')||'');
+    const headers={'Retry-After':String(Number.isFinite(seconds)&&seconds>0?Math.min(seconds,3600):3600)};
+    return new Response(JSON.stringify({error:'Supabase has reached its email sending limit. Please try again later or configure custom SMTP for reliable JiTap staff sign-in.',code:'email_rate_limited'}),{status:429,headers:{'Content-Type':'application/json','Cache-Control':'no-store',...headers}});
+   }
+   if(!res.ok){
+    console.warn('Coordinator OTP provider error',{status:res.status});
+    return reply({error:'Supabase could not send the email. Please check the Auth email delivery settings.',code:'email_provider_unavailable'},503);
+   }
+  }catch{
+   console.warn('Coordinator OTP transport failed');
+   return reply({error:'The email service could not be reached. Please retry later.'},503);
+  }
   return reply(generic);
  }
  if(body.action==='verify'){
