@@ -179,7 +179,7 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
   <div className="coordinator-sms-health">
    <button disabled={checkingSms||busy} onClick={checkSmsDiagnostics}>{checkingSms?'Checking Wasiliana…':'Check Wasiliana setup (no SMS sent)'}</button>
    {smsDiagnostics&&<p role="status">{smsDiagnostics.ok?
-    'Wasiliana configuration detected. Sender: '+(smsDiagnostics.senderId||'not configured')+'. Balance must be checked in Wasiliana dashboard.':
+    'Wasiliana key and Sender ID are present in Vercel. Sender: '+(smsDiagnostics.senderId||'not configured')+'. App/key authorization is NOT verified. Balance must be checked in Wasiliana dashboard.':
     'Wasiliana setup incomplete: '+(smsDiagnostics.error||'Check the API key and Sender ID in Vercel.')}</p>}
   </div>
   <p className="coordinator-help">Step 1: Generate and save the message draft. Step 2: In the saved draft below, press <strong>Send SMS now</strong> to actually submit it to Wasiliana. Saving a draft alone does NOT send a text.</p>
