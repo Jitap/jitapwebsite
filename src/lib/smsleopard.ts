@@ -32,7 +32,9 @@ function deliveryResult(httpStatus:number,data:unknown):DeliveryResult{
  const first=recipients[0]&&typeof recipients[0]==='object'?recipients[0] as Record<string,unknown>:{};
  const id=typeof first.id==='string'?first.id:typeof result.id==='string'?result.id:undefined;
  const providerFailed=typeof first.status==='string'&&/^(failed|rejected|error)$/i.test(first.status);
- return {accepted:httpStatus>=200&&httpStatus<300&&result.success!==false&&!providerFailed,httpStatus,providerMessageId:id,errorCode:httpStatus>=200&&httpStatus<300?(providerFailed?'recipient_rejected':undefined):'provider_http_'+httpStatus};
+ const providerError=typeof result.message==='string'?result.message.toLowerCase():'';
+ const errorCode=httpStatus===404&&/sender id|sender_id|source|unrecognized sender/.test(providerError)?'sender_id_not_assigned':httpStatus===401?'invalid_credentials':httpStatus===402?'insufficient_balance':httpStatus===404?'provider_http_404':httpStatus>=400?'provider_http_'+httpStatus:undefined;
+ return {accepted:httpStatus>=200&&httpStatus<300&&result.success!==false&&!providerFailed,httpStatus,providerMessageId:id,errorCode:httpStatus>=200&&httpStatus<300?(providerFailed?'recipient_rejected':undefined):errorCode};
 }
 async function send(url:string,body:unknown):Promise<DeliveryResult>{
  if(process.env.JITAP_NOTIFICATIONS_ENABLED!=='true')throw new Error('notifications_disabled');
@@ -41,17 +43,17 @@ async function send(url:string,body:unknown):Promise<DeliveryResult>{
  return deliveryResult(response.status,data);
 }
 export async function sendJiTapSms(destination:string,message:string,mode:'automatic'|'coordinator'='automatic'):Promise<DeliveryResult>{
- const source=process.env.SMSLEOPARD_SENDER_ID?.trim();
+ const source=(mode==='coordinator'?process.env.JITAP_COORDINATOR_SMS_SENDER_ID:undefined)?.trim()||process.env.SMSLEOPARD_SENDER_ID?.trim();
  if(!source)throw new Error('sms_sender_id_missing');
  if(!message.trim()||message.length>600)throw new Error('invalid_sms_message');
  if(mode==='automatic'&&process.env.JITAP_NOTIFICATIONS_ENABLED!=='true')throw new Error('notifications_disabled');
  if(mode==='coordinator'&&process.env.JITAP_COORDINATOR_SMS_ENABLED!=='true')throw new Error('coordinator_sms_disabled');
- const url=new URL('https://api.smsleopard.com/v1/sms/send');
- url.searchParams.set('source',source);
- url.searchParams.set('message',message);
- url.searchParams.set('destination',normalizeKenyanMobile(destination));
- const response=await fetch(url.toString(),{
-  method:'GET',headers:{Authorization:credentials(),Accept:'application/json'},
+ // SMSLeopard's documented canonical request is POST with destination objects.
+ // Keep credentials and the customer phone out of URL/query strings and application logs.
+ const response=await fetch('https://api.smsleopard.com/v1/sms/send',{
+  method:'POST',
+  headers:{Authorization:credentials(),'Content-Type':'application/json',Accept:'application/json'},
+  body:JSON.stringify({source,message,destination:[{number:normalizeKenyanMobile(destination)}]}),
   cache:'no-store',signal:AbortSignal.timeout(10000)
  });
  const data:unknown=await response.json().catch(()=>null);
