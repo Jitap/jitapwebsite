@@ -77,7 +77,7 @@ export async function POST(req:NextRequest){
     :result.errorCode==='restricted_send_time'
      ?'SMSLeopard says sending is restricted at this time.'
     :'SMSLeopard returned HTTP '+(result.httpStatus||'unknown')+'. Run the read-only SMS diagnostics to check account balance and credentials.';
-  return reply({ok:false,attemptId:claim.attemptId,status:state,httpStatus:result.httpStatus||null,errorCode:result.errorCode||null,providerReason:result.providerReason||null,error},502);
+  return reply({ok:false,attemptId:claim.attemptId,status:state,httpStatus:result.httpStatus||null,errorCode:result.errorCode||null,providerReason:result.providerReason||null,error:result.providerReason?error+' SMSLeopard response: '+result.providerReason:error},502);
  }
  return reply({ok:true,attemptId:claim.attemptId,status:'submitted',message:'SMSLeopard accepted the submission. Handset delivery is not yet verified.'});
 }
