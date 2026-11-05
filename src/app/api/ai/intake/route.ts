@@ -1,5 +1,6 @@
 import {NextRequest,NextResponse} from 'next/server';
 import {z} from 'zod';
+import {createHash} from 'node:crypto';
 import {categories,areas} from '@/lib/data';
 
 export const runtime='nodejs';
@@ -13,12 +14,42 @@ const parsedSchema=z.object({
  questions:z.array(z.object({id:z.string().regex(/^[a-zA-Z][a-zA-Z0-9_]{1,30}$/),title:z.string().min(8).max(135),hint:z.string().max(170).optional(),options:z.array(optionSchema).min(2).max(6)})).max(2)
 });
 const buckets=new Map<string,{start:number,count:number}>();
+const responseCache=new Map<string,{expiresAt:number;payload:{ok:true;category:string;questions:z.infer<typeof parsedSchema>['questions']}}>();
+const CACHE_TTL_MS=20*60*1000;
+const CACHE_MAX=120;
+function cacheKey(description:string,category:string,area:string){
+ // Cache only short, non-personal service descriptions. Do not store raw prompts.
+ if(description.length>140||/\d|@|\+/.test(description))return null;
+ const normalized=description.toLowerCase().replace(/\s+/g,' ').trim();
+ return createHash('sha256').update(JSON.stringify([normalized,category,area])).digest('hex');
+}
+function cached(key:string){
+ const entry=responseCache.get(key);
+ if(!entry)return null;
+ if(entry.expiresAt<Date.now()){responseCache.delete(key);return null}
+ return entry.payload;
+}
+function saveCache(key:string,payload:{ok:true;category:string;questions:z.infer<typeof parsedSchema>['questions']}){
+ if(responseCache.size>=CACHE_MAX){
+  const first=responseCache.keys().next().value;
+  if(first)responseCache.delete(first);
+ }
+ responseCache.set(key,{expiresAt:Date.now()+CACHE_TTL_MS,payload});
+}
+function aiAnswer(payload:Record<string,unknown>,source:'model'|'cache',started:number){
+ const elapsed=Date.now()-started;
+ // Metrics are request-type/latency only; never log customer descriptions or contact details.
+ console.info('JiTap AI intake completed',{source,durationMs:elapsed});
+ return NextResponse.json(payload,{status:200,headers:{...headers,'X-JiTap-Intake-Source':source,'Server-Timing':'intake;dur='+elapsed}});
+}
+
 function answer(payload:Record<string,unknown>,status:number){return NextResponse.json(payload,{status,headers})}
 function allowed(req:NextRequest){
  const origin=req.headers.get('origin');if(!origin)return true;
  try{const host=req.headers.get('x-forwarded-host')||req.headers.get('host')||'';return origin===req.nextUrl.origin||origin==='https://'+host||origin==='https://www.jitap.app'}catch{return false}
 }
 export async function POST(req:NextRequest){
+ const started=Date.now();
  if(!allowed(req))return answer({error:'Invalid origin'},403);
  if(!req.headers.get('content-type')?.startsWith('application/json'))return answer({error:'JSON required'},415);
  const ip=(req.headers.get('x-vercel-forwarded-for')||req.headers.get('x-forwarded-for')||'unknown').split(',')[0].slice(0,100);
@@ -28,6 +59,11 @@ export async function POST(req:NextRequest){
  let raw:string;try{raw=await req.text();if(raw.length>1500)return answer({error:'Request too long'},413)}catch{return answer({error:'Invalid request'},400)}
  let request:unknown;try{request=JSON.parse(raw)}catch{return answer({error:'Invalid JSON'},400)}
  const parsed=inputSchema.safeParse(request);if(!parsed.success||!areas.includes(parsed.data?.area||'')||(parsed.data?.categoryHint&&!categorySlugs.includes(parsed.data.categoryHint)))return answer({error:'Invalid service request'},422);
+ const key=cacheKey(parsed.data.description,parsed.data.categoryHint||'',parsed.data.area);
+ if(key){
+  const found=cached(key);
+  if(found)return aiAnswer(found,'cache',started);
+ }
  const geminiKey=process.env.GEMINI_API_KEY;
  const openaiKey=process.env.OPENAI_API_KEY;
  // Prefer a Gemini free-tier project. Existing OpenAI remains an optional fallback
@@ -119,6 +155,8 @@ export async function POST(req:NextRequest){
   const validated=parsedSchema.safeParse(data);if(!validated.success||!categorySlugs.includes(validated.data?.category||''))return answer({error:'AI category unavailable'},503);
   const category=validated.data.category;
   const questions=validated.data.questions.filter(q=>q.id!=='timing'&&q.id!=='cleanServices'&&q.options.every(o=>o.value.trim()&&o.label.trim())); 
-  return answer({ok:true,category,questions:questions.slice(0,2) },200);
+  const payload={ok:true as const,category,questions:questions.slice(0,2)};
+  if(key&&payload.questions.length>0)saveCache(key,payload);
+  return aiAnswer(payload,'model',started);
  }catch{console.error('JiTap AI classification transport failure');return answer({error:'AI temporarily unavailable'},503)}
 }
