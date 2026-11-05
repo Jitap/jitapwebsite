@@ -40,11 +40,12 @@ async function send(url:string,body:unknown):Promise<DeliveryResult>{
  const data:unknown=await response.json().catch(()=>null);
  return deliveryResult(response.status,data);
 }
-export async function sendJiTapSms(destination:string,message:string):Promise<DeliveryResult>{
+export async function sendJiTapSms(destination:string,message:string,mode:'automatic'|'coordinator'='automatic'):Promise<DeliveryResult>{
  const source=process.env.SMSLEOPARD_SENDER_ID?.trim();
  if(!source)throw new Error('sms_sender_id_missing');
  if(!message.trim()||message.length>600)throw new Error('invalid_sms_message');
- if(process.env.JITAP_NOTIFICATIONS_ENABLED!=='true')throw new Error('notifications_disabled');
+ if(mode==='automatic'&&process.env.JITAP_NOTIFICATIONS_ENABLED!=='true')throw new Error('notifications_disabled');
+ if(mode==='coordinator'&&process.env.JITAP_COORDINATOR_SMS_ENABLED!=='true')throw new Error('coordinator_sms_disabled');
  const url=new URL('https://api.smsleopard.com/v1/sms/send');
  url.searchParams.set('source',source);
  url.searchParams.set('message',message);
