@@ -168,6 +168,7 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
    const p=providers.find(p=>p.id===a.provider_id);
    return <div className="coordinator-assignment" key={a.id}>
     <strong>{p?.business_name||'Provider '+a.provider_id}</strong><span className="coordinator-status">{a.state.replaceAll('_',' ')}</span>
+    <small>Private SMS contact: {providerSmsContacts.find(x=>x.providerId===a.provider_id)?.enabled?'On file · '+providerSmsContacts.find(x=>x.providerId===a.provider_id)?.maskedPhone:'No consented SMS contact'}</small>
     {a.quoted_amount_kes!==null&&<small>Quoted: KES {Number(a.quoted_amount_kes).toLocaleString('en-KE')}</small>}
     <label>Provider response
      <select disabled={busy||['completed','closed','cancelled'].includes(caseItem.status)} value={responses[a.id]||a.state} onChange={e=>setResponses(s=>({...s,[a.id]:e.target.value}))}>
@@ -191,8 +192,9 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
       </>}
     </div>
     {smsAttempts.filter(s=>s.assignment_id===a.id).map(s=><small key={s.id}>Provider SMS: {s.state} · {new Date(s.requested_at).toLocaleString('en-KE')}</small>)}
-    {!smsAttempts.some(s=>s.assignment_id===a.id)&&<button disabled={busy||!smsEnabled||!smsReady||!providerSmsContacts.some(p=>p.providerId===a.provider_id&&p.enabled)||!['proposed','contacted','needs_clarification','quote_requested'].includes(a.state)} onClick={()=>sendSms('provider',a.id)}>Send provider SMS via Wasiliana</button>}
+    {!smsAttempts.some(s=>s.assignment_id===a.id)&&<button disabled={busy||!smsEnabled||!smsReady||!providerDrafts.some(d=>d.assignment_id===a.id)||!providerSmsContacts.some(p=>p.providerId===a.provider_id&&p.enabled)||!['proposed','contacted','needs_clarification','quote_requested'].includes(a.state)} onClick={()=>sendSms('provider',a.id)}>Send provider SMS via Wasiliana</button>}
     {!providerSmsContacts.some(p=>p.providerId===a.provider_id&&p.enabled)&&<small>Provider SMS requires documented opt-in and a private mobile number.</small>}
+    {!providerDrafts.some(d=>d.assignment_id===a.id)&&!smsAttempts.some(s=>s.assignment_id===a.id)&&<small>Save the provider BUZZ draft to unlock SMS sending.</small>}
     {!smsEnabled&&<small>Coordinator SMS sending is not activated.</small>}
    </div>
   })}</div>:<p className="coordinator-help">No provider proposed yet. Requests without a confirmed provider remain available for manual sourcing.</p>}
