@@ -4,10 +4,11 @@ import {Copy,ExternalLink,RefreshCw,MessageSquare,UserRoundCheck,AlertCircle} fr
 
 type Provider={id:string;business_name:string;service_categories:string[];service_areas:string[];base_area:string|null};
 type Assignment={id:string;provider_id:string;state:string;quoted_amount_kes:number|null;notes:string|null;assigned_at:string;responded_at:string|null};
+type ProviderSmsDraft={id:string;assignment_id:string;message:string};
 type ProviderSmsContact={providerId:string;enabled:boolean;maskedPhone:string};
 type SmsAttempt={id:string;customer_update_id:string|null;assignment_id:string|null;recipient_kind:string;gateway?:string;state:string;requested_at:string;http_status:number|null;provider_message_id:string|null};
 type Update={id:string;kind:string;channel:'whatsapp'|'sms'|'phone';message:string;state:'draft'|'sent_manually'|'cancelled';created_at:string;sent_at:string|null};
-type Case={id:string;reference:string;category:string;description:string;area:string;phone:string;status:string;canContact:boolean;source_kind:string;name:string;locationLabel:string;notifyOptIn:boolean};
+type Case={id:string;reference:string;category:string;description:string;area:string;phone:string;status:string;canContact:boolean;source_kind:string;name:string;locationLabel:string;notifyOptIn:boolean;preferredDate?:string;preferredTime?:string};
 const responseStates=[['contacted','Contacted'],['accepted','Accepted'],['declined','Declined'],['needs_clarification','Needs clarification'],['quote_requested','Quote requested'],['quote_received','Quote received'],['cancelled','Cancelled']] as const;
 const updateKinds=[['request_received','Request received'],['provider_search','Searching for provider'],['provider_found','Provider found'],['quote_update','Quotation update'],['scheduled','Scheduled'],['progress','Job progress'],['completion','Completion'],['clarification','Clarification needed']] as const;
 function toKenyanWhatsApp(phone:string){
@@ -34,6 +35,8 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
  const [assignments,setAssignments]=useState<Assignment[]>([]);
  const [updates,setUpdates]=useState<Update[]>([]);
  const [smsAttempts,setSmsAttempts]=useState<SmsAttempt[]>([]);
+ const [providerDrafts,setProviderDrafts]=useState<ProviderSmsDraft[]>([]);
+ const [buzzText,setBuzzText]=useState<Record<string,string>>({});
  const [providerSmsContacts,setProviderSmsContacts]=useState<ProviderSmsContact[]>([]);
  const [isAdmin,setIsAdmin]=useState(false);
  const [newProviderPhone,setNewProviderPhone]=useState('');
@@ -58,7 +61,7 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
   const res=await fetch('/api/coordinator/workflow?caseId='+encodeURIComponent(caseItem.id),{cache:'no-store'});
   if(!res.ok)throw new Error('Unable to load workflow');
   const data=await res.json();
-  setProviders(data.providers||[]);setAssignments(data.assignments||[]);setUpdates(data.updates||[]);setSmsAttempts(data.smsAttempts||[]);setSmsEnabled(data.smsEnabled===true);setSmsReady(data.smsReady===true);setProviderSmsContacts(data.providerSmsContacts||[]);setIsAdmin(data.staffRole==='admin');
+  setProviders(data.providers||[]);setAssignments(data.assignments||[]);setUpdates(data.updates||[]);setSmsAttempts(data.smsAttempts||[]);setProviderDrafts(data.providerDrafts||[]);setSmsEnabled(data.smsEnabled===true);setSmsReady(data.smsReady===true);setProviderSmsContacts(data.providerSmsContacts||[]);setIsAdmin(data.staffRole==='admin');
  },[caseItem.id]);
  useEffect(()=>{
   let alive=true;
