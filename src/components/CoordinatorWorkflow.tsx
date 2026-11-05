@@ -4,6 +4,7 @@ import {Copy,ExternalLink,RefreshCw,MessageSquare,UserRoundCheck,AlertCircle} fr
 
 type Provider={id:string;business_name:string;service_categories:string[];service_areas:string[];base_area:string|null};
 type Assignment={id:string;provider_id:string;state:string;quoted_amount_kes:number|null;notes:string|null;assigned_at:string;responded_at:string|null};
+type ProviderSmsContact={providerId:string;enabled:boolean;maskedPhone:string};
 type SmsAttempt={id:string;customer_update_id:string|null;assignment_id:string|null;recipient_kind:string;state:string;requested_at:string;http_status:number|null;provider_message_id:string|null};
 type Update={id:string;kind:string;channel:'whatsapp'|'sms'|'phone';message:string;state:'draft'|'sent_manually'|'cancelled';created_at:string;sent_at:string|null};
 type Case={id:string;reference:string;category:string;description:string;area:string;phone:string;status:string;canContact:boolean;source_kind:string;name:string;locationLabel:string;notifyOptIn:boolean};
@@ -33,6 +34,11 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
  const [assignments,setAssignments]=useState<Assignment[]>([]);
  const [updates,setUpdates]=useState<Update[]>([]);
  const [smsAttempts,setSmsAttempts]=useState<SmsAttempt[]>([]);
+ const [providerSmsContacts,setProviderSmsContacts]=useState<ProviderSmsContact[]>([]);
+ const [isAdmin,setIsAdmin]=useState(false);
+ const [newProviderPhone,setNewProviderPhone]=useState('');
+ const [consentSource,setConsentSource]=useState('');
+ const [providerConsent,setProviderConsent]=useState(false);
  const [smsEnabled,setSmsEnabled]=useState(false);
  const [providerId,setProviderId]=useState('');
  const [providerNote,setProviderNote]=useState('');
@@ -49,7 +55,7 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
   const res=await fetch('/api/coordinator/workflow?caseId='+encodeURIComponent(caseItem.id),{cache:'no-store'});
   if(!res.ok)throw new Error('Unable to load workflow');
   const data=await res.json();
-  setProviders(data.providers||[]);setAssignments(data.assignments||[]);setUpdates(data.updates||[]);setSmsAttempts(data.smsAttempts||[]);setSmsEnabled(data.smsEnabled===true);
+  setProviders(data.providers||[]);setAssignments(data.assignments||[]);setUpdates(data.updates||[]);setSmsAttempts(data.smsAttempts||[]);setSmsEnabled(data.smsEnabled===true);setProviderSmsContacts(data.providerSmsContacts||[]);setIsAdmin(data.staffRole==='admin');
  },[caseItem.id]);
  useEffect(()=>{
   let alive=true;
@@ -72,6 +78,20 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
    if(!res.ok)throw new Error(data.error||'Could not save');
    await load();await onChanged();setFeedback(success);
   }catch(e){setFeedback(e instanceof Error?e.message:'Operation failed')}
+  finally{setBusy(false)}
+ }
+ async function saveProviderContact(){
+  if(!providerId||!providerConsent)return;
+  setBusy(true);setFeedback('');
+  try{
+   const res=await fetch('/api/coordinator/provider-contact',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+    providerId,phone:newProviderPhone,consentConfirmed:true,consentSource
+   })});
+   const data=await res.json();
+   if(!res.ok)throw new Error(data.error||'Provider contact was not saved');
+   setNewProviderPhone('');setConsentSource('');setProviderConsent(false);await load();
+   setFeedback('Private provider SMS contact saved with documented consent.');
+  }catch(e){setFeedback(e instanceof Error?e.message:'Could not save provider contact')}
   finally{setBusy(false)}
  }
  async function sendSms(recipientKind:'customer'|'provider',id:string){
@@ -111,6 +131,15 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
    </select>
   </label>
   {matches.length===0&&<p className="coordinator-help"><AlertCircle size={15}/> No verified provider category match confirmed. Use <strong>Needs sourcing</strong> for human intervention.</p>}
+  {providerId&&<p className="coordinator-help">Provider SMS contact: {providerSmsContacts.find(p=>p.providerId===providerId)?.enabled?'SMS consent recorded · '+providerSmsContacts.find(p=>p.providerId===providerId)?.maskedPhone:'No opted-in phone on file'}</p>}
+  {providerId&&isAdmin&&!providerSmsContacts.find(p=>p.providerId===providerId)?.enabled&&<div className="coordinator-provider-contact">
+   <h4>Private provider SMS onboarding</h4>
+   <p className="coordinator-help">Only enter a provider's number after the provider has agreed to JiTap SMS job alerts. This number remains private.</p>
+   <label>Provider mobile number<input inputMode="tel" autoComplete="off" placeholder="07XXXXXXXX" value={newProviderPhone} maxLength={25} onChange={e=>setNewProviderPhone(e.target.value)}/></label>
+   <label>Consent evidence<input placeholder="e.g. agreed during onboarding call on 5 Nov" value={consentSource} maxLength={300} onChange={e=>setConsentSource(e.target.value)}/></label>
+   <label className="coordinator-check"><input type="checkbox" checked={providerConsent} onChange={e=>setProviderConsent(e.target.checked)}/> I confirm the provider gave permission to receive JiTap SMS alerts.</label>
+   <button disabled={busy||!providerConsent||consentSource.trim().length<5||newProviderPhone.trim().length<10} onClick={saveProviderContact}>Save private SMS contact</button>
+  </div>}
   <input aria-label="Provider assignment note" maxLength={1000} value={providerNote} onChange={e=>setProviderNote(e.target.value)} placeholder="Private note for sourcing or proposed provider"/>
   <button disabled={busy||!providerId||caseItem.status==='incomplete'||['closed','completed','cancelled'].includes(caseItem.status)} onClick={()=>action({action:'assign_provider',providerId,note:providerNote},'Provider proposal saved')}>Assign selected provider</button>
   {assignments.length? <div className="coordinator-assignment-list">{assignments.map(a=>{
@@ -128,7 +157,8 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
     <input aria-label="Response notes" maxLength={1000} placeholder="Provider reply or clarification (private)" value={responseNotes[a.id]||''} onChange={e=>setResponseNotes(s=>({...s,[a.id]:e.target.value}))}/>
     <button disabled={busy||!responses[a.id]||responses[a.id]===a.state} onClick={()=>action({action:'provider_response',assignmentId:a.id,state:responses[a.id],quote:responses[a.id]==='quote_received'&&quote[a.id]!==''?Number(quote[a.id]):null,note:responseNotes[a.id]||''},'Provider response saved')}>Record provider response</button>
     {smsAttempts.filter(s=>s.assignment_id===a.id).map(s=><small key={s.id}>Provider SMS: {s.state} · {new Date(s.requested_at).toLocaleString('en-KE')}</small>)}
-    {!smsAttempts.some(s=>s.assignment_id===a.id)&&<button disabled={busy||!smsEnabled||!['proposed','contacted','needs_clarification','quote_requested'].includes(a.state)} onClick={()=>sendSms('provider',a.id)}>Send provider SMS</button>}
+    {!smsAttempts.some(s=>s.assignment_id===a.id)&&<button disabled={busy||!smsEnabled||!providerSmsContacts.some(p=>p.providerId===a.provider_id&&p.enabled)||!['proposed','contacted','needs_clarification','quote_requested'].includes(a.state)} onClick={()=>sendSms('provider',a.id)}>Send provider SMS</button>}
+    {!providerSmsContacts.some(p=>p.providerId===a.provider_id&&p.enabled)&&<small>Provider SMS requires documented opt-in and a private mobile number.</small>}
     {!smsEnabled&&<small>Coordinator SMS sending is not activated.</small>}
    </div>
   })}</div>:<p className="coordinator-help">No provider proposed yet. Requests without a confirmed provider remain available for manual sourcing.</p>}
@@ -139,13 +169,14 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
   <label>Channel<select value={channel} onChange={e=>setChannel(e.target.value as 'whatsapp'|'sms'|'phone')}><option value="whatsapp">WhatsApp (manual)</option><option value="sms">SMS via SMSLeopard</option><option value="phone">Phone call (log only)</option></select></label>
   <button className="coordinator-secondary" onClick={()=>setMessage(makeMessage(caseItem,kind,acceptedName))}>Generate update draft</button>
   <textarea rows={5} maxLength={1200} value={message} onChange={e=>setMessage(e.target.value)} placeholder="Write a factual update to the customer. Do not promise availability or a booking unless it is confirmed."/>
-  <button disabled={busy||message.trim().length<10||!caseItem.canContact} onClick={()=>action({action:'customer_update_draft',kind,channel,message},'Customer update draft saved')}>Save update draft</button>
+  <button disabled={busy||message.trim().length<10||!caseItem.canContact||(channel==='sms'&&message.length>600)} onClick={()=>action({action:'customer_update_draft',kind,channel,message},'Customer update draft saved')}>Save update draft</button>
+  {channel==='sms'&&message.length>600&&<p className="coordinator-help">SMS content must be 600 characters or fewer.</p>}
   {updates.length>0&&<div className="coordinator-updates">{updates.map(u=><div key={u.id} className="coordinator-update-item">
    <div><strong>{u.kind.replaceAll('_',' ')}</strong><span className="coordinator-status">{u.state.replaceAll('_',' ')}</span></div>
    <p>{u.message}</p><small>{u.channel} · {new Date(u.created_at).toLocaleString('en-KE',{timeZone:'Africa/Nairobi'})}</small>
    {u.state==='draft'&&<div className="coordinator-update-actions">
     <button disabled={busy} onClick={()=>copyUpdate(u.message)}><Copy size={14}/> Copy message</button>
-    {u.channel==='sms'&&<>{smsAttempts.filter(s=>s.customer_update_id===u.id).map(s=><small key={s.id}>SMS API: {s.state} (HTTP {s.http_status||'unknown'}) · attempt {s.id.slice(0,8)}</small>)}
+    {u.channel==='sms'&&<>{!caseItem.notifyOptIn&&<small>Customer has not opted in to SMS notifications.</small>}{smsAttempts.filter(s=>s.customer_update_id===u.id).map(s=><small key={s.id}>SMS API: {s.state} (HTTP {s.http_status||'unknown'}) · attempt {s.id.slice(0,8)}</small>)}
     {!smsAttempts.some(s=>s.customer_update_id===u.id)&&<button disabled={busy||!smsEnabled||!caseItem.notifyOptIn||!caseItem.canContact} onClick={()=>sendSms('customer',u.id)}>Send SMS now</button>}</>}
     {u.channel==='whatsapp'&&caseItem.canContact&&<button disabled={busy} onClick={()=>openWhatsApp(u.message)}><ExternalLink size={14}/> Open WhatsApp</button>}
     <button disabled={busy} onClick={()=>{if(window.confirm('Have you actually delivered this update to the customer using '+u.channel+'?'))action({action:'customer_update_mark_sent',updateId:u.id},'Manual customer update recorded')}}>Confirm sent</button>
