@@ -1,20 +1,39 @@
 import {NextRequest} from 'next/server';
-import {accessCookie,authConfig,isAllowedStaff,privateHeaders,reply,requireCoordinator,validOrigin} from '@/lib/coordinator-server';
+import {accessCookie,authConfig,isAllowedStaff,reply,requireCoordinator,validOrigin} from '@/lib/coordinator-server';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
-const generic={ok:true,message:'If the email is authorized, a sign-in code will be sent.'};
+const generic={ok:true,message:'If the email is authorized, a sign-in email will be sent.'};
 export async function GET(req:NextRequest){
  try{const staff=await requireCoordinator(req);return reply(staff?{ok:true,staff}:{ok:false},staff?200:401)}
  catch{return reply({ok:false},503)}
 }
 export async function POST(req:NextRequest){
  if(!validOrigin(req))return reply({error:'Invalid origin'},403);
- let body:{action?:string;email?:string;token?:string}={};
+ let body:{action?:string;email?:string;token?:string;accessToken?:string}={};
  try{body=await req.json()}catch{return reply({error:'Invalid request'},400)}
  if(body.action==='logout'){
   const result=reply({ok:true});
   result.cookies.set(accessCookie,'',{httpOnly:true,secure:true,sameSite:'lax',path:'/',maxAge:0});
   return result;
+ }
+ if(body.action==='link'){
+  const accessToken=typeof body.accessToken==='string'?body.accessToken:'';
+  if(accessToken.length<40||accessToken.length>6000)return reply({error:'Invalid sign-in token'},400);
+  try{
+   const cfg=authConfig();
+   const result=await fetch(cfg.url+'/auth/v1/user',{
+    headers:{apikey:cfg.anon,Authorization:'Bearer '+accessToken},
+    cache:'no-store',signal:AbortSignal.timeout(8000)
+   });
+   if(!result.ok)return reply({error:'Your sign-in link has expired. Request a new one.'},401);
+   const user=await result.json() as {email?:string;email_confirmed_at?:string;exp?:number};
+   if(!user.email||!user.email_confirmed_at)return reply({error:'Email verification required'},403);
+   const staff=await isAllowedStaff(user.email);
+   if(!staff)return reply({error:'Not authorized'},403);
+   const response=reply({ok:true,staff});
+   response.cookies.set(accessCookie,accessToken,{httpOnly:true,secure:true,sameSite:'lax',path:'/',maxAge:3600});
+   return response;
+  }catch{return reply({error:'Unable to verify your sign-in link'},503)}
  }
  const email=typeof body.email==='string'?body.email.trim().toLowerCase():'';
  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||email.length>254)return reply({error:'Enter a valid email'},400);
@@ -24,7 +43,7 @@ export async function POST(req:NextRequest){
  const cfg=authConfig();
  if(body.action==='send'){
   try{
-   const res=await fetch(cfg.url+'/auth/v1/otp',{method:'POST',headers:{apikey:cfg.anon,'Content-Type':'application/json'},body:JSON.stringify({email,create_user:true}),cache:'no-store',signal:AbortSignal.timeout(10000)});
+   const res=await fetch(cfg.url+'/auth/v1/otp',{method:'POST',headers:{apikey:cfg.anon,'Content-Type':'application/json'},body:JSON.stringify({email,create_user:true,redirect_to:'https://jitap.app/coordinator',data:{}}),cache:'no-store',signal:AbortSignal.timeout(10000)});
    if(!res.ok)console.warn('Coordinator OTP provider error',{status:res.status});
   }catch{console.warn('Coordinator OTP transport failed')}
   return reply(generic);
