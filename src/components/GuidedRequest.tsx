@@ -1,9 +1,10 @@
 'use client';
-import {useEffect,useMemo,useState} from 'react';
+import {useEffect,useMemo,useState,useRef} from 'react';
 import Link from 'next/link';
 import {ArrowLeft,ArrowRight,ChevronLeft,X,Sparkles,Shirt,Footprints,House,BedDouble,Layers,Droplets,Brush} from 'lucide-react';
 import {areas,categories,inferService} from '@/lib/data';
 import {understandJob} from '@/lib/job-intelligence';
+import {safeIntakeQuestions,fastIntakeQuestions} from '@/lib/fast-intake';
 import {track} from '@/lib/analytics';
 import {IntakeForm} from '@/components/Interactive';
 import {MatchedFundis} from '@/components/FundiDirectory';
@@ -131,14 +132,20 @@ export function GuidedRequest(){
  },[]);
  const [aiQuestions,setAiQuestions]=useState<Question[]|null>(null);
  const [aiResolvedKey,setAiResolvedKey]=useState('');
- const [aiFailedKey,setAiFailedKey]=useState('');
- const [aiRetry,setAiRetry]=useState(0);
  const [hydrated,setHydrated]=useState(false);
  const understood=useMemo(()=>understandJob(description),[description]);
  const context=understood&&understood.category===category?understood:null;
  const tvMount=isTvMounting(description)&&['general-repairs','other-services'].includes(category);
- // AI-derived questions only: unrelated generic lists must never be shown as a fallback.
- const questions=useMemo(()=>category==='cleaning'?byCategory.cleaning:category==='moving'?[]:aiQuestions?.length?[...aiQuestions,time]:[time],[category,aiQuestions]);
+ const instantQuestions=useMemo(()=>safeIntakeQuestions(category,description),[category,description]);
+ const knownQuestions=useMemo(()=>fastIntakeQuestions(category,description),[category,description]);
+ const requestKey=category+'|'+area+'|'+description.trim();
+ const questions=useMemo(()=>{
+  if(category==='cleaning')return byCategory.cleaning;
+  if(category==='moving')return [];
+  // Never show stale AI results from a different description.
+  const chosen=aiResolvedKey===requestKey&&aiQuestions?.length?aiQuestions:instantQuestions;
+  return [...chosen,time];
+ },[category,requestKey,aiResolvedKey,aiQuestions,instantQuestions]);
  const question=questions[stage];
  const answer=question?answers[question.id]||'':'';
  const onMamaFua=category==='cleaning'&&question?.id==='cleanServices';
@@ -150,10 +157,10 @@ export function GuidedRequest(){
  const validDate=preferredDate>=clock.date&&preferredDate<=furthestDate(clock.date);
  const validTime=preferredTimes.some(([time])=>time===preferredTime)&&!(preferredDate===clock.date&&Number(preferredTime.slice(0,2))*60+Number(preferredTime.slice(3,5))<=clock.minutes);
  const stageNames:string[]=category==='cleaning'?['Need','Time','Total','Contact']:[...questions.map((q,i)=>q.id==='timing'?'Time':q.id==='screenSize'?'TV size':q.id==='wallType'?'Wall':q.id==='bracket'?'Bracket':q.id==='frequency'?'Frequency':q.id==='size'?'Space':q.id==='cleanType'?'Type':i===0?'Need':'Details'),'Matches','Contact'];
- const aiRequestKey=category+'|'+area+'|'+description.trim();
- const shouldAwaitAI=hydrated&&stage===0&&!ready&&!showMatches&&category!=='cleaning'&&category!=='moving'&&description.trim().length>=8;
- const aiWaiting=!hydrated||(shouldAwaitAI&&aiResolvedKey!==aiRequestKey&&aiFailedKey!==aiRequestKey);
- const aiUnavailable=shouldAwaitAI&&aiFailedKey===aiRequestKey;
+ const aiRequestKey=requestKey;
+ const aiWaiting=false;
+ const answersRef=useRef(answers);
+ answersRef.current=answers;
  const label=tvMount?'TV Mounting':context?({ 'fan-repair':'Fan Repair','socket-repair':'Electrical Socket Repair','tv-repair':'TV Repair','microwave-repair':'Microwave Repair','computer-electronics':'Electronics Service','vehicle-exhaust':'Vehicle Exhaust','photography':'Photography','vehicle-mechanic':'Vehicle Mechanic' } as Record<string,string>)[context.subcategory]||categories.find(x=>x.slug===category)?.name||'Local service':categories.find(x=>x.slug===category)?.name||'Local service';
  const finished=()=>{const details=category==='cleaning'
  ? cleaningLineItems.map(item=>item.label+' x '+item.quantity+' '+item.unit+(item.quantity===1?'':'s')+' (reference '+money(item.price*item.quantity)+')').join('; ')+'; Reference estimate: '+money(cleaningTotal)+' (not a confirmed quote)'
@@ -161,35 +168,29 @@ export function GuidedRequest(){
  function next(){if(onTime&&(!validDate||!validTime))return;if(stage>=questions.length-1){finished()}else setStage(n=>n+1)}
  function skip(){if(onTime)return;if(stage>=questions.length-1)finished();else setStage(n=>n+1)}
  useEffect(()=>{
-  if(ready||showMatches||stage!==0||category==='cleaning'||category==='moving'||description.trim().length<8||aiResolvedKey===category+'|'+area+'|'+description.trim()||aiFailedKey===category+'|'+area+'|'+description.trim())return;
+  // Always offer immediate relevant intake choices; AI enriches unknown jobs without blocking.
+  if(!hydrated||ready||showMatches||stage!==0||category==='cleaning'||category==='moving'||description.trim().length<8||knownQuestions||aiResolvedKey===requestKey)return;
   let cancelled=false;
   const controller=new AbortController();
   const timer=setTimeout(async()=>{
    const started=performance.now();
    try{
     const res=await fetch('/api/ai/intake',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({description:description.trim().slice(0,600),area,categoryHint:category}),signal:controller.signal});
-    if(!res.ok)throw new Error('AI intake unavailable');
+    if(!res.ok)return;
     const data=await res.json();
-    if(cancelled)return;
-    if(!data.ok||!Array.isArray(data.questions)||data.questions.length===0)throw new Error('No AI questions');
+    if(cancelled||!data.ok||!Array.isArray(data.questions)||!data.questions.length||Object.keys(answersRef.current).length>0)return;
     const nextCategory=typeof data.category==='string'&&categories.some(x=>x.slug===data.category)?data.category:category;
     track('ai_intake_timing',{source:res.headers.get('X-JiTap-Intake-Source')||'model',durationMs:Math.round(performance.now()-started),category:nextCategory});
     setAiQuestions(data.questions);
-    setAnswers({});
-    setStage(0);
     setAiResolvedKey(nextCategory+'|'+area+'|'+description.trim());
-    setAiFailedKey('');
     if(nextCategory!==category)setCategory(nextCategory);
    }catch{
-    if(!cancelled){
-     track('ai_intake_timing',{source:'error',durationMs:Math.round(performance.now()-started),category});
-     setAiQuestions(null);
-     setAiFailedKey(category+'|'+area+'|'+description.trim());
-    }
+    // Keep the immediate contextual questions. No error screen, retry or blocking.
+    if(!cancelled)track('ai_intake_timing',{source:'local_intake',durationMs:Math.round(performance.now()-started),category});
    }
   },120);
   return ()=>{cancelled=true;clearTimeout(timer);controller.abort()};
- },[description,category,area,ready,showMatches,stage,aiResolvedKey,aiFailedKey,aiRetry]);
+ },[hydrated,description,category,area,ready,showMatches,stage,knownQuestions,requestKey,aiResolvedKey]);
  if(category==='moving')return <MovingRequest/>;
  return <div className="th-request-flow">
   <div className="container th-request-layout">
@@ -197,7 +198,7 @@ export function GuidedRequest(){
    {ready?<div className="th-request-final"><div className="jt-segment-progress th-request-stage-progress jt-named-progress" role="progressbar" aria-label="Service request progress" aria-valuemin={1} aria-valuemax={stageNames.length} aria-valuenow={stageNames.length}>{stageNames.map((name,index)=><div key={name+'-'+index} className="jt-progress-unit"><span className="is-active"/><small>{name}</small></div>)}</div><div className="th-request-final-title"><span className="th-overline">FINAL STEP</span><h2>How can JiTap reach you, and where is the job?</h2><p>Share your mobile number and choose the service location before submitting your request.</p><p className="jt-request-schedule"><strong>Preferred time:</strong> {preferredDate} · {preferredTimes.find(([time])=>time===preferredTime)?.[1]} EAT</p><button type="button" onClick={()=>setReady(false)}><ChevronLeft size={18}/> Edit job details</button></div><IntakeForm kind="request" initialCategory={category} initialArea={area} initialTiming={answers.timing==="today"||answers.timing==="this-week"?answers.timing:"flexible"} initialDescription={finalDescription} initialPreferredDate={preferredDate} initialPreferredTime={preferredTime}/></div>:showMatches?<div className="th-request-final jt-matches-wrap"><div className="jt-segment-progress th-request-stage-progress jt-named-progress" role="progressbar" aria-label="Service request progress" aria-valuemin={1} aria-valuemax={stageNames.length} aria-valuenow={questions.length+1}>{stageNames.map((name,index)=><div key={name+'-'+index} className="jt-progress-unit"><span className={index<=questions.length?'is-active':''}/><small>{name}</small></div>)}</div><button type="button" className="jt-profile-back" onClick={()=>setShowMatches(false)}>← Edit service brief</button>{category==='cleaning'&&<section className="jt-cleaning-total" aria-label="Cleaning reference total"><div className="jt-cleaning-total-head"><div><span className="th-overline">YOUR CLEANING ESTIMATE</span><h2>Review your total</h2></div><strong>{money(cleaningTotal)}</strong></div><div className="jt-cleaning-total-lines">{cleaningLineItems.map(item=><div key={item.value}><span>{item.label} <small>× {item.quantity} {item.unit}{item.quantity===1?'':'s'}</small></span><strong>{money(item.price*item.quantity)}</strong></div>)}</div><p>Reference estimate only. JiTap will confirm availability, scope and the final quote with a cleaner. Extra hours or supplies may affect the price.</p></section>}<MatchedFundis category={category} area={area} specialty={tvMount?'tv-mounting':context?.subcategory} onQuotes={()=>setReady(true)}/></div>:
    <div className="th-questions" role="region" aria-label="Service request questions"><div className="th-question-nav"><button type="button" onClick={()=>stage>0?setStage(n=>n-1):window.location.assign('/services')} aria-label="Back"><ArrowLeft size={20}/></button><div><strong>{label}</strong><span>{stage+1} of {questions.length} · Tell us about your job</span></div><Link href="/" aria-label="Close questionnaire"><X size={20}/></Link></div>
     <div className="jt-segment-progress th-request-segments jt-named-progress" role="progressbar" aria-label="Service brief progress" aria-valuemin={1} aria-valuemax={stageNames.length} aria-valuenow={stage+1}>{stageNames.map((name,index)=><div className="jt-progress-unit" key={name+'-'+index}><span className={index<=stage?'is-active':''}/><small className={index===stage?'is-current':''}>{name}</small></div>)}</div>
-    <div className="th-question-body"><div className="th-edit-brief"><label htmlFor="brief">Your description</label><textarea id="brief" value={description} rows={2} onChange={e=>{const next=e.target.value;setDescription(next);const inferred=inferService(next);if(category==='other-services'&&inferred&&inferred!=='other-services'){setCategory(inferred);setStage(0);setAnswers({});setAiQuestions(null)}}} placeholder="e.g. my sink is leaking in Nyali"/></div><label className="th-question-area" htmlFor="areaSelect">Service area <select id="areaSelect" value={area} onChange={e=>setArea(e.target.value)}>{areas.map(a=><option key={a}>{a}</option>)}</select></label>{aiWaiting?<div className="jt-ai-intake-loading" role="status" aria-live="polite" aria-label="JiTap is preparing your service questions"><span className="jt-ai-typing-dots" aria-hidden="true"><span/><span/><span/></span></div>:aiUnavailable?<div className="jt-ai-intake-unavailable" role="status"><p>JiTap AI couldn't connect. Retry to get questions about your specific request.</p><button type="button" onClick={()=>{setAiFailedKey('');setAiRetry(n=>n+1)}}>Retry AI</button></div>:<><h2>{question.title}</h2>{question.hint&&<p className="th-question-hint">{question.hint}</p>}{onTime?<div className="jt-time-picker">
+    <div className="th-question-body"><div className="th-edit-brief"><label htmlFor="brief">Your description</label><textarea id="brief" value={description} rows={2} onChange={e=>{const next=e.target.value;setDescription(next);const inferred=inferService(next);if(category==='other-services'&&inferred&&inferred!=='other-services'){setCategory(inferred);setStage(0);setAnswers({});setAiQuestions(null)}}} placeholder="e.g. my sink is leaking in Nyali"/></div><label className="th-question-area" htmlFor="areaSelect">Service area <select id="areaSelect" value={area} onChange={e=>setArea(e.target.value)}>{areas.map(a=><option key={a}>{a}</option>)}</select></label>{<><h2>{question.title}</h2>{question.hint&&<p className="th-question-hint">{question.hint}</p>}{onTime?<div className="jt-time-picker">
  <h3>Preferred date</h3>
  <div className="jt-date-options" role="group" aria-label="Preferred service date">{days.map((day,i)=><button type="button" key={day.value} className={'jt-date-chip'+(preferredDate===day.value?' selected':'')} aria-pressed={preferredDate===day.value} onClick={()=>{setPreferredDate(day.value);setPreferredTime('');setClock(nairobiNow())}}><small>{i===0?'Today':i===1?'Tomorrow':day.day}</small><strong>{day.number}</strong><small>{day.month}</small></button>)}</div>
  <label className="jt-later-date" htmlFor="jt-preferred-date">Or choose another date <input id="jt-preferred-date" type="date" min={clock.date} max={furthestDate(clock.date)} value={preferredDate} onChange={e=>{setPreferredDate(e.target.value);setPreferredTime('');setClock(nairobiNow())}}/></label>
@@ -221,7 +222,7 @@ export function GuidedRequest(){
  <div className="jt-cleaning-inline-total"><span>Reference total</span><strong>{money(cleaningTotal)}</strong></div>
  <p className="jt-mamafua-guidance">Final price is confirmed by JiTap and the cleaner. Visit minimums, extra hours or materials may change the quote.</p>
  </div>:<div className="th-choice-list">{question.options.map(x=><button key={x.value} type="button" className={'th-choice'+(answer===x.value?' selected':'')} aria-pressed={answer===x.value} onClick={()=>setAnswers(y=>({...y,[question.id]:x.value}))}><span className="th-radio-indicator"/><span><strong>{x.label}</strong>{x.hint&&<small>{x.hint}</small>}</span></button>)}</div>}</>}</div>
-    {!aiWaiting&&!aiUnavailable&&<div className="th-question-actions">{!onTime&&!onMamaFua&&<button type="button" className="th-skip" onClick={skip}>Skip</button>}<button type="button" className="th-next" onClick={next} disabled={onTime?(!validDate||!validTime):!answer}> {onTime?'Continue':onMamaFua?'Continue':'Next'} <ArrowRight size={18}/></button></div>}
+    {<div className="th-question-actions">{!onTime&&!onMamaFua&&<button type="button" className="th-skip" onClick={skip}>Skip</button>}<button type="button" className="th-next" onClick={next} disabled={onTime?(!validDate||!validTime):!answer}> {onTime?'Continue':onMamaFua?'Continue':'Next'} <ArrowRight size={18}/></button></div>}
    </div>}
   </div>
  </div>;
