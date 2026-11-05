@@ -1,7 +1,7 @@
 import {NextRequest} from 'next/server';
 import {z} from 'zod';
 import {reply,requireCoordinator,supabasePrivate,validOrigin} from '@/lib/coordinator-server';
-import {sendJiTapSms,smsLeopardConfiguration,getJiTapSmsBalance} from '@/lib/smsleopard';
+import {sendWasilianaSms,wasilianaSettings} from '@/lib/wasiliana';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -14,21 +14,23 @@ export async function GET(req:NextRequest){
  try{
   const staff=await requireCoordinator(req);
   if(!staff)return reply({error:'Sign in required'},401);
-  if(!smsLeopardConfiguration().smsReady)return reply({ok:false,error:'SMSLeopard credentials or sender are missing'},503);
-  const result=await getJiTapSmsBalance();
-  return reply({ok:result.ok,httpStatus:result.httpStatus,balanceKes:result.balanceKes,currency:result.currency,errorCode:result.errorCode,
-   senderId:(process.env.JITAP_COORDINATOR_SMS_SENDER_ID||process.env.SMSLEOPARD_SENDER_ID||'').trim(),
-   enabled:process.env.JITAP_COORDINATOR_SMS_ENABLED==='true'});
- }catch{return reply({ok:false,error:'SMSLeopard account diagnostics temporarily unavailable'},503)}
+  const settings=wasilianaSettings();
+  return reply({ok:settings.configured&&settings.senderConfigured,provider:'Wasiliana',
+   keyConfigured:settings.configured,senderConfigured:settings.senderConfigured,
+   senderId:settings.senderLabel,enabled:process.env.JITAP_COORDINATOR_SMS_ENABLED==='true',
+   error:!settings.configured?'Wasiliana API key missing':!settings.senderConfigured?'Set the Wasiliana-approved Sender ID / ShortCode in WASILIANA_SENDER_ID on Vercel.':'',
+   balanceKes:null, balanceNote:'Wasiliana balance API has not been verified. Check balance in Wasiliana dashboard.'});
+ }catch{return reply({ok:false,error:'Wasiliana settings unavailable'},503)}
 }
-
 export async function POST(req:NextRequest){
  if(!validOrigin(req))return reply({error:'Invalid origin'},403);
  let staff;
  try{staff=await requireCoordinator(req)}catch{return reply({error:'Coordinator sign-in service unavailable'},503)}
  if(!staff)return reply({error:'Sign in required'},401);
  if(process.env.JITAP_COORDINATOR_SMS_ENABLED!=='true')return reply({error:'Manual SMS testing is not enabled for this JiTap environment.'},409);
- if(!smsLeopardConfiguration().smsReady)return reply({error:'SMSLeopard SMS credentials are not configured.'},503);
+ const settings=wasilianaSettings();
+ if(!settings.configured)return reply({error:'Wasiliana API key is not configured.'},503);
+ if(!settings.senderConfigured)return reply({error:'Wasiliana Sender ID or ShortCode is not configured. Add WASILIANA_SENDER_ID in Vercel for a sender assigned to your account.'},409);
  let input:z.infer<typeof schema>;
  try{
   const parsed=schema.safeParse(await req.json());
@@ -43,10 +45,16 @@ export async function POST(req:NextRequest){
    p_assignment_id:input.recipientKind==='provider'?input.assignmentId:null
   })});
  }catch{return reply({error:'SMS blocked: confirm customer notification consent, an opted-in provider, and that this message was not already attempted.'},409)}
+ // Record the exact gateway before calling it, preserving SMSLeopard history.
+ try{
+  await supabasePrivate<null>('coordinator_sms_attempts?id=eq.'+encodeURIComponent(claim.attemptId),{
+   method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({gateway:'wasiliana'})
+  });
+ }catch{return reply({error:'Unable to audit SMS gateway selection; message not sent. Contact JiTap operations before trying again.'},503)}
  let result:{accepted:boolean;httpStatus?:number;providerMessageId?:string;errorCode?:string;providerReason?:string}={accepted:false};
  let state:'submitted'|'rejected'|'unknown'='unknown';
  try{
-  result=await sendJiTapSms(claim.recipient,claim.message,'coordinator');
+  result=await sendWasilianaSms(claim.recipient,claim.message);
   state=result.accepted?'submitted':'rejected';
  }catch{
   // A network timeout can occur AFTER upstream acceptance. Never auto-retry.
@@ -62,22 +70,10 @@ export async function POST(req:NextRequest){
   return reply({ok:false,attemptId:claim.attemptId,error:'SMS result could not be recorded. Do not retry; ask JiTap operations to reconcile the attempt.'},503);
  }
  if(state!=='submitted'){
-  const error=state==='unknown'
-   ?'SMS submission status is uncertain. Do not retry until the provider logs are checked.'
-   :result.errorCode==='sender_id_not_assigned'||result.errorCode==='missing_sender_id'
-    ?'SMSLeopard rejected the Sender ID. Verify that the shared test sender is available to your account.'
-    :result.errorCode==='insufficient_balance'
-     ?'SMSLeopard says your account balance is insufficient. Add production SMS credits before retrying.'
-    :result.errorCode==='invalid_recipient'
-     ?'SMSLeopard rejected the mobile number. Verify the Kenyan recipient number.'
-    :result.errorCode==='invalid_message'
-     ?'SMSLeopard rejected the message content. Check its length and characters.'
-    :result.errorCode==='invalid_credentials'
-     ?'SMSLeopard rejected the API credentials. Verify the production key and secret.'
-    :result.errorCode==='restricted_send_time'
-     ?'SMSLeopard says sending is restricted at this time.'
-    :'SMSLeopard returned HTTP '+(result.httpStatus||'unknown')+'. Run the read-only SMS diagnostics to check account balance and credentials.';
-  return reply({ok:false,attemptId:claim.attemptId,status:state,httpStatus:result.httpStatus||null,errorCode:result.errorCode||null,providerReason:result.providerReason||null,error:result.providerReason?error+' SMSLeopard response: '+result.providerReason:error},502);
+  const error=state==='unknown'?'Wasiliana submission status is uncertain. Do not retry this draft until reconciled.':
+   'Wasiliana SMS not accepted (HTTP '+(result.httpStatus||'unknown')+'). '+(result.providerReason||'Check the Sender ID, account permissions, and Wasiliana dashboard.');
+  return reply({ok:false,attemptId:claim.attemptId,status:state,
+   httpStatus:result.httpStatus||null,errorCode:result.errorCode||null,error},502);
  }
- return reply({ok:true,attemptId:claim.attemptId,status:'submitted',message:'SMSLeopard accepted the submission. Handset delivery is not yet verified.'});
+ return reply({ok:true,attemptId:claim.attemptId,status:'submitted',message:'Wasiliana accepted the submission. Handset delivery is not yet verified.'});
 }
