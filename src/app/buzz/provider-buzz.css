@@ -1,0 +1,25 @@
+.jt-buzz-page{min-height:100dvh;background:linear-gradient(150deg,#f4fcf9,#eef3fc 70%,#fff);color:#142b40;padding:0 16px 50px;font-family:inherit}
+.jt-buzz-header{max-width:680px;margin:auto;padding:22px 0;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #dce8ea;color:#466477;font-size:13px}
+.jt-buzz-header a{color:#102273;text-decoration:none;font-size:29px;letter-spacing:-.045em}
+.jt-buzz-panel{max-width:680px;background:#fff;margin:28px auto 0;padding:clamp(22px,5vw,36px);border-radius:22px;border:1px solid #dbe8e5;box-shadow:0 12px 48px rgba(8,39,52,.06)}
+.jt-buzz-eyebrow{color:#0a9472;font-size:12px;letter-spacing:.12em;font-weight:800}
+.jt-buzz-panel h1{font-size:clamp(24px,4.6vw,34px);line-height:1.22;margin:11px 0 12px;color:#102d42}
+.jt-buzz-desc{color:#5d7380;font-size:15px;line-height:1.5}
+.jt-buzz-facts{display:grid;grid-template-columns:125px minmax(0,1fr);gap:12px 18px;padding:21px 0;margin:22px 0 18px;border-top:1px solid #e6ecee;border-bottom:1px solid #e6ecee;line-height:1.55}
+.jt-buzz-facts dt{font-size:13px;font-weight:750;color:#587079}
+.jt-buzz-facts dd{font-size:15px;margin:0;overflow-wrap:anywhere}
+.jt-buzz-panel h2{font-size:19px;margin:12px 0 16px}
+.jt-buzz-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.jt-buzz-choices button{background:#fff;border:1px solid #d3e0e0;color:#25475b;border-radius:11px;min-height:60px;padding:10px 7px;font-weight:750;cursor:pointer}
+.jt-buzz-choices button:hover{border-color:#179f77}
+.jt-buzz-choices button.selected{border-color:#138e6e;background:#ecfaf3;color:#096c50;box-shadow:inset 0 0 0 1px #138e6e}
+.jt-buzz-question{display:flex;flex-direction:column;gap:9px;font-size:14px;font-weight:700;margin-top:18px}
+.jt-buzz-question textarea{font:inherit;padding:13px;border:1px solid #becfd3;border-radius:11px;width:100%;resize:vertical}
+.jt-buzz-submit{display:block;width:100%;margin:20px 0 12px;min-height:54px;border:0;border-radius:12px;background:#0a875e;color:#fff;font-size:16px;font-weight:800;cursor:pointer}
+.jt-buzz-submit:disabled{background:#aebfc2;cursor:not-allowed}
+.jt-buzz-hint{font-size:12px;line-height:1.65;color:#6a7b86}
+.jt-buzz-error{color:#ac3636;font-size:13px}
+.jt-buzz-result{text-align:center;padding:28px 0}
+.jt-buzz-result p{color:#526875;line-height:1.65}
+.jt-buzz-symbol{display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:#e3f7ec;color:#148758;width:62px;height:62px;font-size:33px}
+@media(max-width:530px){.jt-buzz-page{padding:0 10px 35px}.jt-buzz-panel{margin-top:12px;padding:20px;border-radius:16px}.jt-buzz-facts{grid-template-columns:100px minmax(0,1fr);gap:10px}.jt-buzz-choices{grid-template-columns:1fr}.jt-buzz-choices button{min-height:47px}}
