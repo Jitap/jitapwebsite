@@ -26,15 +26,41 @@ export function normalizeKenyanMobile(phone:string){
  if(!/^254[17][0-9]{8}$/.test(local))throw new Error('invalid_kenyan_mobile');
  return local;
 }
+function safeProviderReason(httpStatus:number,result:Record<string,unknown>):string|undefined{
+ const msg=[result.message,result.error_message].filter((v):v is string=>typeof v==='string').join(' ').toLowerCase();
+ const recipients=Array.isArray(result.recipients)?result.recipients:[];
+ const recipientStatus=recipients.map((v:unknown)=>v&&typeof v==='object'&&'status' in v?String((v as {status:unknown}).status):'').join(' ').toLowerCase();
+ const reason=msg+' '+recipientStatus;
+ if(/insufficient.*balance|not enough.*credit|low.*balance/.test(reason))return 'insufficient_balance';
+ if(/unrecognized sender|sender.*not assigned|invalid sender/.test(reason))return 'sender_id_not_assigned';
+ if(/source.*not defined|missing.*source/.test(reason))return 'missing_sender_id';
+ if(/no valid recipients|invalid.*phone|invalid.*number|invalid_phone/.test(reason))return 'invalid_recipient';
+ if(/message validation failed|invalid.*message|message.*required/.test(reason))return 'invalid_message';
+ if(/restricted_send_time/.test(reason))return 'restricted_send_time';
+ if(/invalid.*credentials|unauthorized/.test(reason))return 'invalid_credentials';
+ if(httpStatus===400)return 'provider_bad_request';
+ return undefined;
+}
 function deliveryResult(httpStatus:number,data:unknown):DeliveryResult{
  const result=(data&&typeof data==='object'?data:{}) as Record<string,unknown>;
  const recipients=Array.isArray(result.recipients)?result.recipients:[];
  const first=recipients[0]&&typeof recipients[0]==='object'?recipients[0] as Record<string,unknown>:{};
  const id=typeof first.id==='string'?first.id:typeof result.id==='string'?result.id:undefined;
- const providerFailed=typeof first.status==='string'&&/^(failed|rejected|error)$/i.test(first.status);
- const providerError=typeof result.message==='string'?result.message.toLowerCase():'';
- const errorCode=httpStatus===404&&/sender id|sender_id|source|unrecognized sender/.test(providerError)?'sender_id_not_assigned':httpStatus===401?'invalid_credentials':httpStatus===402?'insufficient_balance':httpStatus===404?'provider_http_404':httpStatus>=400?'provider_http_'+httpStatus:undefined;
- return {accepted:httpStatus>=200&&httpStatus<300&&result.success!==false&&!providerFailed,httpStatus,providerMessageId:id,errorCode:httpStatus>=200&&httpStatus<300?(providerFailed?'recipient_rejected':undefined):errorCode};
+ const providerFailed=typeof first.status==='string'&&/^(failed|rejected|error|invalid_phone|restricted_send_time)$/i.test(first.status);
+ const code=safeProviderReason(httpStatus,result);
+ return {accepted:httpStatus>=200&&httpStatus<300&&result.success!==false&&!providerFailed&&!!id,httpStatus,providerMessageId:id,errorCode:code||(providerFailed?'recipient_rejected':httpStatus>=400?'provider_http_'+httpStatus:undefined)};
+}
+export async function getJiTapSmsBalance():Promise<{ok:boolean;httpStatus:number;balanceKes?:number;currency?:string;errorCode?:string}>{
+ const res=await fetch('https://api.smsleopard.com/v1/balance',{
+  method:'GET',headers:{Authorization:credentials(),Accept:'application/json'},
+  cache:'no-store',signal:AbortSignal.timeout(8000)
+ });
+ const raw:unknown=await res.json().catch(()=>null);
+ const data=(raw&&typeof raw==='object'?raw:{}) as Record<string,unknown>;
+ return {ok:res.ok,httpStatus:res.status,
+  balanceKes:typeof data.balance==='number'?data.balance:undefined,
+  currency:typeof data.currency==='string'?data.currency:undefined,
+  errorCode:res.ok?undefined:safeProviderReason(res.status,data)||'provider_http_'+res.status};
 }
 async function send(url:string,body:unknown):Promise<DeliveryResult>{
  if(process.env.JITAP_NOTIFICATIONS_ENABLED!=='true')throw new Error('notifications_disabled');
