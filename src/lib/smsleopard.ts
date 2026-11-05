@@ -4,7 +4,7 @@
  * Never import this module into client components.
  */
 
-export type DeliveryResult={accepted:boolean;httpStatus:number;providerMessageId?:string;errorCode?:string};
+export type DeliveryResult={accepted:boolean;httpStatus:number;providerMessageId?:string;errorCode?:string;providerReason?:string};
 export type WhatsAppTemplate={destination:string;templateId:string;phoneNumberId:string;variables:string[]};
 
 export function smsLeopardConfiguration(){
@@ -41,6 +41,16 @@ function safeProviderReason(httpStatus:number,result:Record<string,unknown>):str
  if(httpStatus===400)return 'provider_bad_request';
  return undefined;
 }
+function sanitizedProviderMessage(data:Record<string,unknown>):string|undefined{
+ // Only provider's high-level explanation. Redact numbers, URLs and email-like strings;
+ // never return raw API responses, recipient lists, keys or message content.
+ const value=typeof data.message==='string'?data.message:typeof data.error_message==='string'?data.error_message:'';
+ if(!value)return undefined;
+ const safe=value.replace(/https?:\/\/\S+/gi,'[link]').replace(/[\w.+-]+@[\w.-]+/g,'[email]')
+  .replace(/(?:\+?\d[\d\s-]{4,}\d)/g,'[number]')
+  .replace(/[^a-zA-Z\s.,:;!()_\-]/g,'').replace(/\s+/g,' ').trim().slice(0,75);
+ return safe||undefined;
+}
 function deliveryResult(httpStatus:number,data:unknown):DeliveryResult{
  const result=(data&&typeof data==='object'?data:{}) as Record<string,unknown>;
  const recipients=Array.isArray(result.recipients)?result.recipients:[];
@@ -48,7 +58,7 @@ function deliveryResult(httpStatus:number,data:unknown):DeliveryResult{
  const id=typeof first.id==='string'?first.id:typeof result.id==='string'?result.id:undefined;
  const providerFailed=typeof first.status==='string'&&/^(failed|rejected|error|invalid_phone|restricted_send_time)$/i.test(first.status);
  const code=safeProviderReason(httpStatus,result);
- return {accepted:httpStatus>=200&&httpStatus<300&&result.success!==false&&!providerFailed&&!!id,httpStatus,providerMessageId:id,errorCode:code||(providerFailed?'recipient_rejected':httpStatus>=400?'provider_http_'+httpStatus:undefined)};
+ return {accepted:httpStatus>=200&&httpStatus<300&&result.success!==false&&!providerFailed&&!!id,httpStatus,providerMessageId:id,errorCode:code||(providerFailed?'recipient_rejected':httpStatus>=400?'provider_http_'+httpStatus:undefined),providerReason:httpStatus>=400?sanitizedProviderMessage(result):undefined};
 }
 export async function getJiTapSmsBalance():Promise<{ok:boolean;httpStatus:number;balanceKes?:number;currency?:string;errorCode?:string}>{
  const res=await fetch('https://api.smsleopard.com/v1/balance',{
