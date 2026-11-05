@@ -49,6 +49,15 @@ export async function POST(req:NextRequest){
  }catch{
   return reply({ok:false,attemptId:claim.attemptId,error:'SMS result could not be recorded. Do not retry; ask JiTap operations to reconcile the attempt.'},503);
  }
- if(state!=='submitted')return reply({ok:false,attemptId:claim.attemptId,status:state,error:state==='unknown'?'Delivery acceptance is uncertain. Do not retry until reconciled.':'SMSLeopard rejected this message. Review provider status before another attempt.'},502);
+ if(state!=='submitted'){
+  const error=state==='unknown'
+   ?'SMS submission status is uncertain. Do not retry until the provider logs are checked.'
+   :result.errorCode==='sender_id_not_assigned'
+    ?'SMSLeopard rejected the SMS Sender ID. Confirm a sender assigned to your SMSLeopard account.'
+    :result.errorCode==='invalid_credentials'
+     ?'SMSLeopard rejected the API credentials. Verify that production keys are configured.'
+     :'SMSLeopard rejected the SMS (HTTP '+(result.httpStatus||'unknown')+'). Check the sender ID, account mode, and available credits.';
+  return reply({ok:false,attemptId:claim.attemptId,status:state,httpStatus:result.httpStatus||null,errorCode:result.errorCode||null,error},502);
+ }
  return reply({ok:true,attemptId:claim.attemptId,status:'submitted',message:'SMSLeopard accepted the submission. Handset delivery is not yet verified.'});
 }
