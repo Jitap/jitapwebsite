@@ -163,23 +163,23 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
    </div>
   })}</div>:<p className="coordinator-help">No provider proposed yet. Requests without a confirmed provider remain available for manual sourcing.</p>}
   <h3><MessageSquare size={18}/> Customer updates</h3>
-  <p className="coordinator-help">Generate a message, review it and save the draft. SMS drafts can be sent through SMSLeopard when enabled and the customer opted in. WhatsApp remains a manual handoff until templates are approved.</p>
+  <p className="coordinator-help">Step 1: Generate and save the message draft. Step 2: In the saved draft below, press <strong>Send SMS now</strong> to actually submit it to SMSLeopard. Saving a draft alone does NOT send a text.</p>
   {!caseItem.canContact&&<p className="coordinator-help"><AlertCircle size={15}/> Customer phone is missing; confirm contact details before messaging.</p>}
   <label>Update type<select value={kind} onChange={e=>{setKind(e.target.value);setMessage('')}}>{updateKinds.map(([k,l])=><option key={k} value={k}>{l}</option>)}</select></label>
   <label>Channel<select value={channel} onChange={e=>setChannel(e.target.value as 'whatsapp'|'sms'|'phone')}><option value="whatsapp">WhatsApp (manual)</option><option value="sms">SMS via SMSLeopard</option><option value="phone">Phone call (log only)</option></select></label>
   <button className="coordinator-secondary" onClick={()=>setMessage(makeMessage(caseItem,kind,acceptedName))}>Generate update draft</button>
   <textarea rows={5} maxLength={1200} value={message} onChange={e=>setMessage(e.target.value)} placeholder="Write a factual update to the customer. Do not promise availability or a booking unless it is confirmed."/>
-  <button disabled={busy||message.trim().length<10||!caseItem.canContact||(channel==='sms'&&message.length>600)} onClick={()=>action({action:'customer_update_draft',kind,channel,message},'Customer update draft saved')}>Save update draft</button>
+  <button disabled={busy||message.trim().length<10||!caseItem.canContact||(channel==='sms'&&message.length>600)} onClick={()=>action({action:'customer_update_draft',kind,channel,message},'Draft saved. Scroll down to the saved draft and press Send SMS now to actually send it.')}>Save draft — do not send</button>
   {channel==='sms'&&message.length>600&&<p className="coordinator-help">SMS content must be 600 characters or fewer.</p>}
   {updates.length>0&&<div className="coordinator-updates">{updates.map(u=><div key={u.id} className="coordinator-update-item">
    <div><strong>{u.kind.replaceAll('_',' ')}</strong><span className="coordinator-status">{u.state.replaceAll('_',' ')}</span></div>
-   <p>{u.message}</p><small>{u.channel} · {new Date(u.created_at).toLocaleString('en-KE',{timeZone:'Africa/Nairobi'})}</small>
+   <p>{u.message}</p>{u.state==='draft'&&u.channel==='sms'&&<p className="coordinator-sms-unsent">NOT SENT — this message is saved as a draft only. Press Send SMS now below.</p>}<small>{u.channel} · {new Date(u.created_at).toLocaleString('en-KE',{timeZone:'Africa/Nairobi'})}</small>
    {u.state==='draft'&&<div className="coordinator-update-actions">
     <button disabled={busy} onClick={()=>copyUpdate(u.message)}><Copy size={14}/> Copy message</button>
     {u.channel==='sms'&&<>{!caseItem.notifyOptIn&&<small>Customer has not opted in to SMS notifications.</small>}{smsAttempts.filter(s=>s.customer_update_id===u.id).map(s=><small key={s.id}>SMS API: {s.state} (HTTP {s.http_status||'unknown'}) · attempt {s.id.slice(0,8)}</small>)}
-    {!smsAttempts.some(s=>s.customer_update_id===u.id)&&<button disabled={busy||!smsEnabled||!caseItem.notifyOptIn||!caseItem.canContact} onClick={()=>sendSms('customer',u.id)}>Send SMS now</button>}</>}
+    {!smsAttempts.some(s=>s.customer_update_id===u.id)&&<button className="coordinator-send-sms" disabled={busy||!smsEnabled||!caseItem.notifyOptIn||!caseItem.canContact} onClick={()=>sendSms('customer',u.id)}>Send SMS now — via SMSLeopard</button>}</>}
     {u.channel==='whatsapp'&&caseItem.canContact&&<button disabled={busy} onClick={()=>openWhatsApp(u.message)}><ExternalLink size={14}/> Open WhatsApp</button>}
-    <button disabled={busy} onClick={()=>{if(window.confirm('Have you actually delivered this update to the customer using '+u.channel+'?'))action({action:'customer_update_mark_sent',updateId:u.id},'Manual customer update recorded')}}>Confirm sent</button>
+    {u.channel!=='sms'&&<button disabled={busy} onClick={()=>{if(window.confirm('Have you actually delivered this update to the customer using '+u.channel+'?'))action({action:'customer_update_mark_sent',updateId:u.id},'Manual customer update recorded')}}>Confirm manual delivery</button>}
    </div>}
   </div>)}</div>}
   {!smsEnabled&&<p className="coordinator-help">SMS sending is configured for staff-controlled testing but not yet enabled. No messages will be sent until the coordinator SMS switch is activated.</p>}
