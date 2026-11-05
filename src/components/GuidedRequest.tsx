@@ -182,7 +182,7 @@ export function GuidedRequest(){
      throw new Error('AI returned a different service category');
     }
    }catch{if(!cancelled){setAiQuestions(null);setAiResolvedKey(category+'|'+area+'|'+description.trim());}}
-  },650);
+  },120);
   return ()=>{cancelled=true;clearTimeout(timer);controller.abort()};
  },[description,category,area,ready,showMatches,stage,tvMount,context,aiResolvedKey]);
  if(category==='moving')return <MovingRequest/>;
