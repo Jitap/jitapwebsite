@@ -193,7 +193,7 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
       </>}
     </div>
     {smsAttempts.filter(s=>s.assignment_id===a.id).map(s=><small key={s.id}>Provider SMS: {s.state} · {new Date(s.requested_at).toLocaleString('en-KE')}</small>)}
-    {!smsAttempts.some(s=>s.assignment_id===a.id)&&<button disabled={busy||!smsEnabled||!smsReady||!providerDrafts.some(d=>d.assignment_id===a.id)||!providerSmsContacts.some(p=>p.providerId===a.provider_id&&p.enabled)||!['proposed','contacted','needs_clarification','quote_requested'].includes(a.state)} onClick={()=>sendSms('provider',a.id)}>Send provider SMS via Wasiliana</button>}
+    {!smsAttempts.some(s=>s.assignment_id===a.id)&&<button disabled={busy||!smsEnabled||!smsReady||!providerDrafts.some(d=>d.assignment_id===a.id)||(buzzText[a.id]!==undefined&&buzzText[a.id]!==providerDrafts.find(d=>d.assignment_id===a.id)?.message)||!providerSmsContacts.some(p=>p.providerId===a.provider_id&&p.enabled)||!['proposed','contacted','needs_clarification','quote_requested'].includes(a.state)} onClick={()=>sendSms('provider',a.id)}>Send provider SMS via Wasiliana</button>}
     {!providerSmsContacts.some(p=>p.providerId===a.provider_id&&p.enabled)&&<small>Provider SMS requires documented opt-in and a private mobile number.</small>}
     {!providerDrafts.some(d=>d.assignment_id===a.id)&&!smsAttempts.some(s=>s.assignment_id===a.id)&&<small>Save the provider BUZZ draft to unlock SMS sending.</small>}
     {!smsEnabled&&<small>Coordinator SMS sending is not activated.</small>}
