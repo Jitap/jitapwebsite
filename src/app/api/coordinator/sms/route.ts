@@ -1,3 +1,4 @@
+import {randomBytes,createHash} from 'node:crypto';
 import {NextRequest} from 'next/server';
 import {z} from 'zod';
 import {reply,requireCoordinator,supabasePrivate,validOrigin} from '@/lib/coordinator-server';
@@ -38,13 +39,21 @@ export async function POST(req:NextRequest){
   input=parsed.data;
  }catch{return reply({error:'Invalid request'},400)}
  let claim:Claim;
+ // Only the token hash is stored. The SMS carries the raw token after # so
+ // it is not sent to JiTap in page requests or browser history.
+ const responseToken=input.recipientKind==='provider'?randomBytes(32).toString('base64url'):null;
+ const tokenHash=responseToken?createHash('sha256').update(responseToken).digest('hex'):null;
  try{
-  claim=await supabasePrivate<Claim>('rpc/coordinator_claim_sms',{method:'POST',body:JSON.stringify({
-   p_case_id:input.caseId,p_actor_email:staff.email,p_recipient_kind:input.recipientKind,
-   p_update_id:input.recipientKind==='customer'?input.updateId:null,
-   p_assignment_id:input.recipientKind==='provider'?input.assignmentId:null
-  })});
- }catch{return reply({error:'SMS blocked: confirm customer notification consent, an opted-in provider, and that this message was not already attempted.'},409)}
+  claim=input.recipientKind==='provider'
+   ?await supabasePrivate<Claim>('rpc/coordinator_claim_provider_sms',{method:'POST',body:JSON.stringify({
+      p_case_id:input.caseId,p_actor_email:staff.email,p_assignment_id:input.assignmentId,p_token_hash:tokenHash
+     })})
+   :await supabasePrivate<Claim>('rpc/coordinator_claim_sms',{method:'POST',body:JSON.stringify({
+      p_case_id:input.caseId,p_actor_email:staff.email,p_recipient_kind:'customer',p_update_id:input.updateId
+     })});
+ }catch{return reply({error:'SMS blocked: confirm a reviewed draft, recipient consent, and that this assignment was not already sent.'},409)}
+ const responseUrl=responseToken?'https://jitap.app/buzz#'+responseToken:null;
+ const outboundMessage=responseUrl?claim.message.slice(0,600-responseUrl.length-2).trimEnd()+'\\n'+responseUrl:claim.message;
  // Record the exact gateway before calling it, preserving SMSLeopard history.
  try{
   await supabasePrivate<null>('coordinator_sms_attempts?id=eq.'+encodeURIComponent(claim.attemptId),{
@@ -54,7 +63,7 @@ export async function POST(req:NextRequest){
  let result:{accepted:boolean;httpStatus?:number;providerMessageId?:string;errorCode?:string;providerReason?:string}={accepted:false};
  let state:'submitted'|'rejected'|'unknown'='unknown';
  try{
-  result=await sendWasilianaSms(claim.recipient,claim.message);
+  result=await sendWasilianaSms(claim.recipient,outboundMessage);
   state=result.accepted?'submitted':'rejected';
  }catch{
   // A network timeout can occur AFTER upstream acceptance. Never auto-retry.
