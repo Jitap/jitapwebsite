@@ -18,3 +18,38 @@
 .coordinator-case-workflow-lead{font-size:13px;line-height:1.6;color:#55707b;background:#f3fbf8;padding:12px 14px;border-radius:10px}
 #coordinator-detail-panel{scroll-margin-top:20px}
 @media(max-width:580px){.coordinator-case-tabs{grid-template-columns:1fr}.coordinator-case-tabs button{min-height:42px}}
+
+/* Independent scrolling: keep a selected case usable even when the queue is long. */
+@media(min-width:901px){
+ .coordinator-layout{align-items:start}
+ .coordinator-list,.coordinator-detail{
+  position:sticky;
+  top:16px;
+  height:calc(100dvh - 32px);
+  max-height:900px;
+  overflow-y:auto;
+  overflow-x:hidden;
+  overscroll-behavior-y:contain;
+  scrollbar-gutter:stable;
+  -webkit-overflow-scrolling:touch;
+ }
+ .coordinator-list{min-height:320px}
+ .coordinator-detail{min-height:320px;scroll-padding-top:12px}
+}
+@media(max-width:900px){
+ .coordinator-list{
+  max-height:min(45dvh,400px);
+  overflow-y:auto;
+  overscroll-behavior-y:contain;
+  -webkit-overflow-scrolling:touch;
+ }
+ .coordinator-detail{
+  position:static;
+  top:auto;
+  height:auto;
+  max-height:none;
+  overflow:visible;
+  min-height:400px;
+ }
+ .coordinator-layout{align-items:stretch}
+}
