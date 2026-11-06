@@ -59,7 +59,7 @@ export function MarketplaceHome(){
  return <div className="th-site">
    <div className={'th-sticky-search'+(showStickySearch?' th-sticky-search-visible':'')} aria-hidden={!showStickySearch}>
      <form className="th-sticky-search-inner th-animated-border" onSubmit={search} role="search" aria-label="Ask JiTap while browsing">
-       <label className="th-sticky-query"><Sparkles size={20} aria-hidden="true"/><input aria-label="Describe your service need" tabIndex={showStickySearch?0:-1} placeholder="How can I help you today - e.g. my sink is leaking" value={description} onChange={e=>setDescription(e.target.value)} required/></label>
+       <label className="th-sticky-query"><Sparkles size={20} aria-hidden="true"/><input aria-label="Describe your service need" tabIndex={showStickySearch?0:-1} placeholder="How can I help you today..." value={description} onChange={e=>setDescription(e.target.value)} required/></label>
        <label className="th-sticky-area"><MapPin size={17} aria-hidden="true"/><select aria-label="Your service area" tabIndex={showStickySearch?0:-1} value={area} onChange={e=>setArea(e.target.value)}>{areas.map(x=><option key={x}>{x}</option>)}</select></label>
        <button type="submit" tabIndex={showStickySearch?0:-1}>Ask JiTap <ArrowRight size={17}/></button>
      </form>
