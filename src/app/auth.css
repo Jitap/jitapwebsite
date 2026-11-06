@@ -81,3 +81,13 @@
 @media(max-width:760px){.jt-auth-page{display:flex;flex-direction:column}.jt-auth-promo{min-height:auto;padding:34px 25px;background-position:center 35%}.jt-auth-promo-content{max-width:none}.jt-auth-promo h1{font-size:38px;max-width:450px}.jt-auth-promo-lead{font-size:15px}.jt-auth-benefits,.jt-auth-network{display:none}.jt-auth-panel{padding:32px 20px 48px}.jt-auth-panel-inner{max-width:620px}.jt-auth-roles{margin-bottom:20px}}
 @media(max-width:400px){.jt-auth-roles{gap:8px}.jt-auth-roles button{padding:12px 8px;gap:7px}.jt-auth-roles button strong{font-size:12px}.jt-auth-country{padding:0 9px;font-size:12px}.jt-account-cards{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.jt-auth-roles button,.jt-auth-submit{transition:none}}
+
+
+/* Provider image supplied by JiTap; customer retains the coastal homepage scene. */
+.jt-auth-provider .jt-auth-promo{
+ background-image:linear-gradient(90deg,rgba(3,21,57,.94) 0%,rgba(3,29,72,.83) 40%,rgba(5,39,78,.15) 100%),url('/images/provider-signup.webp.png');
+ background-position:center,center;
+}
+.jt-auth-customer .jt-auth-promo{
+ background-image:linear-gradient(90deg,rgba(3,21,57,.96),rgba(3,29,72,.84) 52%,rgba(5,39,78,.24)),url('/images/mombasa-hero-reference.webp');
+}
