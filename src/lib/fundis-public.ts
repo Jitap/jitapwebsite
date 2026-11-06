@@ -16,34 +16,12 @@ export const fundiListings:FundiListing[]=[
     ]
   },
   {
-    "id": "fund-002",
-    "name": "AirBNB host",
-    "categories": [
-      "Other"
-    ],
-    "areas": [
-      "Bamburi"
-    ]
-  },
-  {
     "id": "fund-003",
     "name": "Architectural design services, interior design, Construction",
     "categories": [
       "Carpentry / Furniture",
       "Masonry / Construction",
       "Welding / Metalwork",
-      "Other"
-    ],
-    "areas": [
-      "Bamburi",
-      "Nyali",
-      "Mtwapa"
-    ]
-  },
-  {
-    "id": "fund-004",
-    "name": "Butchery, Grilling/Nyama Choma",
-    "categories": [
       "Other"
     ],
     "areas": [
@@ -61,16 +39,6 @@ export const fundiListings:FundiListing[]=[
     ],
     "areas": [
       "Mtwapa"
-    ]
-  },
-  {
-    "id": "fund-006",
-    "name": "Bnb services",
-    "categories": [
-      "Other"
-    ],
-    "areas": [
-      "Bamburi"
     ]
   },
   {
@@ -221,17 +189,6 @@ export const fundiListings:FundiListing[]=[
       "Nyali",
       "Mtwapa",
       "Tudor"
-    ]
-  },
-  {
-    "id": "fund-019",
-    "name": "Kate W.",
-    "categories": [
-      "Other"
-    ],
-    "areas": [
-      "Bamburi",
-      "Nyali"
     ]
   },
   {
