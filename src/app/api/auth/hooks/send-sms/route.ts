@@ -4,7 +4,7 @@ import {sendWasilianaSms} from '@/lib/wasiliana';
 
 export const runtime='nodejs';
 const headers={'Cache-Control':'no-store'};
-function reject(status:number){return NextResponse.json({error:'SMS hook request rejected'},{status,headers});}
+function reject(status:number,reason='unspecified'){if(status!==405)console.error('[jitap-sms-hook]',reason,'status',status);return NextResponse.json({error:'SMS hook request rejected'},{status,headers});}
 function signatureValid(body:string,request:Request,secret:string){
  // Supabase Auth HTTP hooks use Standard Webhooks (id.timestamp.body).
  // Never allow an unauthenticated network request to trigger paid SMS.
@@ -28,22 +28,25 @@ function signatureValid(body:string,request:Request,secret:string){
 }
 export async function POST(request:Request){
  const configured=process.env.SUPABASE_SEND_SMS_HOOK_SECRET?.trim();
- if(!configured||!process.env.WASILIANA_API_KEY||!process.env.WASILIANA_SENDER_ID)return reject(503);
- if(Number(request.headers.get('content-length')||0)>18000)return reject(413);
- let body:string;try{body=await request.text();}catch{return reject(400)}
- if(body.length>18000||!signatureValid(body,request,configured))return reject(401);
- let event:unknown;try{event=JSON.parse(body)}catch{return reject(400)}
+ if(!configured)return reject(503,'hook_secret_missing');
+ if(!process.env.WASILIANA_API_KEY)return reject(503,'wasiliana_key_missing');
+ if(!process.env.WASILIANA_SENDER_ID)return reject(503,'wasiliana_sender_missing');
+ if(Number(request.headers.get('content-length')||0)>18000)return reject(413,'payload_too_large');
+ let body:string;try{body=await request.text();}catch{return reject(400,'body_unreadable')}
+ if(body.length>18000)return reject(413,'payload_too_large');
+ if(!signatureValid(body,request,configured))return reject(401,'signature_invalid');
+ let event:unknown;try{event=JSON.parse(body)}catch{return reject(400,'invalid_json')}
  const payload=event as {user?:{phone?:unknown};sms?:{otp?:unknown}};
  const phone=payload?.user?.phone;
  const otp=payload?.sms?.otp;
- if(typeof phone!=='string'||!/^\+254[17][0-9]{8}$/.test(phone)||typeof otp!=='string'||!/^\d{6,8}$/.test(otp))return reject(422);
+ if(typeof phone!=='string'||!/^\+254[17][0-9]{8}$/.test(phone)||typeof otp!=='string'||!/^\d{6,8}$/.test(otp))return reject(422,'invalid_hook_payload');
  // The OTP originates inside Supabase Auth; never trust browser-supplied codes.
  // Wasiliana delivers it; Supabase verifies it. Never log the code or phone.
  const message='JiTap verification code: '+otp+'. Do not share this code with anyone.';
  try{
   const result=await sendWasilianaSms(phone,message,true);
-  if(!result.accepted)return reject(502);
+  if(!result.accepted)return reject(502,'wasiliana_unconfirmed_or_rejected');
   return NextResponse.json({},{headers});
- }catch{return reject(503)}
+ }catch{return reject(503,'wasiliana_transport_error')}
 }
 export async function GET(){return reject(405)}
