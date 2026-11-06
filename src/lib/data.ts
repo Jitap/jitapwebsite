@@ -42,6 +42,18 @@ export const guideBySlug=(slug:string)=>guides.find(x=>x.slug===slug);
 export function inferService(query:string):string|undefined {
  const t=query.toLowerCase().replace(/\s+/g,' ').trim();
  if(!t)return undefined;
+ // Specific building and technical trades outrank broad repair words.
+ if(/\b(?:roof(?:ing|er|ers)?|roof leak|mabati|gutter|gutters|waterproofing|roof sheet|roof tiles)\b/.test(t))return 'roofing';
+ if(/\b(?:mason|masonry|bricklay(?:er|ing)|bricks?|concrete|plaster(?:ing|er)?|fundi wa mawe|fundi wa ujenzi|foundation repair|building construction)\b/.test(t))return 'masonry';
+ if(/\b(?:tile|tiles|tiling|grout|grouting|flooring|floor tiles|floor screed|screeding|vinyl floor|laminate floor)\b/.test(t))return 'tiling';
+ if(/\b(?:weld(?:er|ers|ing)?|welding|fabricat(?:ion|or|e)|metalwork|metal gate|steel gate|steel railing|window grill|window grille)\b/.test(t))return 'welding';
+ if(/\b(?:cctv|surveillance camera|solar|inverter|electric fence|security alarm|security camera|alarm system)\b/.test(t))return 'solar-security';
+ if(/\b(?:air conditioner|air conditioning|aircon|a\/c|ac repair|hvac|cold room|refrigeration|cooling system)\b/.test(t))return 'air-conditioning';
+ if(/\b(?:glass pane|window glass|glazier|alumini?um|glass partition|window frame)\b/.test(t))return 'glass-aluminium';
+ if(/\b(?:termite|termites|pest control|fumigat(?:e|ion|or)|cockroach(?:es)?|bedbugs?|rodent control|exterminat(?:or|ion))\b/.test(t))return 'pest-control';
+ if(/\b(?:landscap(?:ing|er)|gardening|garden maintenance|lawn mowing|grass cutting|hedge trimming|tree pruning|irrigation)\b/.test(t))return 'landscaping';
+ if(/\b(?:laptop|macbook|desktop|computer|pc repair|printer|phone repair|smartphone repair|network setup|it support|motherboard|projector|ps5|playstation)\b/.test(t))return 'it-repairs';
+ if(/\b(?:mechanic|mechanics|fundi wa gari|fundi wa pikipiki|vehicle repair|car repair|motorcycle repair|engine repair|brake repair|exhaust repair|muffler|auto repair)\b/.test(t))return 'vehicle-repair';
  const understood=understandJob(query);
  if(understood)return understood.category;
  // Explicit cleaning task wins over a coincidental moving or repair noun.
