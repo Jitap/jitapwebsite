@@ -3,6 +3,7 @@ import {accountQuery,goTrue,normalizeKenyanPhone} from '@/lib/jitap-auth';
 
 export type CustomerIdentity={
  userId:string;
+ accessToken:string;
  phone:string;
  fullName:string|null;
  // On refresh the caller must set rotated cookies on the final response.
@@ -40,5 +41,5 @@ export async function getCustomerIdentity(req:NextRequest):Promise<CustomerIdent
  if(account.account_type!=='customer')return {kind:'provider'};
  const phone=normalizeKenyanPhone(u.phone),storedPhone=normalizeKenyanPhone(account.phone);
  if(!phone||phone!==storedPhone)return {kind:'invalid'};
- return {kind:'customer',identity:{userId:u.id,phone,fullName:account.full_name||null,rotated}};
+ return {kind:'customer',identity:{userId:u.id,accessToken:token,phone,fullName:account.full_name||null,rotated}};
 }
