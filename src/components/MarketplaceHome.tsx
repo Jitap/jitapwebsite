@@ -50,7 +50,7 @@ export function MarketplaceHome(){
          <h1 id="th-hero-title">Every job needs<br/>the right <em>fundi.</em></h1>
          <p>Tap in to local skills for repairs, cleaning, installations and everything that keeps your home running. Just tell JiTap what needs doing.</p>
          <form className="th-search" onSubmit={search} role="search" aria-label="Ask JiTap about a local service">
-           <label className="th-task-input"><Sparkles size={24} aria-hidden="true"/><textarea aria-label="Describe your project or problem" placeholder="Describe your project or problem — e.g. my sink is leaking..." rows={2} maxLength={1500} value={description} onChange={e=>setDescription(e.target.value)} required/></label>
+           <label className="th-task-input"><Sparkles size={24} aria-hidden="true"/><textarea aria-label="Describe your project or problem" placeholder="Describe your project or problem — e.g. my sink is leaking..." rows={2} maxLength={1500} value={description} onChange={e=>setDescription(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.nativeEvent.isComposing){e.preventDefault();e.currentTarget.form?.requestSubmit()}}} required/></label>
            <div className="th-search-controls"><label className="th-local-input"><MapPin size={19} aria-hidden="true"/><select aria-label="Where do you need a fundi?" value={area} onChange={e=>setArea(e.target.value)}>{areas.map(x=><option key={x}>{x}</option>)}</select></label><button type="submit" className="th-find-button">Ask JiTap <ArrowRight size={19}/></button></div>
          </form>
          <p className="th-privacy-note"><ShieldCheck size={17}/> Your contact details are never displayed publicly. JiTap will review the service request before an introduction.</p>
