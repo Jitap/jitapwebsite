@@ -106,6 +106,13 @@ await check('four-stage JiTap carousel, animated timeline and manual step naviga
  assert.equal(await page.locator('.jt-how-node').count(),4);
  assert.equal(await page.locator('.jt-how-slide').count(),4);
  assert.equal(await page.locator('.jt-how-artwork-frame').count(),4);
+ for(const name of ['Green Checklist App on Smartphone.png','Three Cheerful Cartoon Tradespeople.png','Green Calendar and Clock Reminder.png','Completed Home Service Icon.png']){
+  const imageResponse=await page.request.get(base+'/images/how-it-works/'+encodeURIComponent(name));
+  assert.equal(imageResponse.status(),200,'Uploaded JiTap image must load: '+name);
+ }
+ const imageSources=await page.locator('.jt-how-uploaded-art').evaluateAll(images=>images.map(img=>decodeURIComponent(img.getAttribute('src')||'')));
+ assert.equal(imageSources.length,4);
+ assert.ok(imageSources.every(src=>!src.endsWith('/ask.png')&&!src.endsWith('/match.png')&&!src.endsWith('/buzz.png')&&!src.endsWith('/done.png')));
  assert.equal(await page.locator('.jt-how-progress-pulse').count(),0);
  assert.equal(await page.locator('.jt-how-node-caption').nth(2).innerText(),'BUZZ');
  assert.ok((await page.locator('.jt-how-artwork-frame').first().locator('img').count())===1 || (await page.locator('.jt-how-artwork-frame').first().locator('.jt-how-original-art').count())===1);

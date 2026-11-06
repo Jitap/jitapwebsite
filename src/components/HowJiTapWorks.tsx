@@ -10,11 +10,11 @@ const steps=[
 ] as const;
 const INTERVAL=4800;
 const artworkLabels=['Original illustration of a service request on a phone','Original illustration of a Kenyan service-provider team','Original illustration of a scheduling calendar','Original illustration of a completed home'];
-const artworkFiles=['ask.png','match.png','buzz.png','done.png'] as const;
+const artworkFiles=['Green Checklist App on Smartphone.png','Three Cheerful Cartoon Tradespeople.png','Green Calendar and Clock Reminder.png','Completed Home Service Icon.png'] as const;
 function StepArtwork({step}:{step:number}){
  const [failed,setFailed]=useState(false);
  return <div className="jt-how-artwork-frame">
-  {!failed?<img className="jt-how-uploaded-art" src={`/images/how-it-works/${artworkFiles[step]}`} alt={artworkLabels[step]} loading="lazy" onError={()=>setFailed(true)}/>:<div role="img" aria-label={artworkLabels[step]} className={`jt-how-original-art jt-how-original-art-${step}`}/>}
+  {!failed?<img className="jt-how-uploaded-art" src={`/images/how-it-works/${encodeURIComponent(artworkFiles[step])}`} alt={artworkLabels[step]} loading="lazy" onError={()=>setFailed(true)}/>:<div role="img" aria-label={artworkLabels[step]} className={`jt-how-original-art jt-how-original-art-${step}`}/>}
  </div>;
 }
 export function HowJiTapWorks(){
