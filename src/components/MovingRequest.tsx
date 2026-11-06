@@ -124,7 +124,7 @@ export function MovingRequest(){
     const issues=payload.issues&&typeof payload.issues==='object'?Object.values(payload.issues).flat().filter((v):v is string=>typeof v==='string'):[];
     throw new Error(issues[0]||payload.error||'JiTap could not receive this request.');
    }
-   setReceipt('JT-SRV-'+String(payload.reference).replace(/-/g,'').slice(0,12).toUpperCase());setStage(5);
+   setReceipt(typeof payload.serviceId==='string'?payload.serviceId:'JT-'+String(payload.reference).slice(0,8).toUpperCase());setStage(5);
    try{await saveStage(4,{phone,email:info.email.trim(),intakeReference:String(payload.reference)});}
    catch{console.error('Moving progress sync failed after successful service intake')}
    sessionStorage.removeItem('jitap:moving-draft');
