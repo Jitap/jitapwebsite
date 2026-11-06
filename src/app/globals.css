@@ -515,7 +515,5 @@ body{color:#232c49}
 @media(prefers-reduced-motion:reduce){.jt-ai-typing-dots>span{animation:none;opacity:.75}}
 
 
-/* Negative/reversed JiTap logo on the navy footer; header logo keeps its colors. */
-.footer .brand img {
- filter: brightness(0) invert(1);
-}
+/* Footer uses a dedicated transparent white SVG, without a background panel. */
+.footer .brand img{filter:none;background:transparent}

@@ -153,6 +153,13 @@ await check('provider background loads and unsigned SMS hooks cannot dispatch',a
  await page.getByRole('button',{name:/I need services/}).click();
  assert.equal(await page.locator('.jt-auth-promo').count(),0);
  assert.equal(await page.locator('footer .brand img').count(),1);
+ assert.equal(await page.locator('footer .brand img').getAttribute('src'),'/images/jitap-logo-white.svg');
+ assert.equal(await page.locator('header .brand img').getAttribute('src'),'/images/jitap-logo.svg');
+ const logo=await page.request.get(base+'/images/jitap-logo-white.svg');
+ assert.equal(logo.status(),200);
+ const svg=await logo.text();
+ assert.ok(!svg.includes('<rect width="1002" height="455" fill="#ffffff"'),'Footer logo must not contain a white background rectangle');
+ assert.ok(svg.includes('fill="#ffffff"'),'Footer logo paths must be white');
 });
 await check('signup/login navigation, role selection and invalid phone validation',async()=>{
  await page.setViewportSize({width:390,height:844});
