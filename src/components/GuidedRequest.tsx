@@ -117,6 +117,7 @@ export function GuidedRequest(){
  const [category,setCategory]=useState('other-services');
  const [area,setArea]=useState('Bamburi');
  const [description,setDescription]=useState('');
+ const [introThinking,setIntroThinking]=useState(false);
  const [stage,setStage]=useState(0);
  const [answers,setAnswers]=useState<Record<string,string>>({});
  const [cleaningQuantities,setCleaningQuantities]=useState<Record<string,number>>({});
@@ -127,7 +128,7 @@ export function GuidedRequest(){
  const [ready,setReady]=useState(false);
  const [showMatches,setShowMatches]=useState(false);
  const [finalDescription,setFinalDescription]=useState('');
- useEffect(()=>{const s=new URLSearchParams(window.location.search);const c=s.get('category');const a=s.get('area');const d=s.get('description');if(c&&categories.some(x=>x.slug===c))setCategory(c);if(a&&areas.includes(a))setArea(a);else try{const stored=localStorage.getItem('jitap:area');if(stored&&areas.includes(stored))setArea(stored)}catch{}if(d){setDescription(d);if((!c||c==='other-services')&&inferService(d))setCategory(inferService(d)!);}
+ useEffect(()=>{const s=new URLSearchParams(window.location.search);const c=s.get('category');const a=s.get('area');const d=s.get('description');if(c&&categories.some(x=>x.slug===c))setCategory(c);if(a&&areas.includes(a))setArea(a);else try{const stored=localStorage.getItem('jitap:area');if(stored&&areas.includes(stored))setArea(stored)}catch{}if(d){setDescription(d);setIntroThinking(true);if((!c||c==='other-services')&&inferService(d))setCategory(inferService(d)!);}
  setHydrated(true);
  },[]);
  const [aiQuestions,setAiQuestions]=useState<Question[]|null>(null);
@@ -158,7 +159,15 @@ export function GuidedRequest(){
  const validTime=preferredTimes.some(([time])=>time===preferredTime)&&!(preferredDate===clock.date&&Number(preferredTime.slice(0,2))*60+Number(preferredTime.slice(3,5))<=clock.minutes);
  const stageNames:string[]=category==='cleaning'?['Need','Time','Total','Contact']:[...questions.map((q,i)=>q.id==='timing'?'Time':q.id==='screenSize'?'TV size':q.id==='wallType'?'Wall':q.id==='bracket'?'Bracket':q.id==='frequency'?'Frequency':q.id==='size'?'Space':q.id==='cleanType'?'Type':i===0?'Need':'Details'),'Matches','Contact'];
  const aiRequestKey=requestKey;
- const aiWaiting=false;
+ const aiWaiting=(!hydrated||introThinking)&&description.trim().length>=8&&!ready&&!showMatches&&stage===0;
+ useEffect(()=>{
+  if(!introThinking)return;
+  // Familiar requests get a brief typing transition; unfamiliar jobs get time
+  // for AI intake to form its first contextual question before fallback.
+  const wait=knownQuestions||category==='cleaning'||category==='moving'?850:5200;
+  const timer=window.setTimeout(()=>setIntroThinking(false),wait);
+  return()=>window.clearTimeout(timer);
+ },[introThinking,requestKey,knownQuestions,category]);
  const answersRef=useRef(answers);
  answersRef.current=answers;
  const label=tvMount?'TV Mounting':context?({ 'fan-repair':'Fan Repair','socket-repair':'Electrical Socket Repair','tv-repair':'TV Repair','microwave-repair':'Microwave Repair','computer-electronics':'Electronics Service','vehicle-exhaust':'Vehicle Exhaust','photography':'Photography','vehicle-mechanic':'Vehicle Mechanic' } as Record<string,string>)[context.subcategory]||categories.find(x=>x.slug===category)?.name||'Local service':categories.find(x=>x.slug===category)?.name||'Local service';
@@ -182,6 +191,7 @@ export function GuidedRequest(){
     const nextCategory=typeof data.category==='string'&&categories.some(x=>x.slug===data.category)?data.category:category;
     track('ai_intake_timing',{source:res.headers.get('X-JiTap-Intake-Source')||'model',durationMs:Math.round(performance.now()-started),category:nextCategory});
     setAiQuestions(data.questions);
+    setIntroThinking(false);
     setAiResolvedKey(nextCategory+'|'+area+'|'+description.trim());
     if(nextCategory!==category)setCategory(nextCategory);
    }catch{
@@ -192,6 +202,7 @@ export function GuidedRequest(){
   return ()=>{cancelled=true;clearTimeout(timer);controller.abort()};
  },[hydrated,description,category,area,ready,showMatches,stage,knownQuestions,requestKey,aiResolvedKey]);
  if(category==='moving')return <MovingRequest/>;
+ if(aiWaiting)return <main className="th-request-flow"><div className="container th-request-layout"><section className="th-questions jt-ai-intake-loading" role="status" aria-label="JiTap is preparing your service questions"><span className="jt-ai-typing-dots" aria-hidden="true"><span/><span/><span/></span></section></div></main>;
  return <div className="th-request-flow">
   <div className="container th-request-layout">
    
