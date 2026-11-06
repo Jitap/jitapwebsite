@@ -22,12 +22,31 @@ export const guides:Guide[]=[
 ];
 export const serviceBySlug=(slug:string)=>categories.find(x=>x.slug===slug);
 export const guideBySlug=(slug:string)=>guides.find(x=>x.slug===slug);
-export function inferService(query:string){const t=query.toLowerCase();const understood=understandJob(query);if(understood)return understood.category;
- // High-confidence intent vocabulary runs before generic category matching.
- // Handles terse English, Kiswahili and Sheng service requests even when AI is offline.
- if(/\b(plumb(?:er|ing|ers)?|fundi\s+wa\s+maji|bomba|mabomba|tap|faucet|sink|drain|leak(?:ing|age)?|dripping|imeziba|imevuja|inavuja|choo\s+imeziba)\b/i.test(t))return 'plumbing';
- if(/\b(electrician|fundi\s+wa\s+stima|stima|electric(?:al)?|wiring|socket|switch|power\s+fault)\b/i.test(t))return 'electrical';
- if(/\b(paint(?:er|ing)?|kupaka\s+rangi|rangi\s+ya\s+nyumba)\b/i.test(t))return 'painting';
- if(/\b(carpenter|carpentry|fundi\s+wa\s+mbao|kabati|wardrobe|door\s*(?:handle|knob|hinge|lock|latch)|door\s*(?:repair|replacement)|(?:replace|repair|fix|install)\s+(?:my\s+|the\s+|a\s+)?door\b|mlango|furniture|cabinet)\b/i.test(t))return 'carpentry';
- if(/\b(fridge|refrigerator|freezer|washing\s+machine|appliance\s+repair)\b/i.test(t))return 'appliance-repair';if(/(?:\b(?:tv|television|smart\s*tv|screen)\b.{0,55}\b(?:mount|mounting|install|hang|bracket|wall)\b|\b(?:mount|mounting|hang|bracket)\b.{0,55}\b(?:tv|television|screen)\b|\btv\s*mount\w*\b)/i.test(t))return 'general-repairs';if(/\b(mov(?:e|es|ing|ers)|relocat(?:e|ion|ing)|shifting|house shifting|house moving|moving truck|moving delivery|kuhama|nihame|transport furniture)\b/i.test(t))return 'moving';if(/(?:mama[\s-]*fua|mamafua|kufua|laundry|laundering|house.?keeper|house.?cleaner|house.?cleaning|clean my (?:house|home)|cleaning|ironing|folding clothes|wash (?:clothes|duvet|blanket)|duvet washing)/i.test(t))return 'cleaning';// Avoid arbitrary word fragments: 'handle' contains 'hand' (washing).
- return (/sink|tap|pipe|drain|water leak/.test(t)?'plumbing':/power|socket|wire|electric/.test(t)?'electrical':/fridge|washer/.test(t)?'appliance-repair':/\b(?:wood|furniture|door|handle|hinge|cabinet)\b/.test(t)?'carpentry':undefined);}
+/**
+ * Conservative local-service routing.
+ * Match whole service terms and the requested action, never fragments of a
+ * label (e.g. "handle" must NOT match "hand washing").
+ * Unclear requests stay unclassified for contextual AI intake.
+ */
+export function inferService(query:string):string|undefined {
+ const t=query.toLowerCase().replace(/\s+/g,' ').trim();
+ if(!t)return undefined;
+ const understood=understandJob(query);
+ if(understood)return understood.category;
+ // Explicit cleaning task wins over a coincidental moving or repair noun.
+ if(/\b(?:move[- ]out|post[- ]move|after moving)\s+clean(?:ing)?\b|\b(?:clean|wash|wipe|polish)\s+(?:my\s+|the\s+|a\s+)?(?:door|handle|furniture|floor|house|home)\b/.test(t))return 'cleaning';
+ // Moving furniture is transport work, not furniture carpentry.
+ if(/\b(?:mov(?:e|es|ing|ers)|relocat(?:e|ion|ing)|shifting|kuhama|nihame|transport(?:ing)?)\b/.test(t)&&
+    /\b(?:house|home|furniture|wardrobe|sofa|bed|truck|delivery|relocation|moving|office|items|goods|kuhama|nihame)\b/.test(t))return 'moving';
+ // Appliance names override mentions of a door, handle, motor or pipe.
+ if(/\b(?:fridge|refrigerator|freezer|friji|washing machine|washer|dishwasher|cooker|oven|appliance repair)\b/.test(t))return 'appliance-repair';
+ if(/\b(?:plumb(?:er|ing|ers)?|fundi wa maji|bomba|mabomba|tap|faucet|sink|drain|pipe|leak(?:ing|age)?|dripping|imeziba|imevuja|inavuja|choo imeziba)\b/.test(t))return 'plumbing';
+ if(/\b(?:electrician|fundi wa stima|stima|electric(?:al)?|wiring|socket|soketi|switch|power fault|circuit breaker)\b/.test(t))return 'electrical';
+ if(/\b(?:paint(?:er|ing)?|kupaka rangi|rangi ya nyumba)\b/.test(t))return 'painting';
+ if(/\b(?:mama[ -]*fua|mamafua|kufua|laundry|laundering|housekeeper|house cleaner|house cleaning|clean my house|clean my home|cleaning|ironing|folding clothes|wash clothes|wash duvets?|wash blankets?|duvet washing)\b/.test(t))return 'cleaning';
+ if(/\b(?:carpenter|carpentry|fundi wa mbao|kabati|wardrobe|furniture|cabinet|hinge|hinges|door|doors|door handle|door knob|door lock|mlango)\b/.test(t))return 'carpentry';
+ if(/(?:\b(?:tv|television|smart tv|screen)\b.{0,55}\b(?:mount|mounting|install|hang|bracket|wall)\b|\b(?:mount|mounting|hang|bracket)\b.{0,55}\b(?:tv|television|screen)\b)/.test(t))return 'general-repairs';
+ if(/\b(?:handyman|general repairs|fixture repair|wall mounting)\b/.test(t))return 'general-repairs';
+ // Do not invent a service from partial substrings; ask for clarification.
+ return undefined;
+}
