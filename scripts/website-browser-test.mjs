@@ -80,7 +80,7 @@ await check('sticky search preserves typed problem and area when scrolling',asyn
  assert.equal(await page.getByRole('textbox',{name:'Describe your service need'}).inputValue(),'My sink is leaking');
  assert.equal(await page.getByRole('combobox',{name:'Your service area'}).inputValue(),'Nyali');
  await page.screenshot({path:'ui-test-results/jitap-sticky-mobile.png'});
- await page.getByRole('button',{name:'Ask JiTap'}).click();
+ await page.locator('.th-sticky-search-visible button[type="submit"]').click();
  await page.waitForURL('**/request?**');
  const params=new URL(page.url()).searchParams;
  assert.equal(params.get('area'),'Nyali');
