@@ -147,7 +147,12 @@ await check('provider background loads and unsigned SMS hooks cannot dispatch',a
  assert.ok([401,503].includes(unsigned.status()),'Hook must reject unsigned SMS requests');
  await page.setViewportSize({width:390,height:844});
  await page.goto(base+'/login');
- assert.equal(await page.locator('.jt-auth-provider .jt-auth-promo').count(),1);
+ assert.equal(await page.locator('.jt-auth-promo').count(),0);
+ assert.equal(await page.locator('.jt-auth-panel').count(),1);
+ assert.equal(await page.locator('.jt-auth-help').count(),0);
+ await page.getByRole('button',{name:/I need services/}).click();
+ assert.equal(await page.locator('.jt-auth-promo').count(),0);
+ assert.equal(await page.locator('footer .brand img').count(),1);
 });
 await check('signup/login navigation, role selection and invalid phone validation',async()=>{
  await page.setViewportSize({width:390,height:844});
