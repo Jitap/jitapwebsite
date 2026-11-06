@@ -12,14 +12,16 @@ const open=(path='/')=>page.goto(base+path,{waitUntil:'domcontentloaded',timeout
 await check('approved Google Drive photos load sharply and without repeats',async()=>{
  const res=await open();assert.equal(res?.status(),200);
  await page.getByRole('heading',{name:/Every job needs/i}).waitFor();
- assert.equal(await page.locator('.th-category').count(),8);
+ assert.equal(await page.locator('.th-category').count(),4);
+ assert.equal(await page.locator('.th-category-chip').count(),40);
+ assert.equal(await page.locator('.th-category-all a').getAttribute('href'),'/services');
  assert.equal(await page.locator('.th-project').count(),6);
  await page.locator('.th-category').first().scrollIntoViewIfNeeded();
  await page.waitForTimeout(1700);
  const images=await page.locator('.th-categories img').evaluateAll(nodes=>nodes.map(n=>({src:n.getAttribute('src'),loaded:n.complete,natural:n.naturalWidth,display:Math.round(n.getBoundingClientRect().width)})));
  console.log('APPROVED IMAGES',JSON.stringify(images));
  assert.ok(images.every(x=>x.loaded&&x.natural>=450),'All category images must load from original approved photos');
- assert.equal(new Set(images.map(x=>x.src)).size,8,'No repeated category photographs');
+ assert.equal(new Set(images.map(x=>x.src)).size,4,'No repeated category photographs');
  assert.ok(images.every(x=>x.natural>x.display),'No category image may be upscaled');
  const mascot=await page.locator('.th-hero-visual>img').evaluate(n=>({natural:n.naturalWidth,display:n.getBoundingClientRect().width}));
  assert.ok(mascot.natural>mascot.display,'Original mascot must never be upscaled');
@@ -29,14 +31,14 @@ await check('all six Mombasa areas exist in homepage search and header',async()=
  await open();
  const options=await page.getByRole('combobox',{name:'Where do you need a fundi?'}).locator('option').allTextContents();
  assert.deepEqual(options,['Bamburi','Nyali','Mtwapa','Tudor','Changamwe','Likoni']);
- await page.getByRole('combobox',{name:'Choose your pilot neighbourhood'}).selectOption('Tudor');
+ await page.getByRole('combobox',{name:'Where do you need a fundi?'}).selectOption('Tudor');
  assert.equal(await page.getByRole('combobox',{name:'Where do you need a fundi?'}).inputValue(),'Tudor');
 });
 await check('homepage service search sends a structured request',async()=>{
  await open();
  await page.getByRole('combobox',{name:'Where do you need a fundi?'}).selectOption('Mtwapa');
  await page.getByRole('textbox',{name:'Describe your project or problem'}).fill('My sink is leaking, I need a plumber.');
- await page.getByRole('button',{name:'Find a fundi'}).click();
+ await page.getByRole('button',{name:'Ask JiTap'}).click();
  await page.waitForURL('**/request?**');
  const params=new URL(page.url()).searchParams;
  assert.equal(params.get('area'),'Mtwapa');assert.equal(params.get('category'),'plumbing');
@@ -62,11 +64,35 @@ await check('Thumbtack-style guided questions, progress, skip and contact step',
  await page.screenshot({path:'ui-test-results/thumbtack-guided-request.png',fullPage:true});
 });
 await check('every category card links to a real service page',async()=>{
- for(const slug of ['plumbing','electrical','cleaning','painting','carpentry','appliance-repair','general-repairs','other-services']){
+ for(const slug of ['plumbing','electrical','cleaning','moving']){
   await open();
   await page.locator('.th-category[href="/services/'+slug+'"]').click();
   await page.waitForURL('**/services/'+slug);
  }
+});
+await check('sticky search preserves typed problem and area when scrolling',async()=>{
+ await page.setViewportSize({width:390,height:844});
+ await open();
+ await page.getByRole('textbox',{name:'Describe your project or problem'}).fill('My sink is leaking');
+ await page.getByRole('combobox',{name:'Where do you need a fundi?'}).selectOption('Nyali');
+ await page.evaluate(()=>window.scrollTo(0,1250));
+ await page.locator('.th-sticky-search-visible').waitFor();
+ assert.equal(await page.getByRole('textbox',{name:'Describe your service need'}).inputValue(),'My sink is leaking');
+ assert.equal(await page.getByRole('combobox',{name:'Your service area'}).inputValue(),'Nyali');
+ await page.screenshot({path:'ui-test-results/jitap-sticky-mobile.png'});
+ await page.getByRole('button',{name:'Ask JiTap'}).click();
+ await page.waitForURL('**/request?**');
+ const params=new URL(page.url()).searchParams;
+ assert.equal(params.get('area'),'Nyali');
+ assert.equal(params.get('category'),'plumbing');
+});
+await check('all service icon shortcuts have valid links',async()=>{
+ await open();
+ assert.equal(await page.locator('.th-category-track-group:first-child a').count(),20);
+ assert.ok((await page.locator('.th-category-track-group:first-child a').evaluateAll(links=>links.every(l=>l.getAttribute('href')?.startsWith('/services/')))));
+ assert.equal(await page.getByRole('heading',{name:'Why customers love JiTap'}).count(),1);
+ assert.equal(await page.locator('.th-testimonial-card').count(),3);
+ assert.ok((await page.locator('.th-testimonial-disclaimer').innerText()).includes('not actual reviews'));
 });
 await check('fundi directory contains 36 profiles but exposes no phone contacts',async()=>{
  const resp=await open('/fundis');assert.equal(resp?.status(),200);
