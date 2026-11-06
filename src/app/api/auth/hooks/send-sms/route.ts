@@ -40,9 +40,9 @@ export async function POST(request:Request){
  const msg=(payload?.user&&payload?.sms)?payload:payload?.record;
  const rawPhone=msg?.user?.phone;
  const rawOtp=msg?.sms?.otp;
- const phone=typeof rawPhone==='string'?(/^254[17]\\d{8}$/.test(rawPhone)?'+'+rawPhone:/^0[17]\\d{8}$/.test(rawPhone)?'+254'+rawPhone.slice(1):rawPhone):null;
+ const phone=typeof rawPhone==='string'?(/^254[17]\d{8}$/.test(rawPhone)?'+'+rawPhone:/^0[17]\d{8}$/.test(rawPhone)?'+254'+rawPhone.slice(1):rawPhone):null;
  const otp=(typeof rawOtp==='string'||typeof rawOtp==='number')?String(rawOtp):'';
- if(!phone||!/^\\+254[17]\\d{8}$/.test(phone)||!/^\\d{6,8}$/.test(otp)){
+ if(!phone||!/^\+254[17]\d{8}$/.test(phone)||!/^\d{6,8}$/.test(otp)){
   // Only structural diagnostics: never log event values, phone numbers or OTP digits.
   console.error('[jitap-sms-hook] payload_shape',{
    envelope:payload?.record?'record':payload?.user?'direct':'unknown',
