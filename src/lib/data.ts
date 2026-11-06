@@ -53,7 +53,7 @@ export function inferService(query:string):string|undefined {
  if(/\b(?:termite|termites|pest control|fumigat(?:e|ion|or)|cockroach(?:es)?|bedbugs?|rodent control|exterminat(?:or|ion))\b/.test(t))return 'pest-control';
  if(/\b(?:landscap(?:ing|er)|gardening|garden maintenance|lawn mowing|grass cutting|hedge trimming|tree pruning|irrigation)\b/.test(t))return 'landscaping';
  if(/\b(?:laptop|macbook|desktop|computer|pc repair|printer|phone repair|smartphone repair|network setup|it support|motherboard|projector|ps5|playstation)\b/.test(t))return 'it-repairs';
- if(/\b(?:mechanic|mechanics|fundi wa gari|fundi wa pikipiki|vehicle repair|car repair|motorcycle repair|engine repair|brake repair|exhaust repair|muffler|auto repair)\b/.test(t))return 'vehicle-repair';
+ if(/\b(?:mechanic|mechanics|fundi wa gari|fundi wa pikipiki|vehicle repair|car repair|motorcycle repair|motorcycle|boda boda|engine repair|brakes?|brake repair|exhaust repair|muffler|auto repair)\b/.test(t))return 'vehicle-repair';
  const understood=understandJob(query);
  if(understood)return understood.category;
  // Explicit cleaning task wins over a coincidental moving or repair noun.
