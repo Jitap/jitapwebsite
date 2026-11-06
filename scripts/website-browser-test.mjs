@@ -99,6 +99,20 @@ await check('all service icon shortcuts have valid links',async()=>{
  assert.ok((await page.locator('.jt-voices-stack').innerText()).includes('Know where your fundi is coming from.'));
  assert.equal(await page.locator('.jt-voice-card [aria-label="customer review"]').count(),0);
 });
+await check('four-stage JiTap carousel, animated timeline and manual step navigation',async()=>{
+ await page.setViewportSize({width:390,height:844});
+ await open();
+ await page.getByRole('heading',{name:'How JiTap Works'}).waitFor();
+ assert.equal(await page.locator('.jt-how-node').count(),4);
+ assert.equal(await page.locator('.jt-how-slide').count(),4);
+ await page.getByRole('button',{name:'Show step 3: Connect and agree on a time'}).click();
+ assert.ok((await page.locator('.jt-how-progress-fill').getAttribute('style')).includes('66.666'));
+ assert.equal(await page.getByRole('heading',{name:'Connect and agree on a time'}).count(),1);
+ assert.equal(await page.getByRole('button',{name:'Play carousel'}).count(),1);
+ await page.getByRole('button',{name:'Next step'}).click();
+ assert.equal(await page.locator('.jt-how-slide[aria-hidden="false"] h3').innerText(),'Complete the job');
+ await page.screenshot({path:'ui-test-results/jitap-how-works-mobile.png'});
+});
 await check('fundi directory contains 36 profiles but exposes no phone contacts',async()=>{
  const resp=await open('/fundis');assert.equal(resp?.status(),200);
  assert.equal(await page.locator('.td-pro-card').count(),36);
