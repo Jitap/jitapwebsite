@@ -1,6 +1,7 @@
 'use client';
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {Copy,ExternalLink,RefreshCw,MessageSquare,UserRoundCheck,AlertCircle} from 'lucide-react';
+import {providerMatchesTrade} from '@/lib/trade-categories';
 
 type Provider={id:string;business_name:string;service_categories:string[];service_areas:string[];base_area:string|null};
 type Assignment={id:string;provider_id:string;state:string;quoted_amount_kes:number|null;notes:string|null;assigned_at:string;responded_at:string|null};
@@ -87,11 +88,10 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
  },[load]);
  const accepted=assignments.find(x=>x.state==='accepted');
  const acceptedName=providers.find(p=>p.id===accepted?.provider_id)?.business_name;
- const matches=useMemo(()=>providers.filter(p=>{
-  const category=caseItem.category.toLowerCase().replaceAll('-',' ');
-  const cats=p.service_categories.join(' ').toLowerCase().replaceAll('-',' ');
-  return cats.includes(category)||category.includes('moving')&&cats.includes('moving')||cats.includes('relocation')&&category.includes('moving');
- }),[providers,caseItem.category]);
+ const matches=useMemo(()=>providers.filter(p=>
+  providerMatchesTrade(caseItem.category,p.service_categories)&&
+  p.service_areas.some(area=>area.toLowerCase()===caseItem.area.toLowerCase())
+ ),[providers,caseItem.category,caseItem.area]);
  async function action(payload:Record<string,unknown>,success:string){
   setBusy(true);setFeedback('');
   try{
@@ -159,7 +159,12 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
   <label>Choose verified provider
    <select value={providerId} onChange={e=>setProviderId(e.target.value)} disabled={busy||caseItem.status==='incomplete'}>
     <option value="">Select a verified provider…</option>
-    {providers.map(p=><option key={p.id} value={p.id}>{p.business_name} · {p.base_area||p.service_areas.join(', ')}</option>)}
+    <optgroup label="Matching trade and area">
+     {matches.map(p=><option key={p.id} value={p.id}>{p.business_name} · {p.base_area||p.service_areas.join(', ')}</option>)}
+    </optgroup>
+    <optgroup label="Other providers — manually verify suitability">
+     {providers.filter(p=>!matches.some(m=>m.id===p.id)).map(p=><option key={p.id} value={p.id}>{p.business_name} · {p.base_area||p.service_areas.join(', ')}</option>)}
+    </optgroup>
    </select>
   </label>
   {matches.length===0&&<p className="coordinator-help"><AlertCircle size={15}/> No verified provider category match confirmed. Use <strong>Needs sourcing</strong> for human intervention.</p>}
