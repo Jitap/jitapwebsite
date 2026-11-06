@@ -72,3 +72,20 @@
 .coordinator-case-reference{font-size:12px;line-height:1.4;font-weight:800;letter-spacing:.06em;color:#008a62;margin-bottom:7px}
 .coordinator-service-id{font-weight:800!important;color:#0b8562!important;letter-spacing:.025em;overflow-wrap:anywhere}
 .coordinator-detail-top span strong{color:#16a06e;letter-spacing:.04em}
+
+/* Live coordinator updates: small in-app alerts, not browser permission prompts. */
+.coordinator-header-actions .coordinator-live-indicator{display:inline-flex;align-items:center;gap:7px;white-space:nowrap;font-size:12px;font-weight:700;color:#15764f;background:#eaf8f0;border:1px solid #bee4cf;border-radius:999px;padding:7px 10px}
+.coordinator-live-dot{display:inline-block;flex:0 0 8px;width:8px;height:8px;border-radius:50%;background:#0da76b;box-shadow:0 0 0 3px #0da76b1b}
+.coordinator-sync-note{padding:10px 14px;background:#fff9e7;border:1px solid #ead9a7;border-radius:10px;color:#815f22;font-size:13px}
+.coordinator-notice-stack{position:fixed;top:88px;right:19px;z-index:1100;width:min(385px,calc(100vw - 30px));display:flex;flex-direction:column;gap:10px;pointer-events:none}
+.coordinator-notice{display:flex;gap:11px;align-items:flex-start;background:#fff;border:1px solid #a4debd;border-left:5px solid #0ba764;border-radius:13px;padding:14px 12px;box-shadow:0 12px 40px rgba(12,42,43,.22);pointer-events:auto;animation:coordinator-notice-in .18s ease-out}
+.coordinator-notice-icon{display:inline-flex;align-items:center;justify-content:center;flex:none;width:35px;height:35px;border-radius:50%;background:#e6f9ef;color:#078d58}
+.coordinator-notice-body{flex:1;min-width:0}
+.coordinator-notice-body strong{display:block;font-size:14px;color:#15344a}
+.coordinator-notice-body p{font-size:12px;line-height:1.5;color:#48606d;margin:5px 0 9px;overflow-wrap:anywhere}
+.coordinator-notice-body button{padding:7px 12px;background:#057c56;border:0;border-radius:8px;color:#fff;font-weight:750;font-size:12px}
+.coordinator-notice-dismiss{display:inline-flex;align-items:center;justify-content:center;padding:5px;background:transparent;border:0;color:#667781;min-width:28px;min-height:28px;border-radius:7px}
+.coordinator-notice-dismiss:hover{background:#ecf2f2}
+@keyframes coordinator-notice-in{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:600px){.coordinator-notice-stack{top:72px;right:10px;width:calc(100vw - 20px)}.coordinator-notice{padding:12px 10px}.coordinator-header-actions .coordinator-live-indicator{white-space:normal}}
+@media(prefers-reduced-motion:reduce){.coordinator-notice{animation:none}}
