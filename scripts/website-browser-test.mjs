@@ -140,6 +140,15 @@ await check('fundi directory contains 36 profiles but exposes no phone contacts'
  assert.ok((await page.locator('.td-pro-card').count())>0);
  await page.screenshot({path:'ui-test-results/thumbtack-fundi-directory.png',fullPage:true});
 });
+await check('provider background loads and unsigned SMS hooks cannot dispatch',async()=>{
+ const asset=await page.request.get(base+'/images/provider-signup.webp.png');
+ assert.equal(asset.status(),200,'Provider signup asset must be accessible');
+ const unsigned=await page.request.post(base+'/api/auth/hooks/send-sms',{data:{user:{phone:'+254700000000'},sms:{otp:'123456'}}});
+ assert.ok([401,503].includes(unsigned.status()),'Hook must reject unsigned SMS requests');
+ await page.setViewportSize({width:390,height:844});
+ await page.goto(base+'/login');
+ assert.equal(await page.locator('.jt-auth-provider .jt-auth-promo').count(),1);
+});
 await check('signup/login navigation, role selection and invalid phone validation',async()=>{
  await page.setViewportSize({width:390,height:844});
  await open();
