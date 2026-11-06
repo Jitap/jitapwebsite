@@ -31,7 +31,7 @@ export function AccountAuth(){
    else{
     if(json.accountType!==role)setNotice('This number already has a '+json.accountType+' account. Opening its dashboard.');
     window.dispatchEvent(new Event('jitap:auth-changed'));
-    router.replace('/account');router.refresh();
+    router.replace(json.accountType==='provider'?'/provider':'/account');router.refresh();
    }
   }catch(err){setError(err instanceof Error?err.message:'Something went wrong. Please try again.')}
   finally{setBusy(false)}

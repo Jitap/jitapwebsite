@@ -2,6 +2,7 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {CheckCircle2,RefreshCw,LogOut,MapPin,Phone,CalendarClock,Search,AlertTriangle,ClipboardList,Users,Clock3,Bell, X} from 'lucide-react';
 import {CoordinatorWorkflow} from '@/components/CoordinatorWorkflow';
+import Link from 'next/link';
 type Staff={email:string;role:'admin'|'coordinator'};
 type Case={
  id:string;reference:string;source_kind:string;source_id:string;status:string;priority:string;assigned_to:string|null;next_followup_at:string|null;created_at:string;
@@ -187,7 +188,7 @@ export function CoordinatorDashboard(){
    {feedback&&<p role="status">{feedback}</p>}
   </div></section>;
  return <section className="coordinator-root">
-  <header className="coordinator-header"><div><span className="coordinator-kicker">JITAP SERVICE OPERATIONS</span><h1>Coordinator queue</h1><p>Follow every request from intake to completion. No provider match? Escalate to human sourcing.</p></div>
+  <header className="coordinator-header"><div><span className="coordinator-kicker">JITAP SERVICE OPERATIONS</span><h1>Coordinator queue</h1><Link href="/coordinator/providers" className="coordinator-provider-link">Provider verification & BUZZ responses →</Link><p>Follow every request from intake to completion. No provider match? Escalate to human sourcing.</p></div>
   <div className="coordinator-header-actions"><span>{staff.email} · {staff.role}</span><div className="coordinator-live-indicator" aria-label="Automatic refresh enabled"><span className="coordinator-live-dot"/> Live updates · every 15s{lastSynced?' · '+lastSynced.toLocaleTimeString('en-KE',{hour:'2-digit',minute:'2-digit',timeZone:'Africa/Nairobi'}):''}</div><button onClick={()=>load().catch(()=>setFeedback('Refresh failed'))}><RefreshCw size={16}/> Refresh</button><button onClick={logout}><LogOut size={16}/> Sign out</button></div></header>
   {refreshIssue&&<p className="coordinator-sync-note" role="status">Connection interrupted. JiTap will automatically check again.</p>}
   {notices.length>0&&<aside className="coordinator-notice-stack" aria-label="Service operations notifications" aria-live="polite">

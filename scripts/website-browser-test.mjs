@@ -198,6 +198,26 @@ await check('signed-in header shows My Account and guest request retains contact
  await open('/request?category=plumbing&area=Bamburi&description=My%20sink%20is%20leaking');
  assert.equal(await page.locator('.jt-verified-contact').count(),0,'Guest cannot be shown as a verified customer');
 });
+await check('provider onboarding renders Kenya areas and no wallet or payments',async()=>{
+ const unauth=await page.request.get(base+'/api/provider/workspace');
+ assert.equal(unauth.status(),401,'Private provider endpoint must reject guest access');
+ const review=await page.request.get(base+'/api/coordinator/provider-reviews');
+ assert.equal(review.status(),401,'Staff review endpoint must reject guest access');
+ await page.route('**/api/provider/workspace',async route=>{
+  if(route.request().method()==='GET'){
+   await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({profile:null,reviewStatus:'not_submitted',opportunities:[],recentResponses:[]})});
+  }else await route.continue();
+ });
+ await page.setViewportSize({width:390,height:844});
+ await open('/provider');
+ await page.getByRole('heading',{name:'Build your provider profile'}).waitFor();
+ assert.equal(await page.getByText('Bamburi',{exact:true}).count()>0,true);
+ assert.equal(await page.getByText('Nyali',{exact:true}).count()>0,true);
+ assert.equal(await page.getByText('Addis Ababa').count(),0);
+ assert.equal(await page.getByText('Wallet',{exact:true}).count(),0);
+ await page.screenshot({path:'ui-test-results/jitap-provider-onboarding.png',fullPage:true});
+ await page.unroute('**/api/provider/workspace');
+});
 await check('provider application supports six areas and back/continue',async()=>{
  await open();
  await page.goto(base+'/providers/apply');
