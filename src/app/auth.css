@@ -1,0 +1,83 @@
+/* JiTap account entry — role-aware, mobile-first, inspired by founder reference */
+.jt-auth-page{min-height:calc(100vh - 80px);display:grid;grid-template-columns:1.04fr .96fr;background:#f1f5fb;color:#09204a}
+.jt-auth-promo{position:relative;isolation:isolate;background:linear-gradient(90deg,rgba(3,21,57,.97),rgba(3,29,72,.91) 56%,rgba(5,39,78,.2)),url('/images/mombasa-provider-reference.webp') center/cover no-repeat;color:#fff;padding:46px clamp(23px,4.3vw,75px);display:flex;align-items:center;min-height:770px}
+.jt-auth-customer .jt-auth-promo{background-image:linear-gradient(90deg,rgba(3,21,57,.97),rgba(3,29,72,.85) 58%,rgba(5,39,78,.19)),url('/images/mombasa-services-reference.webp')}
+.jt-auth-promo-content{max-width:610px;position:relative;z-index:1}
+.jt-auth-promo-brand{display:inline-block;max-width:190px;background:#fff;border-radius:18px;padding:0 9px}
+.jt-auth-promo-brand img{display:block;object-fit:contain;width:170px;height:76px}
+.jt-auth-motto{font-size:17px;line-height:1.45;font-weight:600;margin:15px 0 29px}
+.jt-auth-promo h1{font-size:clamp(42px,4vw,70px);line-height:1.04;letter-spacing:-.05em;color:#fff;font-weight:860;margin:0 0 22px;max-width:570px}
+.jt-auth-promo h1 em{font-style:normal;color:#10e7b7}
+.jt-auth-promo-lead{max-width:420px;font-size:18px;line-height:1.55;color:#f5f9fe;margin:0 0 25px}
+.jt-auth-benefits{display:grid;gap:16px;margin-top:34px;max-width:445px}
+.jt-auth-benefits>div{display:flex;align-items:center;gap:17px}
+.jt-auth-benefits>div>span{flex:none;width:54px;height:54px;display:grid;place-items:center;border-radius:50%;background:#076cf3;color:#fff}
+.jt-auth-benefits p{margin:0;display:grid;gap:4px}
+.jt-auth-benefits strong{color:#fff;font-size:17px;line-height:1.3}
+.jt-auth-benefits small{color:#e5effd;font-size:14px;line-height:1.4}
+.jt-auth-network{display:flex;align-items:center;gap:18px;margin-top:42px;font-size:15px;line-height:1.4;font-weight:700}
+.jt-auth-network p{margin:0;max-width:190px}
+.jt-auth-avatar-cluster{display:flex;padding-left:12px}
+.jt-auth-avatar-cluster span{display:grid;place-items:center;border:3px solid #fff;background:#caeedf;color:#075a48;font-weight:900;border-radius:50%;height:47px;width:47px;margin-left:-11px}
+.jt-auth-avatar-cluster span:nth-child(2){background:#def0fd;color:#1b4a8c}
+.jt-auth-avatar-cluster span:nth-child(3){background:#ffe9d4;color:#794a1a}
+.jt-auth-panel{display:flex;align-items:center;justify-content:center;padding:38px clamp(22px,3.3vw,60px);background:linear-gradient(160deg,#fff,#f8fbff)}
+.jt-auth-panel-inner{width:100%;max-width:590px}
+.jt-auth-switch-hint{text-align:right;font-size:14px;color:#5e7197;margin:0 0 22px}
+.jt-auth-switch-hint button,.jt-auth-edit{border:0;background:transparent;color:#065fea;font-weight:850;cursor:pointer;font:inherit;text-decoration:underline;text-underline-offset:3px;padding:0}
+.jt-auth-eyebrow{display:flex;align-items:center;gap:8px;font-weight:830;font-size:14px;color:#0b2b70;letter-spacing:.05em}
+.jt-auth-eyebrow svg{color:#0668ef}
+.jt-auth-panel h2{color:#0a2154;font-size:clamp(29px,2.4vw,37px);line-height:1.15;letter-spacing:-.035em;margin:13px 0 9px;font-weight:850}
+.jt-auth-subtitle{font-size:16px;line-height:1.5;color:#63749a;margin:0 0 21px}
+.jt-auth-roles{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0 28px}
+.jt-auth-roles button{border:2px solid #d8e0f0;border-radius:17px;display:flex;text-align:left;align-items:center;gap:11px;padding:15px 13px;background:#fff;color:#17325d;cursor:pointer;min-width:0}
+.jt-auth-roles button svg{flex:none;color:#39799c}
+.jt-auth-roles button.selected{border-color:#089e66;background:#f0fff6;box-shadow:0 0 0 2px #07a46712}
+.jt-auth-roles button.selected svg{color:#058958}
+.jt-auth-roles button strong{display:block;font-size:14px;font-weight:820}
+.jt-auth-roles button small{font-size:11px;color:#697c93}
+.jt-auth-form-title{border-top:1px solid #dce4f0;padding-top:22px}
+.jt-auth-form-title h3{font-size:20px;color:#0a2154;margin:0 0 6px}
+.jt-auth-form-title p{font-size:14px;color:#60759a;line-height:1.5;margin:0 0 17px}
+.jt-auth-form{display:grid;gap:10px}
+.jt-auth-label{font-weight:800;font-size:13px;color:#203c66;margin:4px 0 -2px}
+.jt-auth-label span{font-weight:450;color:#71819b}
+.jt-auth-phone-row{display:flex;min-height:57px;border:1px solid #cbd8ee;border-radius:11px;background:#fff;overflow:hidden}
+.jt-auth-country{display:flex;align-items:center;flex:none;padding:0 14px;background:#f7fbff;border-right:1px solid #d3ddef;font-weight:750;font-size:14px;white-space:nowrap;color:#132e63}
+.jt-auth-phone-row input{border:0;outline:0;flex:1;min-width:0;width:100%;padding:14px;color:#152f57;background:#fff;font:inherit}
+.jt-auth-input{min-height:55px;border:1px solid #cbd8ee;border-radius:11px;padding:12px 15px;background:#fff;color:#162e58;font:inherit;width:100%;outline:none}
+.jt-auth-input:focus,.jt-auth-phone-row:focus-within{border-color:#069e63;box-shadow:0 0 0 3px #07b96815}
+.jt-auth-otp{letter-spacing:.28em;font-weight:800;font-size:23px;text-align:center}
+.jt-auth-consent{display:flex;align-items:flex-start;gap:10px;margin:12px 0 8px;color:#596b91;font-size:13px;line-height:1.5}
+.jt-auth-consent input{width:18px;height:18px;flex:none;accent-color:#008f62;margin-top:1px}
+.jt-auth-consent a,.jt-auth-existing a{color:#0069e5;text-decoration:underline;text-underline-offset:3px}
+.jt-auth-submit{min-height:60px;border:0;border-radius:13px;background:#082fa7;color:#fff;font-weight:850;font-size:17px;display:flex;justify-content:center;align-items:center;gap:12px;cursor:pointer;margin-top:12px}
+.jt-auth-submit:hover{background:#063bcb}
+.jt-auth-submit:disabled{opacity:.64;cursor:progress}
+.jt-auth-error{background:#fff1f0;border:1px solid #efb0b0;color:#9d2020;padding:12px 14px;border-radius:10px;font-size:13px;line-height:1.5;margin:8px 0}
+.jt-auth-notice{background:#edf9f2;border:1px solid #c4e6ce;color:#0e7348;padding:12px 14px;border-radius:10px;font-size:13px;margin:8px 0}
+.jt-auth-resend{background:transparent;border:0;color:#0564bd;cursor:pointer;font-size:13px;padding:12px}
+.jt-auth-help{display:flex;align-items:flex-start;gap:9px;color:#6e7b93;font-size:12px;line-height:1.55;margin-top:21px}
+.jt-auth-help svg{flex:none;color:#0b8c60}
+.jt-auth-existing{color:#617290;font-size:13px;margin:21px 0 0}
+.jt-account-page{min-height:70vh;background:linear-gradient(#f3faf7,#fff);padding:65px 0}
+.jt-account-shell{max-width:990px!important}
+.jt-account-head{display:flex;align-items:center;gap:19px}
+.jt-account-head>span{display:grid;place-items:center;background:#ddf7ea;color:#068457;width:66px;height:66px;border-radius:20px}
+.jt-account-head p{margin:0;color:#5f7983}
+.jt-account-head p:first-child{color:#008d61;font-size:12px;letter-spacing:.12em;font-weight:850}
+.jt-account-head h1{color:#102947;font-size:clamp(28px,4vw,43px);margin:5px 0;line-height:1.15}
+.jt-account-summary{display:flex;flex-wrap:wrap;align-items:center;gap:13px;margin:29px 0;padding:20px;background:#fff;border:1px solid #dceae4;border-radius:16px;color:#325b59;font-size:14px}
+.jt-account-summary strong{color:#07885d}
+.jt-account-summary>*{margin-right:10px}
+.jt-account-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:17px}
+.jt-account-cards a{display:flex;flex-direction:column;gap:10px;background:#fff;border:1px solid #d9eae4;border-radius:19px;padding:27px;text-decoration:none;color:#143a4a}
+.jt-account-cards a svg{color:#008a60;width:28px;height:28px}
+.jt-account-cards a strong{font-size:19px}
+.jt-account-cards a small{font-size:14px;line-height:1.4;color:#607883}
+.jt-account-disclaimer{font-size:13px;color:#678080;margin:22px 0}
+.jt-account-signout{display:inline-flex;align-items:center;gap:9px;border:1px solid #aec9c4;border-radius:999px;background:#fff;color:#095a52;font-weight:780;padding:13px 18px;cursor:pointer}
+@media(max-width:1050px){.jt-auth-page{grid-template-columns:.9fr 1.1fr}.jt-auth-promo{padding:35px 26px}.jt-auth-panel{padding:30px 23px}.jt-auth-promo h1{font-size:43px}}
+@media(max-width:760px){.jt-auth-page{display:flex;flex-direction:column}.jt-auth-promo{min-height:auto;padding:34px 25px;background-position:center 35%}.jt-auth-promo-content{max-width:none}.jt-auth-promo h1{font-size:38px;max-width:450px}.jt-auth-promo-lead{font-size:15px}.jt-auth-benefits,.jt-auth-network{display:none}.jt-auth-panel{padding:32px 20px 48px}.jt-auth-panel-inner{max-width:620px}.jt-auth-roles{margin-bottom:20px}}
+@media(max-width:400px){.jt-auth-roles{gap:8px}.jt-auth-roles button{padding:12px 8px;gap:7px}.jt-auth-roles button strong{font-size:12px}.jt-auth-country{padding:0 9px;font-size:12px}.jt-account-cards{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.jt-auth-roles button,.jt-auth-submit{transition:none}}
