@@ -513,3 +513,9 @@ body{color:#232c49}
 .jt-ai-typing-dots>span:nth-child(3){animation-delay:.28s}
 @keyframes jt-ai-dot-bounce{0%,60%,100%{transform:translateY(0);opacity:.35}28%{transform:translateY(-6px);opacity:1}}
 @media(prefers-reduced-motion:reduce){.jt-ai-typing-dots>span{animation:none;opacity:.75}}
+
+
+/* Negative/reversed JiTap logo on the navy footer; header logo keeps its colors. */
+.footer .brand img {
+ filter: brightness(0) invert(1);
+}
