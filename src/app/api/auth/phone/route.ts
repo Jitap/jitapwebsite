@@ -46,7 +46,7 @@ export async function POST(req:NextRequest){
    if(!account)return error('We could not finish creating your account. Please retry.',503);
   }
  }
- if(!isAccountType(account.account_type))return error('Account type is unavailable.',503);
+ if(!account||!isAccountType(account.account_type))return error('Account type is unavailable.',503);
  const result=NextResponse.json({authenticated:true,accountType:account.account_type,requestedRole:input.role,redirect:'/account'},{headers:{'Cache-Control':'no-store'}});
  setAuthCookies(result,access,String(payload.refresh_token),Number(payload.expires_in)||3600);
  return result;
