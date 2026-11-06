@@ -17,7 +17,7 @@ export default function AccountPage(){
   fetch('/api/account/requests',{cache:'no-store'}).then(async r=>{if(!r.ok)throw Error('Unable to load');return r.json()}).then(data=>{if(active)setRequests(Array.isArray(data.requests)?data.requests:[])}).catch(()=>{if(active)setRequestsError('Request history is temporarily unavailable.')}).finally(()=>{if(active)setRequestsLoading(false)});
   return()=>{active=false};
  },[account?.accountType]);
- useEffect(()=>{let active=true;fetch('/api/auth/session',{cache:'no-store'}).then(async r=>{if(!r.ok)throw Error('Sign in required');return r.json()}).then(data=>{if(active)setAccount(data)}).catch(()=>{if(active)router.replace('/login?mode=login')}).finally(()=>{if(active)setLoading(false)});return()=>{active=false}},[router]);
+ useEffect(()=>{let active=true;fetch('/api/auth/session',{cache:'no-store'}).then(async r=>{if(!r.ok)throw Error('Sign in required');return r.json()}).then(data=>{if(active){setAccount(data);if(data.accountType==='provider')router.replace('/provider')}}).catch(()=>{if(active)router.replace('/login?mode=login')}).finally(()=>{if(active)setLoading(false)});return()=>{active=false}},[router]);
  async function signOut(){const r=await fetch('/api/auth/session',{method:'DELETE'});if(!r.ok){setError('Unable to sign out. Please try again.');return}window.dispatchEvent(new Event('jitap:auth-changed'));router.replace('/login?mode=login');router.refresh()}
  return <main className="jt-account-page"><div className="container jt-account-shell">
   {loading?<p role="status">Checking your JiTap account…</p>:account?<>
