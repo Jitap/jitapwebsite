@@ -15,6 +15,50 @@ export function fastIntakeQuestions(category:string,description:string):FastInta
  const text=description.toLowerCase().trim().replace(/\s+/g,' ');
  if(text.length<8||text.length>180)return null;
  // These are confirmed job types with specific, meaningful intake choices.
+ // Trade-specific questions preserve the customer's brief, instead of generic Other.
+ if(category==='roofing')return [
+  question('roofWork','What roofing work is needed?',['Fix a leaking roof','Replace roofing sheets','Install a new roof','Repair or install gutters','Waterproofing or roof inspection']),
+  question('roofMaterial','What type of roof is involved?',['Mabati / metal sheets','Roof tiles','Flat concrete roof','Other / not sure'])
+ ];
+ if(category==='masonry')return [
+  question('masonryJob','What construction work is needed?',['Brickwork or wall construction','Plastering or rendering','Concrete or foundation work','Wall repairs','Other masonry work']),
+  question('masonryScale','What is the approximate scope?',['Small repair','One wall or room','Several rooms','New construction','Not sure'])
+ ];
+ if(category==='welding')return [
+  question('metalJob','What welding or metalwork do you need?',['Repair a gate','Make or install a gate','Window grills','Railings or steelwork','Other metal fabrication']),
+  question('metalScope','What is the work required?',['Repair existing metalwork','Fabricate a new item','Install a completed item','Inspection first'])
+ ];
+ if(category==='tiling')return [
+  question('tileJob','What floor or tiling job do you need?',['Install wall tiles','Install floor tiles','Replace cracked tiles','Repair grout','Other floor work']),
+  question('tileScope','How large is the area?',['Small patch','One room','Several rooms','Outside area','Not sure'])
+ ];
+ if(category==='air-conditioning')return [
+  question('coolingJob','What equipment needs attention?',['Home air conditioner','Commercial air conditioner','Cold room / refrigeration','Other cooling equipment']),
+  question('coolingFault','What work is required?',['Not cooling','Service or maintenance','Install or relocate','Leaking or making noise','Other / not sure'])
+ ];
+ if(category==='solar-security')return [
+  question('systemType','Which technical system is involved?',['Solar panels / inverter','CCTV cameras','Electric fence','Alarm / access control','Other system']),
+  question('systemJob','What help is required?',['New installation','Repair a fault','Add or replace equipment','Maintenance / assessment'])
+ ];
+ if(category==='it-repairs')return [
+  question('computerDevice','Which device needs support?',['Laptop or desktop','Printer or scanner','Mobile phone','Computer network / Wi-Fi','Other electronic device']),
+  question('computerTask','What needs doing?',['Repair a fault','Installation or setup','Service / maintenance','Diagnostics','Replacement part'])
+ ];
+ if(category==='vehicle-repair')return [
+  question('vehicleType','What type of vehicle is it?',['Car','Motorcycle / boda boda','Van or pickup','Truck','Bicycle','Other']),
+  question('vehicleIssue','What service is needed?',['Engine or starting fault','Brakes or suspension','Routine service','Electrical fault','Exhaust','Other problem'])
+ ];
+ if(category==='glass-aluminium')return [
+  question('glassWork','What glass or aluminium work is needed?',['Broken window pane','Aluminium frame repair','New window or door installation','Glass partition','Other'])
+ ];
+ if(category==='landscaping')return [
+  question('gardenWork','What outdoor work do you need?',['Lawn cutting','Garden landscaping','Hedge / tree pruning','Irrigation repair','Other gardening'])
+ ];
+ if(category==='pest-control')return [
+  question('pestType','What pest problem do you have?',['Termites','Cockroaches','Rodents','Bedbugs','Other / unknown']),
+  question('pestArea','Where is treatment needed?',['One room','Whole house','Office or shop','Outdoor area','Other'])
+ ];
+
  if(/\b(tailor|tailoring|seamstress|dressmaker|fundi wa nguo|kushona|mshonaji)\b/.test(text))return [
   question('tailorWork','What do you need the tailor to do?',['Make a new outfit','Alter or resize clothes','Repair torn clothes or a zip','School or work uniform','Other tailoring work']),
   question('garmentType','What type of clothing?',['Dress or skirt','Shirt or trousers','Suit or jacket','Uniform','Other clothing'])
