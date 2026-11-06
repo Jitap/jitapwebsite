@@ -22,7 +22,9 @@ export default function CoordinatorProviderReviews(){
  useEffect(()=>{reload().catch(e=>setError(e instanceof Error?e.message:'Unable to load')).finally(()=>setLoading(false))},[]);
  async function review(p:Provider,decision:'approved'|'rejected'){
   if(role!=='admin')return;
-  if(!window.confirm(decision==='approved'?('Have you independently verified '+p.full_name+' and their service qualifications? Approve this provider?'):('Reject '+p.full_name+'?'))return;
+   if(!window.confirm(decision==='approved'
+    ?'Have you independently verified '+p.full_name+' and their service qualifications? Approve this provider?'
+    :'Reject '+p.full_name+'?'))return;
   setBusy(p.user_id);setError('');setNotice('');
   try{
    const res=await fetch('/api/coordinator/provider-reviews',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:p.user_id,decision})});
