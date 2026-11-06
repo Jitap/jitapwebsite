@@ -29,8 +29,13 @@ export async function POST(req:NextRequest){
  const payload=verify.data as Record<string,unknown>;
  if(!verify.ok||!payload?.access_token||!payload?.refresh_token||!payload?.user)return error('The code is invalid or has expired. Request a new code.',401);
  const access=String(payload.access_token);
- const user=payload.user as {id?:string;phone?:string};
- if(!user.id||user.phone!==phone)return error('Verification could not be completed.',401);
+ // Confirm the token resolves to the same Supabase user and Kenyan mobile
+ // instead of comparing raw phone strings, which can vary in E.164 formatting.
+ const verified=await goTrue('user',undefined,access,'GET');
+ if(!verified.ok)return error('Unable to confirm your verified account. Please try again.',401);
+ const user=verified.data as {id?:string;phone?:string};
+ const phoneFromAuth=normalizeKenyanPhone(user.phone);
+ if(!user.id||!phoneFromAuth||phoneFromAuth!==phone)return error('Verification could not be completed.',401);
  const lookup=await accountQuery(access,'?user_id=eq.'+encodeURIComponent(user.id)+'&select=user_id,account_type,phone,full_name');
  if(!lookup.ok||!Array.isArray(lookup.data))return error('Unable to load your account. Please try again.',503);
  let account=lookup.data[0] as {account_type:string;phone:string;full_name:string|null}|undefined;
