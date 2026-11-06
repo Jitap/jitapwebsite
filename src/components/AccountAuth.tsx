@@ -2,7 +2,7 @@
 import {useEffect,useState,type FormEvent} from 'react';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
-import {ArrowRight,CalendarCheck,CheckCircle2,Eye,EyeOff,MapPin,ShieldCheck,Smartphone,UsersRound,Wrench} from 'lucide-react';
+import {ArrowRight,MapPin,UsersRound,Wrench} from 'lucide-react';
 type Role='customer'|'provider';
 type Mode='signup'|'login';
 export function AccountAuth(){
@@ -37,20 +37,6 @@ export function AccountAuth(){
   finally{setBusy(false)}
  }
  return <main className={'jt-auth-page'+(isProvider?' jt-auth-provider':' jt-auth-customer')}>
-  <section className="jt-auth-promo" aria-label="JiTap service network">
-   <div className="jt-auth-promo-content">
-    <Link href="/" className="jt-auth-promo-brand"><img src="/images/jitap-logo.svg" alt="JiTap" width={185} height={85}/></Link>
-    <p className="jt-auth-motto">Neighbourhood Services.<br/>Just a Tap Away.</p>
-    <h1>{isProvider?<>Grow Your Business with <em>JiTap</em></>:<>Local Help Starts with <em>JiTap</em></>}</h1>
-    <p className="jt-auth-promo-lead">{isProvider?'Get discovered by customers in your area, receive service enquiries and grow your local reputation.':'From a leaking sink to a moving day, find different local services through one simple place to ask.'}</p>
-    <div className="jt-auth-benefits">
-     <div><span><UsersRound size={25}/></span><p><strong>{isProvider?'Get discovered locally':'Find local skills'}</strong><small>{isProvider?'Show customers the areas and services you cover.':'Start with your location and the help you need.'}</small></p></div>
-     <div><span><CalendarCheck size={25}/></span><p><strong>{isProvider?'Manage service requests':'Ask in your own words'}</strong><small>{isProvider?'Keep enquiries and scheduling easier to follow.':'Describe the problem without complicated searching.'}</small></p></div>
-     <div><span><ShieldCheck size={25}/></span><p><strong>{isProvider?'Build your profile':'Your number stays private'}</strong><small>{isProvider?'Show your skills as JiTap grows.':'Your contact number is not displayed publicly.'}</small></p></div>
-    </div>
-    <div className="jt-auth-network"><span className="jt-auth-avatar-cluster" aria-hidden="true"><span>J</span><span>M</span><span>A</span></span><p>Join the JiTap community across Mombasa.</p></div>
-   </div>
-  </section>
   <section className="jt-auth-panel" aria-labelledby="jt-auth-heading">
    <div className="jt-auth-panel-inner">
     <p className="jt-auth-switch-hint">{mode==='signup'?'Already have an account?':'New to JiTap?'} <button type="button" onClick={()=>switchMode(mode==='signup'?'login':'signup')}>{mode==='signup'?'Log in':'Sign up'}</button></p>
@@ -73,7 +59,6 @@ export function AccountAuth(){
      <button className="jt-auth-submit" type="submit" disabled={busy}>{busy?'Please wait…':stage==='otp'?'Verify & continue':mode==='signup'?'Continue with mobile':'Send login code'}<ArrowRight size={19}/></button>
      {stage==='otp'&&<button type="button" className="jt-auth-resend" disabled={busy} onClick={()=>{setStage('details');setCode('');setNotice('Request a new SMS code using your mobile number.')}}>Request a new code</button>}
     </form>
-    <div className="jt-auth-help"><Smartphone size={18}/><span>SMS delivery requires JiTap's phone authentication service to be enabled. No code is generated on this page.</span></div>
     {isProvider&&<p className="jt-auth-existing">Already registered as a provider? <Link href="/providers/apply">View provider onboarding</Link></p>}
    </div>
   </section>
