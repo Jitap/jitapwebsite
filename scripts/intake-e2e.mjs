@@ -35,6 +35,7 @@ assert.match(provider.data.reference, /^[a-f\d-]{36}$/i);
 const customer = await submit('request', {
   ...base,
   category: 'plumbing',
+  locationLabel: 'Bamburi, Mombasa',
   description: `Automated QA TEST only — leaking sink in Bamburi ${run}`,
   area: 'Bamburi',
   timing: 'today'
