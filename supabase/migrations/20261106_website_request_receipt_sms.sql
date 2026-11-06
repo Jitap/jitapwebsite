@@ -29,6 +29,7 @@ begin
  into v_phone,v_eligible
  from public.website_intake where id=p_request_id;
  if not coalesce(v_eligible,false) or v_phone !~ '^([+]?254|0)[17][0-9]{8}$' then return false; end if;
+ perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(v_phone,42));
  -- Limit chargeable SMS acknowledgments to 3 per mobile per hour.
  if (select count(*) from public.website_request_receipt_sms s
    join public.website_intake w on w.id=s.request_id
