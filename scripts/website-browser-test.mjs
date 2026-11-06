@@ -92,7 +92,9 @@ await check('all service icon shortcuts have valid links',async()=>{
  assert.ok((await page.locator('.th-category-track-group:first-child a').evaluateAll(links=>links.every(l=>l.getAttribute('href')?.startsWith('/services/')))));
  assert.equal(await page.getByRole('heading',{name:'Why customers love JiTap'}).count(),1);
  assert.equal(await page.locator('.th-testimonial-card').count(),3);
- assert.ok((await page.locator('.th-testimonial-disclaimer').innerText()).includes('not actual reviews'));
+ assert.equal(await page.locator('.th-testimonial-card small').count(),0);
+ assert.equal(await page.locator('.th-testimonial-disclaimer').count(),0);
+ assert.ok((await page.locator('.th-testimonial-card').first().innerText()).includes('Get to the right help, faster.'));
 });
 await check('fundi directory contains 36 profiles but exposes no phone contacts',async()=>{
  const resp=await open('/fundis');assert.equal(resp?.status(),200);

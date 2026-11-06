@@ -669,3 +669,36 @@
  .th-category-chip{scroll-snap-align:start}
  .th-sticky-search{transition:none}
 }
+
+
+/* Why customers love JiTap: distinctive, promise-safe benefit cards. */
+.th-testimonials{background:#f8fbfb}
+.th-benefit-heading{margin-bottom:34px}
+.th-benefit-heading h2{max-width:680px}
+.th-testimonial-grid{gap:20px}
+.th-testimonial-card{
+ display:flex;align-items:flex-start;gap:17px;
+ min-height:225px;padding:31px 25px;border:1px solid #dce6e8;border-radius:23px;
+ box-shadow:0 6px 24px rgba(9,48,66,.035);
+ background:#fff;transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease;
+}
+.th-testimonial-card:hover{transform:translateY(-4px);border-color:#bbd8d7;box-shadow:0 16px 36px rgba(9,48,66,.09)}
+.th-testimonial-symbol{width:54px;height:54px;min-width:54px;border-radius:16px;margin:0}
+.th-benefit-fast{color:#c78a0a;background:#fff6dc}
+.th-benefit-local{color:#008f68;background:#e9f9f1}
+.th-benefit-private{color:#087fa9;background:#e7f7fc}
+.th-benefit-copy{min-width:0}
+.th-testimonial-card h3{margin:3px 0 12px;font-size:clamp(19px,1.6vw,23px);line-height:1.22;letter-spacing:-.025em}
+.th-testimonial-card p{margin:0;font-size:15px;line-height:1.6;color:#60717c}
+@media(max-width:1000px){
+ .th-testimonial-grid{grid-template-columns:1fr;gap:16px}
+ .th-testimonial-card{min-height:unset;padding:28px 26px;gap:22px}
+}
+@media(max-width:540px){
+ .th-testimonial-card{padding:25px 19px;gap:15px;border-radius:21px}
+ .th-testimonial-symbol{width:48px;height:48px;min-width:48px;border-radius:15px}
+ .th-testimonial-symbol svg{width:26px;height:26px}
+ .th-testimonial-card h3{font-size:21px;margin:2px 0 11px}
+ .th-testimonial-card p{font-size:14px;line-height:1.57}
+}
+@media(prefers-reduced-motion:reduce){.th-testimonial-card{transition:none}.th-testimonial-card:hover{transform:none}}
