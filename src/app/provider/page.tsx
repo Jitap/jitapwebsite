@@ -37,6 +37,18 @@ export default function ProviderDashboardPage(){
   if(!data.profile?.submitted_at)setTab('profile');
  },[router]);
  useEffect(()=>{let active=true;refresh().catch(()=>{if(active)setError('Could not load your provider dashboard. Please refresh.')}).finally(()=>{if(active)setLoading(false)});return()=>{active=false}},[refresh]);
+ useEffect(()=>{
+  if(!dashboard?.profile?.is_online||tab==='profile')return;
+  const id=window.setInterval(()=>{
+   if(document.visibilityState==='visible')void refresh().catch(()=>{});
+  },20000);
+  return()=>window.clearInterval(id);
+ },[dashboard?.profile?.is_online,tab,refresh]);
+ async function logout(){
+  const r=await fetch('/api/auth/session',{method:'DELETE'});
+  if(r.ok){window.dispatchEvent(new Event('jitap:auth-changed'));router.replace('/login?mode=login');router.refresh()}
+  else setError('Unable to sign out. Please try again.');
+ }
  async function act(payload:Record<string,unknown>){
   setBusy(true);setError('');setSuccess('');
   try{
@@ -74,7 +86,7 @@ export default function ProviderDashboardPage(){
   <div className="jt-provider-shell">
    <header className="jt-provider-app-header">
     <Link href="/" aria-label="JiTap home"><img src="/images/jitap-logo.svg" alt="JiTap" width={108} height={52}/></Link>
-    <div className="jt-provider-badge"><ShieldCheck size={17}/> Provider workspace</div>
+    <div className="jt-provider-header-actions"><div className="jt-provider-badge"><ShieldCheck size={17}/> Provider workspace</div><button type="button" onClick={logout} className="jt-provider-logout">Log out</button></div>
    </header>
    {loading?<div className="jt-provider-card" role="status">Loading your JiTap provider account…</div>:<>
     <div className="jt-provider-greeting">
