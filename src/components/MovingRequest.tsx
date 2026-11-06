@@ -173,7 +173,7 @@ export function MovingRequest(){
    </section>}
    {error&&<p className="jt-moving-error" role="alert">{error}</p>}
    <div className="jt-moving-actions">{stage>1&&<button type="button" className="jt-moving-back" disabled={busy} onClick={previous}><ArrowLeft size={17}/> Back</button>}
-    {stage<4?<button className="jt-moving-next" type="button" onClick={next} disabled={busy}>{busy?'Saving…':'Continue'} <ArrowRight size={18}/></button>:<button className="jt-moving-next" disabled={busy} type="submit">{busy?'Submitting…':'Request moving quote'} <ArrowRight size={18}/></button>}
+    {stage<4?<button className="jt-moving-next" type="button" onClick={next} disabled={busy}>{busy?'Saving…':'Continue'} <ArrowRight size={18}/></button>:<button className="jt-moving-next" disabled={busy} type="submit">{busy?'Submitting…':'Request'} <ArrowRight size={18}/></button>}
    </div>
    </form>}
   </div>
