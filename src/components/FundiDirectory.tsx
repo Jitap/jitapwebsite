@@ -3,25 +3,11 @@ import {useMemo,useState} from 'react';
 import Link from 'next/link';
 import {ArrowRight,MapPin,Search,SlidersHorizontal} from 'lucide-react';
 import {areas,categories} from '@/lib/data';
+import {tradeLabels,providerMatchesTrade} from '@/lib/trade-categories';
 import {fundiListings} from '@/lib/fundis-public';
 import {ProviderShowcase} from '@/components/ProviderShowcase';
 
 const filters=['All services',...categories.filter(c=>c.slug!=='other-services').map(c=>c.name)];
-const tradeLabels:Record<string,string[]>={
- plumbing:['plumbing'],electrical:['electrical'],cleaning:['cleaning','laundry'],
- painting:['painting'],carpentry:['carpentry','furniture','woodwork'],
- 'appliance-repair':['appliance repair','home appliances'],
- 'general-repairs':['handyman','general repairs','fixture repair'],
- moving:['moving','relocation'],
- roofing:['roofing','roofer','gutter'],masonry:['masonry','construction','brick','plaster'],
- tiling:['tiling','flooring','tiles'],welding:['welding','metalwork','fabrication'],
- 'air-conditioning':['ac & refrigeration','air conditioning','refrigeration','hvac'],
- 'solar-security':['solar','cctv','security','electric fence'],
- 'it-repairs':['it / phone / computer services','computer repair','phone repair','it support'],
- 'vehicle-repair':['mechanic','auto services','vehicle repair','bicycle repair'],
- landscaping:['gardening','landscaping'], 'pest-control':['pest control'],
- 'glass-aluminium':['glass','aluminium']
-};
 export const slugFor=(cats:string[]):string=>{
  const joined=cats.join(' ').toLowerCase();
  for(const category of categories){
@@ -37,7 +23,7 @@ export function FundiDirectory(){
  const shown=useMemo(()=>fundiListings.filter(p=>{
   const areaOk=area==='All areas'||p.areas.includes(area);
   const selected=categories.find(c=>c.name===category);
-  const catOk=category==='All services'||!!selected&&p.categories.some(c=>(tradeLabels[selected.slug]||[]).some(label=>c.toLowerCase().includes(label)));
+  const catOk=category==='All services'||!!selected&&providerMatchesTrade(selected.slug,p.categories);
   const term=query.trim().toLowerCase();
   const mamaFua=/(?:mama[\s-]*fua|mamafua|kufua|laundry|house.?cleaner|house.?keeper|house cleaning)/i.test(term);const textOk=!term||(mamaFua&&p.categories.some(c=>c.toLowerCase().includes('cleaning')))||[p.name,...p.categories,...p.areas,...(p.id==='fund-022'?['urban movers and relocations','moving','relocation','house moving']:[]),...(p.id==='fund-036'?['zenotech computers','zenotech','zeno tech','computer repair','laptop repair','printer repair','it support','networking']:[])].join(' ').toLowerCase().includes(term);
   return areaOk&&catOk&&textOk;
@@ -78,7 +64,7 @@ export function matchesFor(category:string,area:string,specialty?:string){
  if(specialty==='vehicle-mechanic')return fundiListings.filter(p=>p.areas.includes(area)&&/mechanic|garage|vehicle repair|auto repair/i.test([p.name,...p.categories].join(' ')));
  const names=tradeLabels[category]||[];
  if(!names.length)return [];
- return fundiListings.filter(p=>p.areas.includes(area)&&p.categories.some(c=>names.some(n=>c.toLowerCase().includes(n))));
+ return fundiListings.filter(p=>p.areas.includes(area)&&providerMatchesTrade(category,p.categories));
 }
 export function MatchedFundis({category,area,onQuotes,specialty}:{category:string;area:string;onQuotes:()=>void;specialty?:string}){
  const matched=matchesFor(category,area,specialty);
