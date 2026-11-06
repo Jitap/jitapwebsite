@@ -165,6 +165,16 @@ await check('signup/login navigation, role selection and invalid phone validatio
  assert.equal(invalid.status(),422);
  await page.screenshot({path:'ui-test-results/jitap-signup-mobile.png'});
 });
+await check('guest request flow and private customer history remain separated',async()=>{
+ const history=await page.request.get(base+'/api/account/requests');
+ assert.equal(history.status(),401,'Guest must not access private request history');
+ const payload=await history.json();
+ assert.ok(!payload.requests,'Guest must not receive request details');
+ await open('/account');
+ await page.waitForURL('**/login?mode=login');
+ await open('/request?category=plumbing&area=Bamburi&description=My%20sink%20is%20leaking');
+ assert.equal(await page.locator('.jt-verified-contact').count(),0,'Guest should not be presented as verified');
+});
 await check('provider application supports six areas and back/continue',async()=>{
  await open();
  await page.goto(base+'/providers/apply');
