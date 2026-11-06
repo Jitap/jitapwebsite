@@ -19,7 +19,7 @@ function safeReason(data:Record<string,unknown>):string|undefined {
   .replace(/(?:\+?\d[\d\s-]{4,}\d)/g,'[phone]')
   .replace(/[^a-zA-Z\s.,:;!()_\-]/g,'').replace(/\s+/g,' ').trim().slice(0,75)||undefined;
 }
-export async function sendWasilianaSms(destination:string,message:string):Promise<DeliveryResult>{
+export async function sendWasilianaSms(destination:string,message:string,isOtp=false):Promise<DeliveryResult>{
  const key=process.env.WASILIANA_API_KEY?.trim();
  const sender=process.env.WASILIANA_SENDER_ID?.trim();
  if(!key)throw new Error('wasiliana_api_key_missing');
@@ -27,7 +27,7 @@ export async function sendWasilianaSms(destination:string,message:string):Promis
  // Do not guess or borrow SMSLeopard's unrelated sender ID.
  if(!sender)throw new Error('wasiliana_sender_id_not_configured');
  if(!message.trim()||message.length>600)throw new Error('invalid_sms_message');
- const body={recipients:[normalizeKenyanMobile(destination)],message,from:sender,is_otp:false};
+ const body={recipients:[normalizeKenyanMobile(destination)],message,from:sender,is_otp:isOtp};
  const response=await fetch('https://api.wasiliana.com/api/v1/send/sms',{
   method:'POST',
   headers:{apiKey:key,'Content-Type':'application/json',Accept:'application/json'},
