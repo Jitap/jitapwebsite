@@ -5,16 +5,22 @@ export const runtime='nodejs';
 export const dynamic='force-dynamic';
 type Workspace={user_id:string;full_name:string;business_name:string;categories:string[];service_areas:string[];experience_years:number;skills:string;submitted_at:string|null;is_online:boolean};
 type Review={user_id:string;status:string;reviewed_at:string|null};
+type Response={request_id:string;provider_user_id:string;decision:string;note:string;created_at:string};
 export async function GET(req:NextRequest){
  const staff=await requireCoordinator(req);
  if(!staff)return reply({error:'Staff authentication required'},401);
  try{
-  const [profiles,reviews]=await Promise.all([
+  const [profiles,reviews,responses]=await Promise.all([
    supabasePrivate<Workspace[]>('jitap_provider_workspaces?submitted_at=not.is.null&select=user_id,full_name,business_name,categories,service_areas,experience_years,skills,submitted_at,is_online&order=submitted_at.desc&limit=80'),
-   supabasePrivate<Review[]>('jitap_provider_reviews?select=user_id,status,reviewed_at&limit=300')
+   supabasePrivate<Review[]>('jitap_provider_reviews?select=user_id,status,reviewed_at&limit=300'),
+   supabasePrivate<Response[]>('jitap_provider_buzz_responses?select=request_id,provider_user_id,decision,note,created_at&order=created_at.desc&limit=50')
   ]);
   const map=new Map(reviews.map(r=>[r.user_id,r]));
-  return reply({role:staff.role,providers:profiles.map(p=>({...p,review:map.get(p.user_id)?.status||'pending'}))});
+  const nameMap=new Map(profiles.map(p=>[p.user_id,p.full_name]));
+  return reply({role:staff.role,providers:profiles.map(p=>({...p,review:map.get(p.user_id)?.status||'pending'})),
+   buzzResponses:responses.map(r=>({serviceId:'JT-'+r.request_id.slice(0,8).toUpperCase(),
+    provider:nameMap.get(r.provider_user_id)||'JiTap provider',
+    decision:r.decision,note:r.note,createdAt:r.created_at}))});
  }catch{return reply({error:'Unable to load provider reviews'},503)}
 }
 const schema=z.object({
