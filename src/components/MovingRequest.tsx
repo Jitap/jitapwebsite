@@ -38,13 +38,14 @@ export function MovingRequest(){
  const [error,setError]=useState('');
  const [receipt,setReceipt]=useState('');
  const [verifiedContact,setVerifiedContact]=useState(false);
+ const [contactChecking,setContactChecking]=useState(true);
  useEffect(()=>{
   let active=true;
   fetch('/api/auth/session',{cache:'no-store'}).then(async res=>res.ok?res.json():null).then(profile=>{
    if(!active||!profile||profile.accountType!=='customer')return;
    setVerifiedContact(true);
-   setInfo(old=>({...old,phone:profile.phone,name:old.name||profile.fullName||''}));
-  }).catch(()=>{});
+   setInfo(old=>({...old,phone:profile.phone,name:profile.fullName||'JiTap Customer'}));
+  }).catch(()=>{}).finally(()=>{if(active)setContactChecking(false)});
   return()=>{active=false};
  },[]);
  useEffect(()=>{
@@ -95,7 +96,7 @@ export function MovingRequest(){
  }
  function previous(){setError('');setStage(v=>Math.max(1,v-1))}
  async function submit(e:FormEvent){
-  e.preventDefault();if(busy||receipt)return;
+  e.preventDefault();if(busy||receipt||contactChecking)return;
   if(!info.consent){setError('Please agree to the privacy notice.');return}
   setBusy(true);setError('');
   const requestDescription=[
@@ -111,7 +112,7 @@ export function MovingRequest(){
   const phone=info.phone.replace(/[\s().-]/g,''); const daysAway=Math.round((Date.parse(info.movingDate+'T00:00:00Z')-Date.parse(today()+'T00:00:00Z'))/86400000); const timing=daysAway<=1?'today':daysAway<=7?'this-week':'flexible';
   try{
    const response=await fetch('/api/intake/request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-    name:info.name.trim(),phone,consent:true,notifyOptIn:info.notifyOptIn,category:'moving',area:'Mombasa',timing,description:requestDescription,preferredDate:info.movingDate,preferredTime:info.movingTime,
+    ...(!verifiedContact?{name:info.name.trim(),phone}:{}),consent:true,notifyOptIn:info.notifyOptIn,category:'moving',area:'Mombasa',timing,description:requestDescription,preferredDate:info.movingDate,preferredTime:info.movingTime,
     // Reuse the confirmed pickup Place ID / pin. The customer already provided this at Route.
     locationLabel:info.pickupLocation?.label||info.pickup,
     ...(info.pickupLocation?.placeId?{locationPlaceId:info.pickupLocation.placeId}:{}),
@@ -175,16 +176,17 @@ export function MovingRequest(){
     <div className="jt-moving-stage-title"><Phone/><div><h2>Review your move</h2><p>Share a number JiTap can reach.</p></div></div>
     <div className="jt-moving-estimate"><span>Moving estimate</span><strong>{estimate===null?'Quote pending':fmt(estimate)}</strong></div>
     <div className="jt-moving-review"><p><MapPin size={16}/> {info.pickup} → {info.dropoff}</p><p><CalendarDays size={16}/> {info.movingDate} at {formatMovingTime(info.movingTime)} · {homeLabels[info.homeSize]}</p><p><Package size={16}/> {packingLabels[info.packing]}{info.special?' · Special items':''}</p></div>
+    {contactChecking?<p role="status">Checking your JiTap account…</p>:verifiedContact?<p className="jt-verified-contact">✓ Your JiTap account is verified. Your contact details are already saved.</p>:<>
     <label>Full name <input required autoComplete="name" minLength={2} maxLength={120} placeholder="Your full name" value={info.name} onChange={e=>edit('name',e.target.value)}/></label>
-    <label>Mobile number <input required inputMode="tel" autoComplete="tel" type="tel" placeholder="0712345678" value={info.phone} readOnly={verifiedContact} onChange={e=>edit('phone',e.target.value)}/></label>
-    {verifiedContact&&<p className="jt-verified-contact">✓ Verified JiTap account linked to this moving request.</p>}
+    <label>Mobile number <input required inputMode="tel" autoComplete="tel" type="tel" placeholder="0712345678" value={info.phone} onChange={e=>edit('phone',e.target.value)}/></label>
+    </>}
     <label>Email <small>(optional)</small><input type="email" autoComplete="email" value={info.email} onChange={e=>edit('email',e.target.value)} placeholder="you@example.com"/></label>
     <label className="jt-moving-check"><input type="checkbox" checked={info.notifyOptIn} onChange={e=>edit('notifyOptIn',e.target.checked)}/> Send me SMS or WhatsApp updates about my moving request (optional)</label>
     <label className="jt-moving-check"><input type="checkbox" required checked={info.consent} onChange={e=>edit('consent',e.target.checked)}/> I agree to JiTap processing these details to respond to my request. <Link href="/privacy">Privacy</Link></label>
    </section>}
    {error&&<p className="jt-moving-error" role="alert">{error}</p>}
    <div className="jt-moving-actions">{stage>1&&<button type="button" className="jt-moving-back" disabled={busy} onClick={previous}><ArrowLeft size={17}/> Back</button>}
-    {stage<4?<button className="jt-moving-next" type="button" onClick={next} disabled={busy}>{busy?'Saving…':'Continue'} <ArrowRight size={18}/></button>:<button className="jt-moving-next" disabled={busy} type="submit">{busy?'Submitting…':'Request'} <ArrowRight size={18}/></button>}
+    {stage<4?<button className="jt-moving-next" type="button" onClick={next} disabled={busy}>{busy?'Saving…':'Continue'} <ArrowRight size={18}/></button>:<button className="jt-moving-next" disabled={busy||contactChecking} type="submit">{busy?'Submitting…':'Request'} <ArrowRight size={18}/></button>}
    </div>
    </form>}
   </div>
