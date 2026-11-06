@@ -91,10 +91,10 @@ await check('all service icon shortcuts have valid links',async()=>{
  assert.equal(await page.locator('.th-category-track-group:first-child a').count(),20);
  assert.ok((await page.locator('.th-category-track-group:first-child a').evaluateAll(links=>links.every(l=>l.getAttribute('href')?.startsWith('/services/')))));
  assert.equal(await page.getByRole('heading',{name:'Why customers love JiTap'}).count(),1);
- assert.equal(await page.locator('.th-testimonial-card').count(),3);
- assert.equal(await page.locator('.th-testimonial-card small').count(),0);
- assert.equal(await page.locator('.th-testimonial-disclaimer').count(),0);
- assert.ok((await page.locator('.th-testimonial-card').first().innerText()).includes('Get to the right help, faster.'));
+ assert.equal(await page.locator('.jt-voice-card').count(),4);
+ assert.ok((await page.locator('.jt-voice-card').first().innerText()).includes('From “Nani anajua fundi?” to just a tap.'));
+ assert.ok((await page.locator('.jt-voices-stack').innerText()).includes('Know where your fundi is coming from.'));
+ assert.equal(await page.locator('.jt-voice-card [aria-label="customer review"]').count(),0);
 });
 await check('fundi directory contains 36 profiles but exposes no phone contacts',async()=>{
  const resp=await open('/fundis');assert.equal(resp?.status(),200);

@@ -702,3 +702,48 @@
  .th-testimonial-card p{font-size:14px;line-height:1.57}
 }
 @media(prefers-reduced-motion:reduce){.th-testimonial-card{transition:none}.th-testimonial-card:hover{transform:none}}
+
+
+/* JiTap customer-value cards, inspired by stacked review layouts without fabricated reviews. */
+.jt-voices{position:relative;overflow:hidden;background:#fafcf9}
+.jt-voices::before,.jt-voices::after{content:"";position:absolute;width:450px;height:450px;border:1px solid rgba(4,135,92,.055);border-radius:50%;pointer-events:none}
+.jt-voices::before{top:-210px;left:-230px;box-shadow:0 0 0 45px rgba(4,135,92,.025),0 0 0 100px rgba(4,135,92,.018)}
+.jt-voices::after{right:-240px;bottom:-240px;box-shadow:0 0 0 55px rgba(4,135,92,.018)}
+.jt-voices .th-section{position:relative;z-index:1}
+.jt-voices-heading{text-align:center;margin:0 auto 45px;max-width:790px}
+.jt-voices-kicker{display:inline-flex;align-items:center;gap:10px;font-size:12px;font-weight:850;letter-spacing:.15em;color:#00865a;margin-bottom:16px}
+.jt-voices-kicker svg{color:#0d9c79}
+.jt-voices-heading h2{font-size:clamp(31px,4vw,53px);font-weight:860;letter-spacing:-.055em;line-height:1.1;color:#182941;margin:0}
+.jt-voices-spark{color:#12b67e;margin-right:10px;display:inline-block;font-size:.9em}
+.jt-voices-heading p{font-size:clamp(14px,1.5vw,17px);line-height:1.6;color:#647684;margin:17px 0 0}
+.jt-voices-stack{max-width:850px;margin:0 auto;display:flex;flex-direction:column;gap:17px;padding:15px 24px 30px}
+.jt-voice-card{width:94%;max-width:760px;border-radius:27px;padding:28px 35px 30px;position:relative;box-shadow:0 19px 28px rgba(26,53,44,.12);border:1px solid rgba(9,114,77,.11);transition:transform .23s ease,box-shadow .23s ease}
+.jt-voice-card:nth-child(odd){align-self:flex-start;transform:rotate(-2deg)}
+.jt-voice-card:nth-child(even){align-self:flex-end;transform:rotate(2deg)}
+.jt-voice-card:hover{transform:rotate(0deg) translateY(-3px);box-shadow:0 22px 37px rgba(26,53,44,.17)}
+.jt-voice-card-green{background:#d9f5df;color:#173a34}
+.jt-voice-card-white{background:#fff;color:#183b43}
+.jt-voice-top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:15px}
+.jt-voice-icon{display:grid;place-items:center;width:48px;height:48px;flex:none;border-radius:16px;background:rgba(255,255,255,.68);color:#087c58}
+.jt-voice-card-white .jt-voice-icon{background:#e6f7eb}
+.jt-voice-index{font-size:11px;font-weight:850;letter-spacing:.1em;color:#246d52;text-align:right}
+.jt-voice-card h3{font-size:clamp(20px,2.3vw,27px);line-height:1.2;letter-spacing:-.025em;margin:0 0 12px;color:inherit;font-weight:850}
+.jt-voice-card p{margin:0;font-size:clamp(14px,1.4vw,16px);line-height:1.65;color:#3b5e57;max-width:675px}
+.jt-voice-card-white p{color:#5a7277}
+@media(max-width:600px){
+ .jt-voices-heading{margin-bottom:22px}
+ .jt-voices-heading h2{font-size:33px}
+ .jt-voices-stack{padding:10px 3px 24px;gap:16px}
+ .jt-voice-card{width:96%;border-radius:21px;padding:22px 21px 24px}
+ .jt-voice-card:nth-child(odd){transform:rotate(-1.5deg)}
+ .jt-voice-card:nth-child(even){transform:rotate(1.5deg)}
+ .jt-voice-card h3{font-size:21px}
+ .jt-voice-card p{font-size:14px;line-height:1.58}
+ .jt-voice-top{margin-bottom:12px}
+ .jt-voice-index{font-size:9px}
+ .jt-voice-icon{height:42px;width:42px;border-radius:12px}
+}
+@media(prefers-reduced-motion:reduce){
+ .jt-voice-card{transition:none}
+ .jt-voice-card:hover{transform:none}
+}
