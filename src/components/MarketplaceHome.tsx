@@ -14,21 +14,21 @@ const categories=[
  {name:'Carpentry & Doors',slug:'carpentry',detail:'Doors, furniture & cabinets',img:'carpentry.png',icon:Hammer},
  {name:'Roofing & Gutters',slug:'roofing',detail:'Roof leaks, sheets & gutters',img:'/images/categories/Focused%20Roofer%20Installing%20Brown%20Gutter.png',icon:Hammer},
  {name:'Masonry & Construction',slug:'masonry',detail:'Brickwork, concrete & plaster',img:'/images/categories/Bricklayer%20at%20Work%20on%20a%20Busy%20Construction%20Site.png',icon:Hammer},
- {name:'Welding & Metalwork',slug:'welding',detail:'Gates, grills & metal fabrication',img:'https://images.pexels.com/photos/3158651/pexels-photo-3158651.jpeg?auto=compress&cs=tinysrgb&w=1000',icon:Wrench},
+ {name:'Welding & Metalwork',slug:'welding',detail:'Gates, grills & metal fabrication',img:'/images/categories/Master%20Welder%20at%20Work.png',icon:Wrench},
  {name:'Tiling & Flooring',slug:'tiling',detail:'Wall tiles, floors & grouting',img:'/images/categories/Tile%20Installer%20at%20Work.png',icon:Hammer},
  {name:'Painting',slug:'painting',detail:'Walls, rooms & finishes',img:'painting.png',icon:PaintRoller},
  {name:'Appliance Repair',slug:'appliance-repair',detail:'Fridges, washers & appliances',img:'appliance.png',icon:Refrigerator},
  {name:'AC & Refrigeration',slug:'air-conditioning',detail:'Cooling repairs & installation',img:'/images/categories/Kenyan%20HVAC%20Technician%20Servicing%20Air%20Conditioner.png',icon:Refrigerator},
  {name:'Solar, CCTV & Security',slug:'solar-security',detail:'Solar, CCTV & electric fences',img:'/images/categories/CCTV%20Installation%20and%20Solar%20Rooftop%20Team.png',icon:Zap},
  {name:'Computer & Phone Repair',slug:'it-repairs',detail:'Laptops, printers, phones & IT',img:'/images/categories/JiTap%20Tech%20Repair%20Workshop.png',icon:Wrench},
- {name:'Vehicle & Motorcycle Repair',slug:'vehicle-repair',detail:'Mechanics, brakes & engines',img:'https://images.pexels.com/photos/3806255/pexels-photo-3806255.jpeg?auto=compress&cs=tinysrgb&w=1000',icon:Wrench},
+ {name:'Vehicle & Motorcycle Repair',slug:'vehicle-repair',detail:'Mechanics, brakes & engines',img:'/images/categories/Kenyan%20Mechanic%20Servicing%20Motorcycle.png',icon:Wrench},
  {name:'Glass & Aluminium',slug:'glass-aluminium',detail:'Windows, panes & frames',img:'/images/categories/Precision%20Glass%20Installation%20Team.png',icon:Hammer},
  {name:'Handyman & Mounting',slug:'general-repairs',detail:'TVs, fixtures & small repairs',img:'tv-mounting.png',icon:MonitorPlay},
  {name:'Gardening & Landscaping',slug:'landscaping',detail:'Outdoor upkeep & gardening',img:'/images/categories/Kenyan%20Gardener%20Trimming%20a%20Lush%20Hedge.png',icon:Wrench},
  {name:'Pest Control',slug:'pest-control',detail:'Termites & property treatments',img:'/images/categories/Pest%20Control%20Technician%20Fogging%20Interior%20Corridor.png',icon:ShieldCheck},
  {name:'House Cleaning',slug:'cleaning',detail:'Mama Fua, laundry & cleaning',img:'cleaning.png',icon:Sparkles},
  {name:'Moving & Relocation',slug:'moving',detail:'Furniture and house moving',img:'/images/categories/Friendly%20Kenyan%20Moving%20Team.png',icon:Wrench},
- {name:'Other Services',slug:'other-services',detail:'Describe the service you need',img:'https://images.pexels.com/photos/4792477/pexels-photo-4792477.jpeg?auto=compress&cs=tinysrgb&w=1000',icon:MoreHorizontal}
+ {name:'Other Services',slug:'other-services',detail:'Describe the service you need',img:'/images/categories/Other%20Services%20Friendly%20Handyman%20with%20Tool-Filled%20Toolbox.png',icon:MoreHorizontal}
 ] as const;
 const popular=[
  {title:'Tap & leak repairs',slug:'plumbing',desc:'Fundi wa plumbing',img:'plumbing.png',query:'My tap is leaking and I need a plumber'},
