@@ -93,6 +93,9 @@ await check('all service icon shortcuts have valid links',async()=>{
  assert.equal(await page.getByRole('heading',{name:'Why customers love JiTap'}).count(),1);
  assert.equal(await page.locator('.jt-voice-card').count(),4);
  assert.ok((await page.locator('.jt-voice-card').first().innerText()).includes('From “Nani anajua fundi?” to just a tap.'));
+ assert.equal(await page.locator('.jt-voice-avatar').count(),4);
+ assert.equal(await page.locator('.jt-voice-stars').count(),4);
+ assert.ok(await page.locator('.jt-voice-stars').first().getAttribute('aria-hidden')==='true');
  assert.ok((await page.locator('.jt-voices-stack').innerText()).includes('Know where your fundi is coming from.'));
  assert.equal(await page.locator('.jt-voice-card [aria-label="customer review"]').count(),0);
 });
