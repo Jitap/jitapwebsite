@@ -37,6 +37,16 @@ export function MovingRequest(){
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState('');
  const [receipt,setReceipt]=useState('');
+ const [verifiedContact,setVerifiedContact]=useState(false);
+ useEffect(()=>{
+  let active=true;
+  fetch('/api/auth/session',{cache:'no-store'}).then(async res=>res.ok?res.json():null).then(profile=>{
+   if(!active||!profile||profile.accountType!=='customer')return;
+   setVerifiedContact(true);
+   setInfo(old=>({...old,phone:profile.phone,name:old.name||profile.fullName||''}));
+  }).catch(()=>{});
+  return()=>{active=false};
+ },[]);
  useEffect(()=>{
   try{const raw=sessionStorage.getItem('jitap:moving-draft');if(!raw)return;const saved=JSON.parse(raw) as Saved;
    if(saved.id&&saved.secret&&saved.stage>=1&&saved.stage<=4){setLeadId(saved.id);setSecret(saved.secret);const modern=typeof saved.distanceVerified==='boolean';setInfo({...saved.info,name:saved.info.name||'',movingTime:saved.info.movingTime||'',pickupLocation:saved.info.pickupLocation||null,dropoffLocation:saved.info.dropoffLocation||null,distanceKm:modern&&saved.distanceVerified?saved.info.distanceKm:''});setStage(modern&&isValidTime(saved.info.movingTime||'')?saved.stage:1);setEstimate(modern?saved.estimate:null);setDistanceVerified(saved.distanceVerified===true)}}
@@ -166,7 +176,8 @@ export function MovingRequest(){
     <div className="jt-moving-estimate"><span>Moving estimate</span><strong>{estimate===null?'Quote pending':fmt(estimate)}</strong></div>
     <div className="jt-moving-review"><p><MapPin size={16}/> {info.pickup} → {info.dropoff}</p><p><CalendarDays size={16}/> {info.movingDate} at {formatMovingTime(info.movingTime)} · {homeLabels[info.homeSize]}</p><p><Package size={16}/> {packingLabels[info.packing]}{info.special?' · Special items':''}</p></div>
     <label>Full name <input required autoComplete="name" minLength={2} maxLength={120} placeholder="Your full name" value={info.name} onChange={e=>edit('name',e.target.value)}/></label>
-    <label>Mobile number <input required inputMode="tel" autoComplete="tel" type="tel" placeholder="0712345678" value={info.phone} onChange={e=>edit('phone',e.target.value)}/></label>
+    <label>Mobile number <input required inputMode="tel" autoComplete="tel" type="tel" placeholder="0712345678" value={info.phone} readOnly={verifiedContact} onChange={e=>edit('phone',e.target.value)}/></label>
+    {verifiedContact&&<p className="jt-verified-contact">✓ Verified JiTap account linked to this moving request.</p>}
     <label>Email <small>(optional)</small><input type="email" autoComplete="email" value={info.email} onChange={e=>edit('email',e.target.value)} placeholder="you@example.com"/></label>
     <label className="jt-moving-check"><input type="checkbox" checked={info.notifyOptIn} onChange={e=>edit('notifyOptIn',e.target.checked)}/> Send me SMS or WhatsApp updates about my moving request (optional)</label>
     <label className="jt-moving-check"><input type="checkbox" required checked={info.consent} onChange={e=>edit('consent',e.target.checked)}/> I agree to JiTap processing these details to respond to my request. <Link href="/privacy">Privacy</Link></label>

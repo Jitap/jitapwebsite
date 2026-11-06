@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createHash } from 'node:crypto';
 import { schemas, type FormKind } from '@/lib/validators';
+import {getCustomerIdentity} from '@/lib/customer-session-server';
+import {setAuthCookies} from '@/lib/jitap-auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -115,7 +117,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{kind
   if (!validated.success) {
     return respond({ error: 'Please correct the form fields.', issues: validated.error.flatten().fieldErrors }, 422);
   }
-  const data = validated.data;
+  let data = validated.data;
+  // Never accept client-supplied user IDs. The optional ownership link comes
+  // only from Supabase-verified HttpOnly cookies on the server.
+  const customer = kind === 'request' ? await getCustomerIdentity(req) : {kind:'guest' as const};
+  if(customer.kind === 'invalid') return respond({error:'Please sign in again to save this request to your account.'},401);
+  if(customer.kind === 'provider') return respond({error:'Please use a customer account to submit service requests.'},403);
+  if(customer.kind === 'customer' && kind === 'request') data = {...data,phone:customer.identity.phone};
   if ('website' in data && data.website) return respond({ error: 'Submission rejected.' }, 400);
 
   const cfg = configured();
@@ -128,7 +136,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{kind
   const requestKey = fingerprint(JSON.stringify({ kind, data, clientHash, fiveMinuteWindow }));
 
   try {
-    const result = await fetch(`${cfg.url}/rest/v1/rpc/submit_website_intake_authorized`, {
+    const result = await fetch(`${cfg.url}/rest/v1/rpc/${customer.kind === 'customer' && kind === 'request' ? 'submit_website_intake_customer_authorized' : 'submit_website_intake_authorized'}`, {
       method: 'POST',
       headers: {
         apikey: cfg.key,
@@ -143,7 +151,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{kind
         p_payload: data,
         p_source_hash: clientHash,
         p_request_key: requestKey,
-        p_token: cfg.token
+        p_token: cfg.token,
+        ...(customer.kind === 'customer' && kind === 'request' ? {p_customer_user_id:customer.identity.userId}: {})
       })
     });
 
@@ -162,12 +171,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{kind
       return respond({ error: 'We could not confirm receipt. Please contact JiTap.' }, 502);
     }
     const emailAccepted = await notifyInbox(kind as FormKind, data, identifier);
-    return respond({
+    const receipt=respond({
       ok: true,
       reference: identifier,
+      linkedToAccount:customer.kind === 'customer' && kind === 'request',
       emailNotificationAccepted: emailAccepted,
       message: kind === 'provider' ? 'Your provider application has been received successfully. JiTap will review it and contact you.' : 'Thank you for contacting JiTap. Your enquiry has been received successfully. Our team will review it and get back to you.'
     }, 201);
+    if(customer.kind === 'customer' && customer.identity.rotated){
+      const rotated=customer.identity.rotated;
+      setAuthCookies(receipt,rotated.access,rotated.refresh,rotated.expires);
+    }
+    return receipt;
   } catch {
     console.error('JiTap intake transport failure');
     return respond({ error: 'JiTap could not confirm your submission. Please try again later.' }, 502);

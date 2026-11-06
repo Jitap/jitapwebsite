@@ -33,6 +33,23 @@ export async function accountQuery(token:string,path:string,method='GET',body?:R
   return {ok:r.ok,status:r.status,data:await r.json().catch(()=>null)};
  }catch{return {ok:false,status:503,data:null}}
 }
+export async function ownCustomerRequests(token:string,customerId:string){
+ const c=settings();if(!c)return {ok:false,status:503,data:null};
+ try{
+  const query=new URLSearchParams({
+   select:'id,kind,payload,status,created_at',
+   customer_user_id:'eq.'+customerId,
+   kind:'eq.request',
+   order:'created_at.desc',
+   limit:'30'
+  });
+  const response=await fetch(c.url+'/rest/v1/website_intake?'+query.toString(),{
+   headers:{apikey:c.key,Authorization:'Bearer '+token,Accept:'application/json'},
+   cache:'no-store'
+  });
+  return {ok:response.ok,status:response.status,data:await response.json().catch(()=>null)};
+ }catch{return {ok:false,status:503,data:null}}
+}
 export function setAuthCookies(response:NextResponse,access:string,refresh:string,expires=3600){
  const opts={httpOnly:true,secure:process.env.NODE_ENV==='production',sameSite:'lax' as const,path:'/'};
  response.cookies.set('jt_access',access,{...opts,maxAge:Math.min(Math.max(60,expires),3600)});
