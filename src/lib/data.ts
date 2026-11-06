@@ -34,7 +34,7 @@ export function inferService(query:string):string|undefined {
  const understood=understandJob(query);
  if(understood)return understood.category;
  // Explicit cleaning task wins over a coincidental moving or repair noun.
- if(/\b(?:move[- ]out|post[- ]move|after moving)\s+clean(?:ing)?\b|\b(?:clean|wash|wipe|polish)\s+(?:my\s+|the\s+|a\s+)?(?:door|handle|furniture|floor|house|home)\b/.test(t))return 'cleaning';
+ if(/\b(?:mov(?:e|ing)[- ]out|post[- ]move|after moving)\s+clean(?:ing)?\b|\b(?:clean|wash|wipe|polish)\s+(?:my\s+|the\s+|a\s+)?(?:door|handle|furniture|floor|house|home)\b/.test(t))return 'cleaning';
  // Moving furniture is transport work, not furniture carpentry.
  if(/\b(?:mov(?:e|es|ing|ers)|relocat(?:e|ion|ing)|shifting|kuhama|nihame|transport(?:ing)?)\b/.test(t)&&
     /\b(?:house|home|furniture|wardrobe|sofa|bed|truck|delivery|relocation|moving|office|items|goods|kuhama|nihame)\b/.test(t))return 'moving';
