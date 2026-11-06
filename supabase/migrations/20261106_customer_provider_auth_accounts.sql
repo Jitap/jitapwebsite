@@ -2,7 +2,7 @@
 create table if not exists public.jitap_accounts (
   user_id uuid primary key references auth.users(id) on delete cascade,
   account_type text not null check (account_type in ('customer','provider')),
-  phone text not null check (phone ~ '^[+]254[17][0-9]{8}),
+  phone text not null check (phone ~ '^[+]254[17][0-9]{8}$'),
   full_name text,
   created_at timestamptz not null default now()
 );
