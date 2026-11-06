@@ -1,6 +1,6 @@
 'use client';
-import {useCallback,useEffect,useMemo,useState} from 'react';
-import {CheckCircle2,RefreshCw,LogOut,MapPin,Phone,CalendarClock,Search,AlertTriangle,ClipboardList,Users,Clock3} from 'lucide-react';
+import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import {CheckCircle2,RefreshCw,LogOut,MapPin,Phone,CalendarClock,Search,AlertTriangle,ClipboardList,Users,Clock3,Bell, X} from 'lucide-react';
 import {CoordinatorWorkflow} from '@/components/CoordinatorWorkflow';
 type Staff={email:string;role:'admin'|'coordinator'};
 type Case={
@@ -8,6 +8,8 @@ type Case={
  category:string;area:string;description:string;name:string;phone:string;preferredDate:string;preferredTime:string;locationLabel:string;destination:string;needsLocation:boolean;needsPhone:boolean;needsSchedule:boolean;canContact:boolean;notifyOptIn:boolean;
 };
 type Activity={action:string;actor_email:string;note:string|null;old_value:string|null;new_value:string|null;created_at:string};
+type Notice={id:string;caseId:string;title:string;detail:string;createdAt:number};
+const AUTO_REFRESH_MS=15000;
 const statuses=[
  ['new','New'],['incomplete','Incomplete'],['needs_sourcing','Needs sourcing'],['matching','Matching'],['provider_contacted','Provider contacted'],['awaiting_quote','Awaiting quote'],['scheduled','Scheduled'],['in_progress','In progress'],['completed','Completed'],['cancelled','Cancelled'],['closed','Closed']
 ] as const;
@@ -31,12 +33,39 @@ export function CoordinatorDashboard(){
  const [feedback,setFeedback]=useState('');
  const [note,setNote]=useState('');
  const [followup,setFollowup]=useState('');
+ const [lastSynced,setLastSynced]=useState<Date|null>(null);
+ const [refreshIssue,setRefreshIssue]=useState(false);
+ const [notices,setNotices]=useState<Notice[]>([]);
+ const previousCases=useRef<Map<string,string>|null>(null);
+ const pollInFlight=useRef(false);
+ const selectedRef=useRef<string|null>(null);
+ selectedRef.current=selected;
+
  const load=useCallback(async()=>{
   const res=await fetch('/api/coordinator/cases',{cache:'no-store'});
-  if(res.status===401){setStaff(null);setCases([]);return}
+  if(res.status===401){
+   previousCases.current=null;setStaff(null);setCases([]);setNotices([]);return;
+  }
   if(!res.ok)throw new Error('Could not load cases');
   const data=await res.json();
-  setStaff(data.staff);setCases(data.cases||[]);
+  const incoming:Case[]=Array.isArray(data.cases)?data.cases:[];
+  const previous=previousCases.current;
+  if(previous!==null){
+   const changes:Notice[]=[];
+   for(const item of incoming){
+    const oldStatus=previous.get(item.id);
+    if(oldStatus===undefined){
+     changes.push({id:item.id+':new',caseId:item.id,title:'New service request',
+      detail:'JT-'+item.reference+' · '+item.category.replaceAll('-',' ')+' · '+(item.locationLabel||item.area||'Location pending'),createdAt:Date.now()});
+    }else if(oldStatus!==item.status&&['provider_contacted','needs_sourcing','awaiting_quote','scheduled','in_progress','completed'].includes(item.status)){
+     changes.push({id:item.id+':'+item.status+':'+Date.now(),caseId:item.id,title:'Request status updated',
+      detail:'JT-'+item.reference+' · '+nameStatus(item.status),createdAt:Date.now()});
+    }
+   }
+   if(changes.length)setNotices(old=>[...changes.reverse(),...old].slice(0,5));
+  }
+  previousCases.current=new Map(incoming.map(item=>[item.id,item.status]));
+  setStaff(data.staff);setCases(incoming);setLastSynced(new Date());setRefreshIssue(false);
  },[]);
  const loadDetail=useCallback(async(id:string)=>{
   const res=await fetch('/api/coordinator/cases?id='+encodeURIComponent(id),{cache:'no-store'});
@@ -83,6 +112,34 @@ export function CoordinatorDashboard(){
   return()=>{mounted=false};
  },[load]);
  useEffect(()=>{if(selected)loadDetail(selected).catch(()=>setFeedback('Could not load activity history'))},[selected,loadDetail]);
+ // Poll the authorized coordinator queue only while this tab is visible.
+ // Refresh immediately on tab return / browser focus, with no overlapping polls.
+ useEffect(()=>{
+  if(!staff?.email||checking)return;
+  let active=true;
+  const refresh=async()=>{
+   if(!active||document.visibilityState==='hidden'||pollInFlight.current)return;
+   pollInFlight.current=true;
+   try{
+    await load();
+    const id=selectedRef.current;
+    if(id)await loadDetail(id).catch(()=>{});
+   }catch{
+    if(active)setRefreshIssue(true);
+   }finally{pollInFlight.current=false}
+  };
+  const onVisible=()=>{if(document.visibilityState==='visible')void refresh()};
+  const onFocus=()=>{void refresh()};
+  const interval=window.setInterval(()=>{void refresh()},AUTO_REFRESH_MS);
+  document.addEventListener('visibilitychange',onVisible);
+  window.addEventListener('focus',onFocus);
+  return()=>{
+   active=false;window.clearInterval(interval);
+   document.removeEventListener('visibilitychange',onVisible);
+   window.removeEventListener('focus',onFocus);
+  };
+ },[staff?.email,checking,load,loadDetail]);
+
  async function authenticate(action:'send'|'verify'){
   setLogging(true);setAuthMessage('');
   try{
@@ -96,7 +153,7 @@ export function CoordinatorDashboard(){
  }
  async function logout(){
   await fetch('/api/coordinator/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'logout'})});
-  setStaff(null);setCases([]);setSelected(null);setActivity([]);
+  previousCases.current=null;setStaff(null);setCases([]);setSelected(null);setActivity([]);setNotices([]);setLastSynced(null);
  }
  async function update(action:string,value?:string|null,extraNote?:string){
   if(!selected)return;
@@ -131,7 +188,20 @@ export function CoordinatorDashboard(){
   </div></section>;
  return <section className="coordinator-root">
   <header className="coordinator-header"><div><span className="coordinator-kicker">JITAP SERVICE OPERATIONS</span><h1>Coordinator queue</h1><p>Follow every request from intake to completion. No provider match? Escalate to human sourcing.</p></div>
-  <div className="coordinator-header-actions"><span>{staff.email} · {staff.role}</span><button onClick={()=>load().catch(()=>setFeedback('Refresh failed'))}><RefreshCw size={16}/> Refresh</button><button onClick={logout}><LogOut size={16}/> Sign out</button></div></header>
+  <div className="coordinator-header-actions"><span>{staff.email} · {staff.role}</span><div className="coordinator-live-indicator" aria-label="Automatic refresh enabled"><span className="coordinator-live-dot"/> Live updates · every 15s{lastSynced?' · '+lastSynced.toLocaleTimeString('en-KE',{hour:'2-digit',minute:'2-digit',timeZone:'Africa/Nairobi'}):''}</div><button onClick={()=>load().catch(()=>setFeedback('Refresh failed'))}><RefreshCw size={16}/> Refresh</button><button onClick={logout}><LogOut size={16}/> Sign out</button></div></header>
+  {refreshIssue&&<p className="coordinator-sync-note" role="status">Connection interrupted. JiTap will automatically check again.</p>}
+  {notices.length>0&&<aside className="coordinator-notice-stack" aria-label="Service operations notifications" aria-live="polite">
+   {notices.map(n=><div className="coordinator-notice" key={n.id}>
+    <span className="coordinator-notice-icon"><Bell size={19}/></span>
+    <div className="coordinator-notice-body"><strong>{n.title}</strong><p>{n.detail}</p><button type="button" onClick={()=>{
+     setSelected(n.caseId);setCaseTab('workflow');
+     setFilter('all');setSearch('');
+     setNotices(old=>old.filter(x=>x.id!==n.id));
+     window.setTimeout(()=>document.getElementById('coordinator-detail-panel')?.scrollIntoView({behavior:'smooth',block:'start'}),30);
+    }}>Open request</button></div>
+    <button type="button" className="coordinator-notice-dismiss" aria-label={'Dismiss '+n.title} onClick={()=>setNotices(old=>old.filter(x=>x.id!==n.id))}><X size={17}/></button>
+   </div>)}
+  </aside>}
   <div className="coordinator-stats">
    <div><ClipboardList/><strong>{cases.length}</strong><span>Tracked cases</span></div>
    <div><Clock3/><strong>{newCount}</strong><span>New requests</span></div>
