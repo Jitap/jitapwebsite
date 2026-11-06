@@ -36,10 +36,25 @@ export async function POST(request:Request){
  if(body.length>18000)return reject(413,'payload_too_large');
  if(!signatureValid(body,request,configured))return reject(401,'signature_invalid');
  let event:unknown;try{event=JSON.parse(body)}catch{return reject(400,'invalid_json')}
- const payload=event as {user?:{phone?:unknown};sms?:{otp?:unknown}};
- const phone=payload?.user?.phone;
- const otp=payload?.sms?.otp;
- if(typeof phone!=='string'||!/^\+254[17][0-9]{8}$/.test(phone)||typeof otp!=='string'||!/^\d{6,8}$/.test(otp))return reject(422,'invalid_hook_payload');
+ const payload=event as {user?:{phone?:unknown};sms?:{otp?:unknown};record?:{user?:{phone?:unknown};sms?:{otp?:unknown}}};
+ const msg=(payload?.user&&payload?.sms)?payload:payload?.record;
+ const rawPhone=msg?.user?.phone;
+ const rawOtp=msg?.sms?.otp;
+ const phone=typeof rawPhone==='string'?(/^254[17]\\d{8}$/.test(rawPhone)?'+'+rawPhone:/^0[17]\\d{8}$/.test(rawPhone)?'+254'+rawPhone.slice(1):rawPhone):null;
+ const otp=(typeof rawOtp==='string'||typeof rawOtp==='number')?String(rawOtp):'';
+ if(!phone||!/^\\+254[17]\\d{8}$/.test(phone)||!/^\\d{6,8}$/.test(otp)){
+  // Only structural diagnostics: never log event values, phone numbers or OTP digits.
+  console.error('[jitap-sms-hook] payload_shape',{
+   envelope:payload?.record?'record':payload?.user?'direct':'unknown',
+   userPresent:!!msg?.user,
+   smsPresent:!!msg?.sms,
+   phoneType:typeof rawPhone,
+   phoneLength:typeof rawPhone==='string'?rawPhone.length:null,
+   otpType:typeof rawOtp,
+   otpLength:(typeof rawOtp==='string'||typeof rawOtp==='number')?String(rawOtp).length:null,
+  });
+  return reject(422,'invalid_hook_payload');
+ }
  // The OTP originates inside Supabase Auth; never trust browser-supplied codes.
  // Wasiliana delivers it; Supabase verifies it. Never log the code or phone.
  const message='JiTap verification code: '+otp+'. Do not share this code with anyone.';
