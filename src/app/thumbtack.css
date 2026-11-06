@@ -920,3 +920,14 @@
 @media(max-width:540px){
  .jt-how-original-art{width:195px;height:208px}
 }
+
+
+/* High-resolution How JiTap Works illustration slots: upload ask.png, match.png, buzz.png, done.png. */
+.jt-how-artwork-frame{display:grid;place-items:center;width:100%;min-height:250px}
+.jt-how-uploaded-art{display:block;width:min(100%,350px);max-height:290px;height:auto;object-fit:contain;image-rendering:auto}
+.jt-how-progress-pulse{display:none!important}
+@media(max-width:850px){.jt-how-artwork-frame{min-height:230px}}
+@media(max-width:540px){
+ .jt-how-artwork-frame{min-height:224px}
+ .jt-how-uploaded-art{width:min(100%,260px);max-height:218px}
+}
