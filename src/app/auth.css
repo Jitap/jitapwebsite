@@ -113,3 +113,41 @@
 .jt-request-history-card small{color:#648088;font-size:12px}
 .jt-request-history-status{font-size:11px;font-weight:750;border-radius:999px;color:#116b50;background:#e5f7ed;padding:6px 10px;white-space:nowrap}
 @media(max-width:460px){.jt-customer-requests-head h2{font-size:23px}.jt-customer-requests-head>a{padding:9px 11px}.jt-request-history-card{padding:16px}}
+
+
+/* Focused registration/login screen shared by customers and providers.
+   Keep the page independent of marketing imagery and centered at any width. */
+.jt-auth-page,
+.jt-auth-provider.jt-auth-page,
+.jt-auth-customer.jt-auth-page {
+ display:flex;
+ width:100%;
+ min-height:calc(100dvh - 86px);
+ align-items:center;
+ justify-content:center;
+ padding:clamp(24px,5vw,70px) 16px;
+ background:linear-gradient(180deg,#f4f8ff 0%,#f8fbfa 100%);
+}
+.jt-auth-page .jt-auth-promo{display:none}
+.jt-auth-page .jt-auth-panel{
+ display:block;
+ flex:0 1 660px;
+ width:min(100%,660px);
+ padding:clamp(23px,4vw,43px);
+ border:1px solid #e2e9f2;
+ background:#fff;
+ border-radius:24px;
+ box-shadow:0 16px 45px rgba(13,28,74,.08);
+}
+.jt-auth-page .jt-auth-panel-inner{max-width:none;margin:0 auto}
+@media(max-width:760px){
+ .jt-auth-page,.jt-auth-provider.jt-auth-page,.jt-auth-customer.jt-auth-page{
+  min-height:calc(100dvh - 76px);
+  padding:22px 12px 34px;
+  align-items:flex-start;
+ }
+ .jt-auth-page .jt-auth-panel{padding:25px 20px 30px;border-radius:19px}
+}
+@media(max-width:380px){
+ .jt-auth-page .jt-auth-panel{padding:22px 14px}
+}
