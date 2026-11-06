@@ -2,20 +2,32 @@
 import {useMemo,useState} from 'react';
 import Link from 'next/link';
 import {ArrowRight,MapPin,Search,SlidersHorizontal} from 'lucide-react';
-import {areas} from '@/lib/data';
+import {areas,categories} from '@/lib/data';
 import {fundiListings} from '@/lib/fundis-public';
 import {ProviderShowcase} from '@/components/ProviderShowcase';
 
-const filters=['All services','Plumbing','Electrical','Cleaning','Carpentry','Painting','Appliance Repair','IT / Phone / Computer Services','Moving / Relocation','Other'];
+const filters=['All services',...categories.filter(c=>c.slug!=='other-services').map(c=>c.name)];
+const tradeLabels:Record<string,string[]>={
+ plumbing:['plumbing'],electrical:['electrical'],cleaning:['cleaning','laundry'],
+ painting:['painting'],carpentry:['carpentry','furniture','woodwork'],
+ 'appliance-repair':['appliance repair','home appliances'],
+ 'general-repairs':['handyman','general repairs','fixture repair'],
+ moving:['moving','relocation'],
+ roofing:['roofing','roofer','gutter'],masonry:['masonry','construction','brick','plaster'],
+ tiling:['tiling','flooring','tiles'],welding:['welding','metalwork','fabrication'],
+ 'air-conditioning':['ac & refrigeration','air conditioning','refrigeration','hvac'],
+ 'solar-security':['solar','cctv','security','electric fence'],
+ 'it-repairs':['it / phone / computer services','computer repair','phone repair','it support'],
+ 'vehicle-repair':['mechanic','auto services','vehicle repair','bicycle repair'],
+ landscaping:['gardening','landscaping'], 'pest-control':['pest control'],
+ 'glass-aluminium':['glass','aluminium']
+};
 export const slugFor=(cats:string[]):string=>{
  const joined=cats.join(' ').toLowerCase();
- if(joined.includes('plumbing'))return 'plumbing';
- if(joined.includes('electrical'))return 'electrical';
- if(joined.includes('cleaning'))return 'cleaning';
- if(joined.includes('carpentry'))return 'carpentry';
- if(joined.includes('painting'))return 'painting';
- if(joined.includes('appliance'))return 'appliance-repair';
- if(joined.includes('moving')||joined.includes('relocation'))return 'moving';
+ for(const category of categories){
+  if(category.slug==='other-services')continue;
+  if((tradeLabels[category.slug]||[]).some(label=>joined.includes(label)))return category.slug;
+ }
  return 'other-services';
 };
 export function FundiDirectory(){
@@ -24,7 +36,8 @@ export function FundiDirectory(){
  const [query,setQuery]=useState('');
  const shown=useMemo(()=>fundiListings.filter(p=>{
   const areaOk=area==='All areas'||p.areas.includes(area);
-  const catOk=category==='All services'||(category==='Other'?p.categories.some(c=>c==='Other'):category==='Moving / Relocation'?p.categories.some(c=>/moving|relocation/i.test(c)):p.categories.some(c=>c.toLowerCase().includes(category.toLowerCase())));
+  const selected=categories.find(c=>c.name===category);
+  const catOk=category==='All services'||!!selected&&p.categories.some(c=>(tradeLabels[selected.slug]||[]).some(label=>c.toLowerCase().includes(label)));
   const term=query.trim().toLowerCase();
   const mamaFua=/(?:mama[\s-]*fua|mamafua|kufua|laundry|house.?cleaner|house.?keeper|house cleaning)/i.test(term);const textOk=!term||(mamaFua&&p.categories.some(c=>c.toLowerCase().includes('cleaning')))||[p.name,...p.categories,...p.areas,...(p.id==='fund-022'?['urban movers and relocations','moving','relocation','house moving']:[]),...(p.id==='fund-036'?['zenotech computers','zenotech','zeno tech','computer repair','laptop repair','printer repair','it support','networking']:[])].join(' ').toLowerCase().includes(term);
   return areaOk&&catOk&&textOk;
@@ -63,12 +76,8 @@ export function matchesFor(category:string,area:string,specialty?:string){
  if(specialty==='tv-mounting')return fundiListings.filter(p=>p.areas.includes(area)&&/\b(?:tv\s*mount|television\s*mount|tv\s*installation)\b/i.test([p.name,...p.categories].join(' ')));
  if(specialty==='computer-services')return fundiListings.filter(p=>p.id==='fund-036'&&p.areas.includes(area));
  if(specialty==='vehicle-mechanic')return fundiListings.filter(p=>p.areas.includes(area)&&/mechanic|garage|vehicle repair|auto repair/i.test([p.name,...p.categories].join(' ')));
- const serviceNames:Record<string,string[]>={
-  plumbing:['plumbing'],electrical:['electrical'],cleaning:['cleaning'],
-  carpentry:['carpentry'],painting:['painting'],'appliance-repair':['appliance repair'],
-  'general-repairs':['carpentry','electrical','plumbing'],moving:['moving / delivery'],'other-services':['it / phone / computer services','other']
- };
- const names=serviceNames[category]||serviceNames['other-services'];
+ const names=tradeLabels[category]||[];
+ if(!names.length)return [];
  return fundiListings.filter(p=>p.areas.includes(area)&&p.categories.some(c=>names.some(n=>c.toLowerCase().includes(n))));
 }
 export function MatchedFundis({category,area,onQuotes,specialty}:{category:string;area:string;onQuotes:()=>void;specialty?:string}){
@@ -76,7 +85,7 @@ export function MatchedFundis({category,area,onQuotes,specialty}:{category:strin
  const visible=matched.slice(0,4);
  return <section className="jt-matches" aria-label="Matching local service providers">
   <div className="jt-matches-title"><span className="th-overline">LOCAL SERVICE MATCHES</span><h2>{matched.length} {matched.length===1?'matching profile':'matching profiles'} in {area}</h2><p>Based on listed services and service areas. Availability and quotations are confirmed after a request is submitted.</p></div>
-  {matched.length>0?<><div className="jt-matches-quote"><div><strong>Request quotes from local professionals</strong><p>Share your job details with JiTap to request pricing and availability. No quote has been issued yet.</p></div><button type="button" className="td-outline-button" onClick={onQuotes}>Request {matched.length===1?'a quote':'quotes'}</button></div>
+  {matched.length>0?<><div className="jt-matches-quote"><div><strong>Connect with local fundis</strong><p>Share your service brief with JiTap to coordinate the next steps and check provider availability.</p></div><button type="button" className="td-outline-button" onClick={onQuotes}>Request</button></div>
   <div className="td-pro-list">{visible.map((p,i)=>(p.id==='fund-022'||p.id==='fund-036')?<ProviderShowcase key={p.id} profileId={p.id}/>:<article className="td-pro-card" key={p.id}>
    <div className={'td-pro-avatar td-avatar-'+(i%5)} aria-hidden="true">{p.name.split(/\s+/).map(w=>w[0]||'').slice(0,2).join('').toUpperCase()}</div>
    <div className="td-pro-detail"><h3>{p.name}</h3><p className="td-pro-cats">{p.categories.join(' · ')}</p><div className="td-pro-areas"><MapPin size={15}/>{p.areas.join(' · ')}</div></div>
@@ -90,11 +99,11 @@ export function FundiProfile({id}:{id:string}){
  if(!p)return null;
  if(id==='fund-022'||id==='fund-036')return <section className="container jt-profile"><Link href="/fundis" className="jt-profile-back">← Back to local professionals</Link><ProviderShowcase detail profileId={id}/></section>;
  const category=slugFor(p.categories),area=p.areas[0]||'Bamburi';
- const job='I would like a quote for '+p.categories.join(', ')+' from '+p.name+'.';
+ const job='I need help with '+p.categories.join(', ')+' from '+p.name+'.';
  const href='/request?category='+encodeURIComponent(category)+'&area='+encodeURIComponent(area)+'&description='+encodeURIComponent(job);
  return <section className="container jt-profile"><Link href="/fundis" className="jt-profile-back">← Back to local professionals</Link><article className="jt-profile-panel">
  <div className="td-pro-avatar" aria-hidden="true">{p.name.split(/\s+/).map(w=>w[0]||'').slice(0,2).join('').toUpperCase()}</div>
  <div><span className="th-overline">LOCAL SERVICE PROFESSIONAL</span><h1>{p.name}</h1><h2>Services</h2><p>{p.categories.join(' · ')}</p><h2>Service areas</h2><p>{p.areas.join(' · ')}</p>
  <p className="jt-profile-disclaimer">Service details are provided for discovery. Availability, ratings and credentials have not been independently confirmed.</p>
- <Link className="td-outline-button" href={href}>Request a quote</Link></div></article></section>;
+ <Link className="td-outline-button" href={href}>Request</Link></div></article></section>;
 }
