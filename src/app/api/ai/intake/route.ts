@@ -1,7 +1,8 @@
 import {NextRequest,NextResponse} from 'next/server';
 import {z} from 'zod';
 import {createHash} from 'node:crypto';
-import {categories,areas} from '@/lib/data';
+import {categories,areas,inferService} from '@/lib/data';
+import {safeIntakeQuestions} from '@/lib/fast-intake';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -171,8 +172,13 @@ export async function POST(req:NextRequest){
   if(!text)return answer({error:'AI response unavailable'},503);
   let data:unknown;try{data=JSON.parse(text)}catch{return answer({error:'AI response invalid'},503)}
   const validated=parsedSchema.safeParse(data);if(!validated.success||!categorySlugs.includes(validated.data?.category||''))return answer({error:'AI category unavailable'},503);
-  const category=validated.data.category;
-  const questions=validated.data.questions.filter(q=>q.id!=='timing'&&q.id!=='cleanServices'&&q.options.every(o=>o.value.trim()&&o.label.trim())); 
+  // The customer's concrete service intent outranks an AI guess or stale hint.
+  // Never show AI-generated cleaning options for a repair request.
+  const detected=inferService(parsed.data.description);
+  const category=detected||validated.data.category;
+  const questions=detected&&detected!==validated.data.category
+   ?safeIntakeQuestions(category,parsed.data.description)
+   :validated.data.questions.filter(q=>q.id!=='timing'&&q.id!=='cleanServices'&&q.options.every(o=>o.value.trim()&&o.label.trim())); 
   const payload={ok:true as const,category,questions:questions.slice(0,2)};
   if(key&&payload.questions.length>0)saveCache(key,payload);
   return aiAnswer(payload,'model',started);
