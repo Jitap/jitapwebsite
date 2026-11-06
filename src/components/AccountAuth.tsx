@@ -30,6 +30,7 @@ export function AccountAuth(){
    if(stage==='details'){setStage('otp');setNotice('A verification code has been requested for your mobile number.');}
    else{
     if(json.accountType!==role)setNotice('This number already has a '+json.accountType+' account. Opening its dashboard.');
+    window.dispatchEvent(new Event('jitap:auth-changed'));
     router.replace('/account');router.refresh();
    }
   }catch(err){setError(err instanceof Error?err.message:'Something went wrong. Please try again.')}
