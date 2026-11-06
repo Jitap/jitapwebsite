@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createHash } from 'node:crypto';
-import { schemas, type FormKind } from '@/lib/validators';
+import { schemas,requestSchema, type FormKind } from '@/lib/validators';
 import {getCustomerIdentity} from '@/lib/customer-session-server';
 import {setAuthCookies} from '@/lib/jitap-auth';
 import {sendRequestReceiptSms,serviceReference} from '@/lib/request-receipt-sms';
@@ -177,15 +177,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{kind
     const emailAccepted = await notifyInbox(kind as FormKind, data, identifier);
     // The request has already been committed. A Wasiliana failure must never
     // lose the job or cause the customer to re-submit it.
-    const isSyntheticQA=kind==='request'&&data.name==='JiTap Automated QA TEST'
-      &&data.phone==='0700000000'&&data.description.startsWith('Automated QA TEST only');
-    const smsState=kind==='request'&&!isSyntheticQA
+    const requestDetails=kind==='request'?requestSchema.parse(data):null;
+    const isSyntheticQA=!!requestDetails
+      &&requestDetails.name==='JiTap Automated QA TEST'
+      &&requestDetails.phone==='0700000000'
+      &&requestDetails.description.startsWith('Automated QA TEST only');
+    const smsState=requestDetails&&!isSyntheticQA
       ?await sendRequestReceiptSms({
-        reference:identifier,name:data.name,phone:data.phone,category:data.category,
-        linkedToAccount:customer.kind==='customer',token:cfg.token,url:cfg.url,key:cfg.key
+        reference:identifier,name:requestDetails.name,phone:requestDetails.phone,
+        category:requestDetails.category,linkedToAccount:customer.kind==='customer',
+        token:cfg.token,url:cfg.url,key:cfg.key
        })
       :'skipped';
-
     const receipt=respond({
       ok: true,
       reference: identifier,
