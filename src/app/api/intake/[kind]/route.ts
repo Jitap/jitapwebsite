@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { schemas, type FormKind } from '@/lib/validators';
 import {getCustomerIdentity} from '@/lib/customer-session-server';
 import {setAuthCookies} from '@/lib/jitap-auth';
+import {sendRequestReceiptSms,serviceReference} from '@/lib/request-receipt-sms';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -174,9 +175,21 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{kind
       return respond({ error: 'We could not confirm receipt. Please contact JiTap.' }, 502);
     }
     const emailAccepted = await notifyInbox(kind as FormKind, data, identifier);
+    // The request has already been committed. A Wasiliana failure must never
+    // lose the job or cause the customer to re-submit it.
+    const isSyntheticQA=kind==='request'&&data.name==='JiTap Automated QA TEST'
+      &&data.phone==='0700000000'&&data.description.startsWith('Automated QA TEST only');
+    const smsState=kind==='request'&&!isSyntheticQA
+      ?await sendRequestReceiptSms({
+        reference:identifier,name:data.name,phone:data.phone,category:data.category,
+        linkedToAccount:customer.kind==='customer',token:cfg.token,url:cfg.url,key:cfg.key
+       })
+      :'skipped';
+
     const receipt=respond({
       ok: true,
       reference: identifier,
+      ...(kind==='request'?{serviceId:serviceReference(identifier),smsAcknowledgement:smsState==='submitted'?'submitted':smsState}:{}),
       linkedToAccount:customer.kind === 'customer' && kind === 'request',
       emailNotificationAccepted: emailAccepted,
       message: kind === 'provider' ? 'Your provider application has been received successfully. JiTap will review it and contact you.' : 'Thank you for contacting JiTap. Your enquiry has been received successfully. Our team will review it and get back to you.'
