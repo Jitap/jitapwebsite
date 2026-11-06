@@ -68,3 +68,7 @@
 .coordinator-sms-unsent{font-size:12px;font-weight:750;color:#965400;background:#fff7e6;border:1px solid #f0d8a0;border-radius:9px;padding:10px 12px}
 .coordinator-update-actions .coordinator-send-sms{background:#087b58;color:#fff;border-color:#087b58;font-weight:800}
 .coordinator-update-actions .coordinator-send-sms:hover:not(:disabled){background:#075c45;color:#fff}
+
+.coordinator-case-reference{font-size:12px;line-height:1.4;font-weight:800;letter-spacing:.06em;color:#008a62;margin-bottom:7px}
+.coordinator-service-id{font-weight:800!important;color:#0b8562!important;letter-spacing:.025em;overflow-wrap:anywhere}
+.coordinator-detail-top span strong{color:#16a06e;letter-spacing:.04em}
