@@ -77,4 +77,26 @@ for(const [description,expected] of checks){
  try{assert.equal(got,expected,description)}catch{throw new Error('Routing case failed: '+JSON.stringify({description,expected,got}))}
  passed++;
 }
-console.log('JiTap routing regression: '+passed+' cases passed.');
+const {providerMatchesTrade}=load('src/lib/trade-categories.ts');
+const {fundiListings}=load('src/lib/fundis-public.ts');
+for(const id of ['fund-002','fund-004','fund-006','fund-019']){
+ assert.equal(fundiListings.some(p=>p.id===id),false,'Excluded business still public: '+id);
+}
+for(const [slug,cats,expected] of [
+ ['roofing',['Roofing'],true],
+ ['roofing',['Cleaning'],false],
+ ['roofing',['Plumbing'],false],
+ ['welding',['Welding / Metalwork'],true],
+ ['welding',['IT / Phone / Computer Services'],false],
+ ['it-repairs',['IT / Phone / Computer Services'],true],
+ ['it-repairs',['Computer & Phone Repair'],true],
+ ['solar-security',['Solar, CCTV & Security'],true],
+ ['masonry',['Masonry / Construction'],true],
+ ['air-conditioning',['AC & Refrigeration'],true],
+ ['moving',['Moving / Delivery'],true],
+ ['other-services',['Other'],false]
+]){
+ assert.equal(providerMatchesTrade(slug,cats),expected,'Provider trade match failed: '+slug+' / '+cats);
+ passed++;
+}
+console.log('JiTap routing regression: '+passed+' checks passed.');
