@@ -582,3 +582,8 @@
 .jt-submission-confirmation{display:flex;align-items:flex-start;gap:12px;background:#e5f8ec!important;border:1px solid #8ed5a7!important;color:#145d32!important;border-radius:16px;padding:23px 20px;line-height:1.55;font-weight:650;scroll-margin-top:110px;outline-offset:4px;min-height:115px}
 .jt-submission-confirmation svg{flex:none;color:#148448}
 @media(max-width:600px){.jt-submission-confirmation{margin:12px 0 28px;padding:24px 18px;font-size:16px;scroll-margin-top:95px}}
+
+/* Fundi trade categories without photography: clear icon tiles, not mismatched images. */
+.th-category-photo.th-category-no-photo{display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#e8f5f0,#edf4fc);color:#117c6a}
+.th-category-no-photo .th-category-fundi-icon{opacity:.85;stroke-width:1.7}
+.th-category-no-photo .th-cat-icon{background:#fff;color:#096d58}
