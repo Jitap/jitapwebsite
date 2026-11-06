@@ -9,14 +9,26 @@ import {track} from '@/lib/analytics';
 
 const root='/images/approved/';
 const categories=[
- {name:'Plumbing',slug:'plumbing',detail:'Leaks, taps, pipes & drainage',img:'plumbing.png',icon:Droplets},
+ {name:'Plumbing',slug:'plumbing',detail:'Pipes, sinks, taps & drainage',img:'plumbing.png',icon:Droplets},
  {name:'Electrical',slug:'electrical',detail:'Wiring, sockets & lighting',img:'electrical.png',icon:Zap},
- {name:'House cleaning',slug:'cleaning',detail:'Homes, offices & Airbnb',img:'cleaning.png',icon:Sparkles},
+ {name:'Carpentry & Doors',slug:'carpentry',detail:'Doors, furniture & cabinets',img:'carpentry.png',icon:Hammer},
+ {name:'Roofing & Gutters',slug:'roofing',detail:'Roof leaks, sheets & gutters',img:'',icon:Hammer},
+ {name:'Masonry & Construction',slug:'masonry',detail:'Brickwork, concrete & plaster',img:'',icon:Hammer},
+ {name:'Welding & Metalwork',slug:'welding',detail:'Gates, grills & metal fabrication',img:'',icon:Wrench},
+ {name:'Tiling & Flooring',slug:'tiling',detail:'Wall tiles, floors & grouting',img:'',icon:Hammer},
  {name:'Painting',slug:'painting',detail:'Walls, rooms & finishes',img:'painting.png',icon:PaintRoller},
- {name:'Carpentry',slug:'carpentry',detail:'Furniture, doors & cabinets',img:'carpentry.png',icon:Hammer},
- {name:'Appliance repair',slug:'appliance-repair',detail:'Fridges, washers & appliances',img:'appliance.png',icon:Refrigerator},
- {name:'TV mounting',slug:'general-repairs',detail:'TVs, shelves & home repairs',img:'tv-mounting.png',icon:MonitorPlay},
- {name:'Other services',slug:'other-services',detail:'Tell JiTap what you need',img:'hero-coast.png',icon:MoreHorizontal}
+ {name:'Appliance Repair',slug:'appliance-repair',detail:'Fridges, washers & appliances',img:'appliance.png',icon:Refrigerator},
+ {name:'AC & Refrigeration',slug:'air-conditioning',detail:'Cooling repairs & installation',img:'',icon:Refrigerator},
+ {name:'Solar, CCTV & Security',slug:'solar-security',detail:'Solar, CCTV & electric fences',img:'',icon:Zap},
+ {name:'Computer & Phone Repair',slug:'it-repairs',detail:'Laptops, printers, phones & IT',img:'',icon:Wrench},
+ {name:'Vehicle & Motorcycle Repair',slug:'vehicle-repair',detail:'Mechanics, brakes & engines',img:'',icon:Wrench},
+ {name:'Glass & Aluminium',slug:'glass-aluminium',detail:'Windows, panes & frames',img:'',icon:Hammer},
+ {name:'Handyman & Mounting',slug:'general-repairs',detail:'TVs, fixtures & small repairs',img:'tv-mounting.png',icon:MonitorPlay},
+ {name:'Gardening & Landscaping',slug:'landscaping',detail:'Outdoor upkeep & gardening',img:'',icon:Wrench},
+ {name:'Pest Control',slug:'pest-control',detail:'Termites & property treatments',img:'',icon:ShieldCheck},
+ {name:'House Cleaning',slug:'cleaning',detail:'Mama Fua, laundry & cleaning',img:'cleaning.png',icon:Sparkles},
+ {name:'Moving & Relocation',slug:'moving',detail:'Furniture and house moving',img:'',icon:Wrench},
+ {name:'Trade not listed',slug:'other-services',detail:'Describe another repair or trade',img:'',icon:MoreHorizontal}
 ] as const;
 const popular=[
  {title:'Tap & leak repairs',slug:'plumbing',desc:'Fundi wa plumbing',img:'plumbing.png',query:'My tap is leaking and I need a plumber'},
@@ -63,7 +75,7 @@ export function MarketplaceHome(){
    </section>
    <section className="container th-section" id="th-services" aria-labelledby="th-services-heading">
      <div className="th-section-heading"><div><span className="th-overline">FIND YOUR FUNDIS</span><h2 id="th-services-heading">What needs fixing or sorting?</h2><p>Pick a service, or simply describe the problem in your own words.</p></div><Link href="/services" className="th-plain-link">Explore all services <ArrowUpRight size={18}/></Link></div>
-     <div className="th-categories">{categories.map(c=><Link key={c.slug} href={'/services/'+c.slug} className="th-category"><div className="th-category-photo"><img src={root+c.img} alt={c.name+' illustration'} loading="lazy"/><span className="th-cat-icon"><c.icon size={20}/></span></div><div className="th-category-text"><strong>{c.name}</strong><small>{c.detail}</small></div></Link>)}</div>
+     <div className="th-categories">{categories.map(c=><Link key={c.slug} href={'/services/'+c.slug} className="th-category"><div className={'th-category-photo'+(!c.img?' th-category-no-photo':'')}>{c.img?<img src={root+c.img} alt={c.name+' illustration'} loading="lazy"/>:<c.icon size={48} aria-hidden="true" className="th-category-fundi-icon"/>}<span className="th-cat-icon"><c.icon size={20}/></span></div><div className="th-category-text"><strong>{c.name}</strong><small>{c.detail}</small></div></Link>)}</div>
    </section>
    <section className="th-popular"><div className="container th-section"><div className="th-section-heading"><div><span className="th-overline">EVERYDAY JOBS</span><h2>Popular projects around Mombasa</h2><p>From Bamburi to Likoni, explain the job first. A quote or booking is never assumed.</p></div><Link href="/request" className="th-plain-link">Describe your job <ArrowUpRight size={18}/></Link></div><div className="th-popular-grid">{popular.map(p=><button className="th-project" key={p.title} onClick={()=>go(p.query,p.slug)}><img src={root+p.img} alt={p.title+' service example'} loading="lazy"/><div className="th-project-caption"><span><strong>{p.title}</strong><small>{p.desc}</small></span><ArrowUpRight size={19}/></div></button>)}</div></div></section>
    <section className="container th-section th-fundi-section" aria-labelledby="th-fundis-title"><div className="th-section-heading"><div><span className="th-overline">MOMBASA LOCAL SKILL NETWORK</span><h2 id="th-fundis-title">Fundis and service businesses in the network</h2><p>Meet some of the professionals who have shared their skills with JiTap. All public contact details are withheld.</p></div><Link href="/fundis" className="th-plain-link">Browse all profiles <ArrowUpRight size={18}/></Link></div><div className="th-featured-fundis">{featuredIds.map((id,i)=>{const f=fundiListings.find(x=>x.id===id)!;return <article key={f.id} className="th-fundi-mini"><span className={'th-fundi-initial th-fundi-initial-'+i}>{f.name.slice(0,2).toUpperCase()}</span><div><h3>{f.name}</h3><p>{f.categories.join(' · ')}</p><small><MapPin size={14}/>{f.areas.join(' · ')}</small></div><Link href="/fundis" aria-label={'Browse profiles including '+f.name}><ArrowRight size={18}/></Link></article>})}</div><div className="th-directory-disclaimer">Profiles are based on provider submissions. JiTap does not yet display verified ratings, live availability, guarantees or confirmed job prices.</div></section>
