@@ -175,6 +175,17 @@ await check('guest request flow and private customer history remain separated',a
  await open('/request?category=plumbing&area=Bamburi&description=My%20sink%20is%20leaking');
  assert.equal(await page.locator('.jt-verified-contact').count(),0,'Guest should not be presented as verified');
 });
+await check('signed-in header shows My Account and guest request retains contact fields',async()=>{
+ await page.route('**/api/auth/session',async route=>{
+  await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({authenticated:true,accountType:'customer',phone:'+254700000001',fullName:'JiTap QA Customer'})});
+ });
+ await open('/account');
+ await page.getByRole('link',{name:'My Account'}).first().waitFor();
+ assert.equal(await page.locator('.nav-button').innerText(),'My Account');
+ await page.unroute('**/api/auth/session');
+ await open('/request?category=plumbing&area=Bamburi&description=My%20sink%20is%20leaking');
+ assert.equal(await page.locator('.jt-verified-contact').count(),0,'Guest cannot be shown as a verified customer');
+});
 await check('provider application supports six areas and back/continue',async()=>{
  await open();
  await page.goto(base+'/providers/apply');

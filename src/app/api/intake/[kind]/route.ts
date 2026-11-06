@@ -113,17 +113,20 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{kind
     payload = JSON.parse(body);
   } catch { return respond({ error: 'Invalid JSON request.' }, 400); }
 
+  // Resolve the server-verified session before validating contact fields.
+  // Authenticated customers only supply job details and location: identity
+  // comes from Supabase, never from name/phone/user_id in the browser payload.
+  const customer = kind === 'request' ? await getCustomerIdentity(req) : {kind:'guest' as const};
+  if(customer.kind === 'invalid') return respond({error:'Please sign in again to submit this request.'},401);
+  if(customer.kind === 'provider') return respond({error:'Please use a customer account to submit service requests.'},403);
+  if(customer.kind === 'customer' && kind === 'request' && payload && typeof payload === 'object' && !Array.isArray(payload)){
+    payload = {...payload,phone:customer.identity.phone,name:customer.identity.fullName?.trim() || 'JiTap Customer'};
+  }
   const validated = schemas[kind as FormKind].safeParse(payload);
   if (!validated.success) {
     return respond({ error: 'Please correct the form fields.', issues: validated.error.flatten().fieldErrors }, 422);
   }
-  let data = validated.data;
-  // Never accept client-supplied user IDs. The optional ownership link comes
-  // only from Supabase-verified HttpOnly cookies on the server.
-  const customer = kind === 'request' ? await getCustomerIdentity(req) : {kind:'guest' as const};
-  if(customer.kind === 'invalid') return respond({error:'Please sign in again to save this request to your account.'},401);
-  if(customer.kind === 'provider') return respond({error:'Please use a customer account to submit service requests.'},403);
-  if(customer.kind === 'customer' && kind === 'request') data = {...data,phone:customer.identity.phone};
+  const data = validated.data;
   if ('website' in data && data.website) return respond({ error: 'Submission rejected.' }, 400);
 
   const cfg = configured();

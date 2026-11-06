@@ -18,7 +18,7 @@ export default function AccountPage(){
   return()=>{active=false};
  },[account?.accountType]);
  useEffect(()=>{let active=true;fetch('/api/auth/session',{cache:'no-store'}).then(async r=>{if(!r.ok)throw Error('Sign in required');return r.json()}).then(data=>{if(active)setAccount(data)}).catch(()=>{if(active)router.replace('/login?mode=login')}).finally(()=>{if(active)setLoading(false)});return()=>{active=false}},[router]);
- async function signOut(){const r=await fetch('/api/auth/session',{method:'DELETE'});if(!r.ok){setError('Unable to sign out. Please try again.');return}router.replace('/login?mode=login');router.refresh()}
+ async function signOut(){const r=await fetch('/api/auth/session',{method:'DELETE'});if(!r.ok){setError('Unable to sign out. Please try again.');return}window.dispatchEvent(new Event('jitap:auth-changed'));router.replace('/login?mode=login');router.refresh()}
  return <main className="jt-account-page"><div className="container jt-account-shell">
   {loading?<p role="status">Checking your JiTap account…</p>:account?<>
    <div className="jt-account-head"><span><UserRound size={25}/></span><div><p>JITAP ACCOUNT</p><h1>{account.fullName?('Habari, '+account.fullName.split(' ')[0]+'!'):'Welcome to JiTap!'}</h1><p>{account.accountType==='provider'?'Your provider account':'Your customer account'}</p></div></div>
