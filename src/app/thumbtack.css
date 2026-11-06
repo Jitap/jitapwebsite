@@ -578,3 +578,7 @@
 .jt-time-picker .jt-time-select:focus-visible{outline:2px solid #172078;outline-offset:2px}
 .jt-time-picker .jt-time-select:disabled{opacity:.6;cursor:not-allowed}
 .jt-moving-date-time select{max-width:100%;min-width:0}
+
+.jt-submission-confirmation{display:flex;align-items:flex-start;gap:12px;background:#e5f8ec!important;border:1px solid #8ed5a7!important;color:#145d32!important;border-radius:16px;padding:23px 20px;line-height:1.55;font-weight:650;scroll-margin-top:110px;outline-offset:4px;min-height:115px}
+.jt-submission-confirmation svg{flex:none;color:#148448}
+@media(max-width:600px){.jt-submission-confirmation{margin:12px 0 28px;padding:24px 18px;font-size:16px;scroll-margin-top:95px}}
