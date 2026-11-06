@@ -904,3 +904,19 @@
 @media(prefers-reduced-motion:reduce){
  .jt-how-progress-fill,.jt-how-progress-pulse,.jt-how-slides,.jt-how-node-disc{animation:none!important;transition:none!important}
 }
+
+
+/* Restore the actual illustrations cropped from the supplied JiTap infographic. */
+.jt-how-original-art{
+ width:225px;height:240px;max-width:100%;flex:none;
+ background-image:url('/images/how-it-works/original-illustrations.svg');
+ background-repeat:no-repeat;background-size:400% 100%;
+ background-position:0% 50%;
+ filter:drop-shadow(0 8px 9px rgba(15,71,47,.09));
+}
+.jt-how-original-art-1{background-position:33.333333% 50%}
+.jt-how-original-art-2{background-position:66.666667% 50%}
+.jt-how-original-art-3{background-position:100% 50%}
+@media(max-width:540px){
+ .jt-how-original-art{width:195px;height:208px}
+}
