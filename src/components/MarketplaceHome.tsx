@@ -1,5 +1,5 @@
 'use client';
-import {useEffect,useState,type FormEvent} from 'react';
+import {useEffect,useRef,useState,type FormEvent} from 'react';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
 import {MapPin,ArrowRight,ArrowUpRight,ChevronDown,ShieldCheck,UsersRound,Wrench,Droplets,Zap,Sparkles,PaintRoller,Hammer,Refrigerator,MonitorPlay,MoreHorizontal,MessageCircleMore,CheckCircle2,Clock3} from 'lucide-react';
@@ -38,12 +38,16 @@ const popular=[
  {title:'Furniture & woodwork',slug:'carpentry',desc:'Fundi wa mbao',img:'carpentry.png',query:'I need a carpenter to assemble furniture'},
  {title:'Interior painting',slug:'painting',desc:'Painters & finishing',img:'painting.png',query:'I need a painter for my room'}
 ] as const;
+const featuredSlugs=['cleaning','moving','plumbing','electrical'];
 const featuredIds=['fund-024','fund-017','fund-026','fund-036'];
 export function MarketplaceHome(){
  const router=useRouter();
  const [description,setDescription]=useState('');
+ const heroSearchRef=useRef<HTMLFormElement>(null);
+ const [showStickySearch,setShowStickySearch]=useState(false);
  const [area,setArea]=useState('Bamburi');
  useEffect(()=>{try{const stored=localStorage.getItem('jitap:area');if(stored&&areas.includes(stored))setArea(stored)}catch{}const update=(ev:Event)=>{const selected=(ev as CustomEvent<string>).detail;if(areas.includes(selected))setArea(selected)};window.addEventListener('jitap:area',update);return()=>window.removeEventListener('jitap:area',update)},[]);
+ useEffect(()=>{const element=heroSearchRef.current;if(!element||!('IntersectionObserver' in window))return;const observer=new IntersectionObserver(([entry])=>setShowStickySearch(!entry.isIntersecting&&entry.boundingClientRect.top<0),{threshold:0});observer.observe(element);return()=>observer.disconnect()},[]);
  function search(event:FormEvent<HTMLFormElement>){event.preventDefault();go(description)}
  function go(text:string,slug?:string){
   const words=text.trim();if(!words)return;
@@ -53,6 +57,13 @@ export function MarketplaceHome(){
   router.push('/request?category='+encodeURIComponent(category)+'&area='+encodeURIComponent(area)+'&description='+encodeURIComponent(words));
  }
  return <div className="th-site">
+   <div className={'th-sticky-search'+(showStickySearch?' th-sticky-search-visible':'')} aria-hidden={!showStickySearch}>
+     <form className="th-sticky-search-inner th-animated-border" onSubmit={search} role="search" aria-label="Ask JiTap while browsing">
+       <label className="th-sticky-query"><Sparkles size={20} aria-hidden="true"/><input aria-label="Describe your service need" tabIndex={showStickySearch?0:-1} placeholder="Describe your project or problem..." value={description} onChange={e=>setDescription(e.target.value)} required/></label>
+       <label className="th-sticky-area"><MapPin size={17} aria-hidden="true"/><select aria-label="Your service area" tabIndex={showStickySearch?0:-1} value={area} onChange={e=>setArea(e.target.value)}>{areas.map(x=><option key={x}>{x}</option>)}</select></label>
+       <button type="submit" tabIndex={showStickySearch?0:-1}>Ask JiTap <ArrowRight size={17}/></button>
+     </form>
+   </div>
    <section className="th-hero" aria-labelledby="th-hero-title">
      <img className="th-hero-background" src={root+'hero-coast.png'} alt="" fetchPriority="high"/>
      <div className="th-hero-overlay" aria-hidden="true"/>
@@ -61,7 +72,7 @@ export function MarketplaceHome(){
          <div className="th-hero-kicker"><span className="th-live-dot"/> MOMBASA'S LOCAL SKILLS NETWORK</div>
          <h1 id="th-hero-title">Every job needs<br/>the right <em>fundi.</em></h1>
          <p>Tap in to local skills for repairs, cleaning, installations and everything that keeps your home running. Just tell JiTap what needs doing.</p>
-         <form className="th-search" onSubmit={search} role="search" aria-label="Ask JiTap about a local service">
+         <form ref={heroSearchRef} className="th-search th-animated-border" onSubmit={search} role="search" aria-label="Ask JiTap about a local service">
            <label className="th-task-input"><Sparkles size={24} aria-hidden="true"/><textarea aria-label="Describe your project or problem" placeholder="Describe your project or problem — e.g. my sink is leaking..." rows={2} maxLength={1500} value={description} onChange={e=>setDescription(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.nativeEvent.isComposing){e.preventDefault();e.currentTarget.form?.requestSubmit()}}} required/></label>
            <div className="th-search-controls"><label className="th-local-input"><MapPin size={19} aria-hidden="true"/><select aria-label="Where do you need a fundi?" value={area} onChange={e=>setArea(e.target.value)}>{areas.map(x=><option key={x}>{x}</option>)}</select></label><button type="submit" className="th-find-button">Ask JiTap <ArrowRight size={19}/></button></div>
          </form>
@@ -75,8 +86,18 @@ export function MarketplaceHome(){
    </section>
    <section className="container th-section" id="th-services" aria-labelledby="th-services-heading">
      <div className="th-section-heading"><div><span className="th-overline">FIND YOUR FUNDIS</span><h2 id="th-services-heading">What needs fixing or sorting?</h2><p>Pick a service, or simply describe the problem in your own words.</p></div><Link href="/services" className="th-plain-link">Explore all services <ArrowUpRight size={18}/></Link></div>
-     <div className="th-categories">{categories.map(c=><Link key={c.slug} href={'/services/'+c.slug} className="th-category"><div className="th-category-photo"><img src={c.img.startsWith('https://')||c.img.startsWith('/')?c.img:root+c.img} alt={c.name+' service category'} loading="lazy" decoding="async" onError={e=>{if(!e.currentTarget.src.endsWith('/images/approved/hero-coast.png'))e.currentTarget.src='/images/approved/hero-coast.png'}}/><span className="th-cat-icon"><c.icon size={20}/></span></div><div className="th-category-text"><strong>{c.name}</strong><small>{c.detail}</small></div></Link>)}</div>
+     <div className="th-category-marquee" aria-label="Browse JiTap service categories"><div className="th-category-track">{[0,1].map(copy=><div key={copy} className="th-category-track-group" aria-hidden={copy===1}>{categories.map(c=><Link key={c.slug} href={'/services/'+c.slug} tabIndex={copy===1?-1:undefined} className="th-category-chip"><c.icon size={22} aria-hidden="true"/><span>{c.name}</span></Link>)}</div>)}</div></div>
+     <div className="th-categories">{categories.filter(c=>featuredSlugs.includes(c.slug)).map(c=><Link key={c.slug} href={'/services/'+c.slug} className="th-category"><div className="th-category-photo"><img src={c.img.startsWith('https://')||c.img.startsWith('/')?c.img:root+c.img} alt={c.name+' service category'} loading="lazy" decoding="async" onError={e=>{if(!e.currentTarget.src.endsWith('/images/approved/hero-coast.png'))e.currentTarget.src='/images/approved/hero-coast.png'}}/><span className="th-cat-icon"><c.icon size={20}/></span></div><div className="th-category-text"><strong>{c.name}</strong><small>{c.detail}</small></div></Link>)}</div>
+     <div className="th-category-all"><Link href="/services" className="th-plain-link">View all {categories.length} services <ArrowUpRight size={18}/></Link></div>
    </section>
+   <section className="th-testimonials" aria-labelledby="th-testimonials-title"><div className="container th-section">
+     <div className="th-section-heading"><div><span className="th-overline">WHY JITAP</span><h2 id="th-testimonials-title">Why customers love JiTap</h2><p>Built around the way Kenyans actually ask for help.</p></div></div>
+     <div className="th-testimonial-grid">
+       <article className="th-testimonial-card"><span className="th-testimonial-symbol"><MessageCircleMore size={25}/></span><h3>Explain it in your own words.</h3><p>“My sink is leaking, niko Bamburi.” JiTap starts with your problem, not complicated forms.</p><small>Amina · Bamburi — illustrative example</small></article>
+       <article className="th-testimonial-card"><span className="th-testimonial-symbol"><MapPin size={25}/></span><h3>Local help, where you need it.</h3><p>Tell JiTap your area and what needs doing, so your request can be routed to relevant local skills.</p><small>Brian · Nyali — illustrative example</small></article>
+       <article className="th-testimonial-card"><span className="th-testimonial-symbol"><ShieldCheck size={25}/></span><h3>Your details stay private.</h3><p>Requests are coordinated without publishing your phone number or exact location on provider profiles.</p><small>Wanjiku · Mtwapa — illustrative example</small></article>
+     </div><p className="th-testimonial-disclaimer">These are illustrative customer scenarios, not actual reviews. Verified testimonials will be published with customer permission.</p>
+   </div></section>
    <section className="th-popular"><div className="container th-section"><div className="th-section-heading"><div><span className="th-overline">EVERYDAY JOBS</span><h2>Popular projects around Mombasa</h2><p>From Bamburi to Likoni, explain the job first. A quote or booking is never assumed.</p></div><Link href="/request" className="th-plain-link">Describe your job <ArrowUpRight size={18}/></Link></div><div className="th-popular-grid">{popular.map(p=><button className="th-project" key={p.title} onClick={()=>go(p.query,p.slug)}><img src={root+p.img} alt={p.title+' service example'} loading="lazy"/><div className="th-project-caption"><span><strong>{p.title}</strong><small>{p.desc}</small></span><ArrowUpRight size={19}/></div></button>)}</div></div></section>
    <section className="container th-section th-fundi-section" aria-labelledby="th-fundis-title"><div className="th-section-heading"><div><span className="th-overline">MOMBASA LOCAL SKILL NETWORK</span><h2 id="th-fundis-title">Fundis and service businesses in the network</h2><p>Meet some of the professionals who have shared their skills with JiTap. All public contact details are withheld.</p></div><Link href="/fundis" className="th-plain-link">Browse all profiles <ArrowUpRight size={18}/></Link></div><div className="th-featured-fundis">{featuredIds.map((id,i)=>{const f=fundiListings.find(x=>x.id===id)!;return <article key={f.id} className="th-fundi-mini"><span className={'th-fundi-initial th-fundi-initial-'+i}>{f.name.slice(0,2).toUpperCase()}</span><div><h3>{f.name}</h3><p>{f.categories.join(' · ')}</p><small><MapPin size={14}/>{f.areas.join(' · ')}</small></div><Link href="/fundis" aria-label={'Browse profiles including '+f.name}><ArrowRight size={18}/></Link></article>})}</div><div className="th-directory-disclaimer">Profiles are based on provider submissions. JiTap does not yet display verified ratings, live availability, guarantees or confirmed job prices.</div></section>
    <section className="th-process"><div className="container"><div className="th-section-heading"><div><span className="th-overline">HOW JITAP WORKS</span><h2>ASK. MATCH. BUZZ.</h2><p>A straightforward starting point when you need a fundi in Mombasa.</p></div></div><div className="th-process-grid"><div><span className="th-process-number">01</span><MessageCircleMore size={34}/><h3>ASK</h3><p>Describe what needs fixing, cleaning or installing. Kiswahili, English or Sheng—tell it how you would to a friend.</p></div><div><span className="th-process-number">02</span><UsersRound size={34}/><h3>MATCH</h3><p>JiTap structures your request and checks the relevant service and area. A submitted request does not guarantee a match.</p></div><div><span className="th-process-number">03</span><CheckCircle2 size={34}/><h3>BUZZ</h3><p>As live matching becomes available, a suitable fundi can respond and coordinate the work. Until then, we review enquiries manually.</p></div></div></div></section>
