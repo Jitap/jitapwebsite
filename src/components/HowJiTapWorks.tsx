@@ -5,12 +5,18 @@ import {ArrowLeft,ArrowRight,CalendarClock,CheckCircle2,ClipboardPenLine,Pause,P
 const steps=[
  {key:'ask',short:'ASK',title:'Tell us what you need',description:'Describe the job, your location and when you need help—in English, Kiswahili or Sheng.',icon:ClipboardPenLine,number:'01'},
  {key:'match',short:'MATCH',title:'Find the right local skills',description:'JiTap reviews your request and looks for suitable service providers in the areas they cover. A match depends on availability.',icon:UsersRound,number:'02'},
- {key:'schedule',short:'BUZZ & PLAN',title:'Connect and agree on a time',description:'Once a provider responds, clarify the work, discuss any quote and agree on a suitable time before proceeding.',icon:CalendarClock,number:'03'},
+ {key:'schedule',short:'BUZZ',title:'Connect and agree on a time',description:'Once a provider responds, clarify the work, discuss any quote and agree on a suitable time before proceeding.',icon:CalendarClock,number:'03'},
  {key:'done',short:'DONE',title:'Complete the job',description:'Coordinate the work and confirm completion. You can share feedback about your experience.',icon:CheckCircle2,number:'04'}
 ] as const;
 const INTERVAL=4800;
 const artworkLabels=['Original illustration of a service request on a phone','Original illustration of a Kenyan service-provider team','Original illustration of a scheduling calendar','Original illustration of a completed home'];
-function StepArtwork({step}:{step:number}){return <div role="img" aria-label={artworkLabels[step]} className={`jt-how-original-art jt-how-original-art-${step}`}/>;}
+const artworkFiles=['ask.png','match.png','buzz.png','done.png'] as const;
+function StepArtwork({step}:{step:number}){
+ const [failed,setFailed]=useState(false);
+ return <div className="jt-how-artwork-frame">
+  {!failed?<img className="jt-how-uploaded-art" src={`/images/how-it-works/${artworkFiles[step]}`} alt={artworkLabels[step]} loading="lazy" onError={()=>setFailed(true)}/>:<div role="img" aria-label={artworkLabels[step]} className={`jt-how-original-art jt-how-original-art-${step}`}/>}
+ </div>;
+}
 export function HowJiTapWorks(){
  const [active,setActive]=useState(0);
  const [playing,setPlaying]=useState(true);
@@ -24,7 +30,7 @@ export function HowJiTapWorks(){
  return <section className="jt-how" aria-labelledby="jt-how-title">
   <div className="container jt-how-shell">
    <div className="jt-how-header"><span className="jt-how-overline">ASK · MATCH · BUZZ · DONE</span><h2 id="jt-how-title">How <em>JiTap</em> Works</h2><p>Get local services in four simple steps.</p><span className="jt-how-accent" aria-hidden="true"/></div>
-   <div className="jt-how-progress" aria-label="Service request journey"><div className="jt-how-progress-track" aria-hidden="true"><div className="jt-how-progress-fill" style={{width:`${active/3*100}%`}}/><div className={'jt-how-progress-pulse'+(playing&&!reducedMotion?' is-moving':'')} style={{left:`${active/3*100}%`}}/></div>
+   <div className="jt-how-progress" aria-label="Service request journey"><div className="jt-how-progress-track" aria-hidden="true"><div className="jt-how-progress-fill" style={{width:`${active/3*100}%`}}/></div>
     <div className="jt-how-nodes">{steps.map((step,index)=><button type="button" key={step.key} className={'jt-how-node'+(index===active?' is-active':'')+(index<active?' is-passed':'')} onClick={()=>select(index)} aria-label={`Show step ${index+1}: ${step.title}`} aria-current={index===active?'step':undefined}><span className="jt-how-node-disc"><step.icon size={25} strokeWidth={2.3}/></span><span className="jt-how-node-caption">{step.short}</span></button>)}</div>
    </div>
    <div className="jt-how-viewport" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} aria-roledescription="carousel" aria-label="How JiTap Works steps">
