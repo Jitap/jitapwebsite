@@ -80,7 +80,7 @@ export function MarketplaceHome(){
          <div className="th-hero-facts"><div><strong>300+</strong><span>Households</span></div><div><strong>{areas.length}</strong><span>request areas</span></div><div><strong>ASK • MATCH • BUZZ</strong><span>the JiTap way</span></div></div>
          <div className="th-hero-chips"><span>Popular:</span><button onClick={()=>go('My tap is leaking','plumbing')}>Leaking tap</button><button onClick={()=>go('I need a fundi wa stima','electrical')}>Fundi wa stima</button><button onClick={()=>go('I need a Mama Fua for house cleaning or laundry','cleaning')}>Mama Fua</button></div>
        </div>
-       <div className="th-hero-visual"><img src={root+'mascot-original.png'} alt="JiTap waving mascot" loading="eager" fetchPriority="high"/><span className="th-mascot-note">JiTap's here to help <span>✦</span></span></div>
+       <div className="th-hero-visual"><img src={root+'mascot-original.png'} alt="JiTap waving mascot" loading="eager" fetchPriority="high"/></div>
      </div>
      <a href="#th-services" className="th-scroll" aria-label="Explore services below"><ChevronDown size={24}/></a>
    </section>
