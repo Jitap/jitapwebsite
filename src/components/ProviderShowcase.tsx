@@ -18,7 +18,7 @@ export function ProviderShowcase({detail=false,profile,profileId='fund-022'}:{de
  const p=profile||loaded||(profileId==='fund-022'?fallback:null);
  if(!p)return <p>Provider profile unavailable.</p>;
  const isTech=p.id==='fund-036';
- const request='/request?category='+(isTech?'other-services':'moving')+'&area='+encodeURIComponent(p.base_area||'Bamburi')+'&description='+encodeURIComponent(isTech?'I need computer repair or IT support from '+p.business_name:'I would like a moving or relocation quote from '+p.business_name);
+ const request='/request?category='+(isTech?'other-services':'moving')+'&area='+encodeURIComponent(p.base_area||'Bamburi')+'&description='+encodeURIComponent(isTech?'I need computer repair or IT support from '+p.business_name:'I need moving or relocation services from '+p.business_name);
  return <article className={'jt-provider-feature'+(detail?' jt-provider-feature-detail':'')}>
   <div className="jt-provider-logo-panel">{p.logo_url?<img src={p.logo_url} alt={p.business_name+' logo'}/>:<div className="jt-provider-logo-placeholder">{isTech?<Monitor size={42}/>:<Truck size={42}/>}<strong>{p.business_name}</strong><small>{isTech?'Computer services & support':'Moving & Relocation'}</small></div>}</div>
   <div className="jt-provider-feature-content"><h2>{p.business_name}{p.verified_at&&(isTech?<span className="jt-zenotech-check" role="img" aria-label="JiTap verified provider"><Check size={24} strokeWidth={3.5}/></span>:<img className="jt-provider-verified-shield" src="/images/verified-shield.svg" alt="JiTap verified business" width={38} height={38}/>)}</h2>
@@ -31,6 +31,6 @@ export function ProviderShowcase({detail=false,profile,profileId='fund-022'}:{de
    </div>
    {detail&&<div className="jt-provider-feature-extra"><p>{p.description||(isTech?'Computer services and IT support.':'House moving and relocation services.')}</p><h3>Service coverage</h3><p>{p.service_areas.join(' · ')}</p>{isTech&&<p><a href="https://share.google/sw7NGTin3byTlEmrD" target="_blank" rel="noopener noreferrer">View Google listing and reviews</a></p>}</div>}
   </div>
-  <div className="jt-provider-feature-actions">{detail?<Link href={request} className="jt-provider-profile-button">{isTech?'Request IT support':'Request moving quote'} <ArrowRight size={18}/></Link>:<Link href={'/fundis/'+encodeURIComponent(p.id)} className="jt-provider-profile-button">View profile</Link>}</div>
+  <div className="jt-provider-feature-actions">{detail?<Link href={request} className="jt-provider-profile-button">{isTech?'Request':'Request'} <ArrowRight size={18}/></Link>:<Link href={'/fundis/'+encodeURIComponent(p.id)} className="jt-provider-profile-button">View profile</Link>}</div>
  </article>;
 }
