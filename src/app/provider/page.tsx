@@ -55,7 +55,7 @@ export default function ProviderDashboardPage(){
  async function save(submit:boolean){
   if(!form.full_name.trim()||!form.categories.length||!form.service_areas.length){setError('Add your name, services and service areas.');return}
   const result=await act({action:'save',fullName:form.full_name,businessName:form.business_name,
-   categories:form.categories,areas:form.service_areas,baseArea:form.base_area,
+   categories:form.categories,areas:form.service_areas,baseArea:form.service_areas.includes(form.base_area)?form.base_area:form.service_areas[0],
    experienceYears:form.experience_years,skills:form.skills,submit});
   if(result){setSuccess(submit?'Profile submitted to JiTap for review. You can go online after approval.':'Profile saved.');if(submit)setTab('home')}
  }
