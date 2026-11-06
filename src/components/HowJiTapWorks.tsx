@@ -1,6 +1,6 @@
 'use client';
 import {useEffect,useRef,useState,type TouchEvent} from 'react';
-import {ArrowLeft,ArrowRight,CalendarClock,CheckCircle2,ClipboardPenLine,House,MapPin,Pause,Play,UsersRound} from 'lucide-react';
+import {ArrowLeft,ArrowRight,CalendarClock,CheckCircle2,ClipboardPenLine,Pause,Play,UsersRound} from 'lucide-react';
 
 const steps=[
  {key:'ask',short:'ASK',title:'Tell us what you need',description:'Describe the job, your location and when you need help—in English, Kiswahili or Sheng.',icon:ClipboardPenLine,number:'01'},
@@ -9,12 +9,8 @@ const steps=[
  {key:'done',short:'DONE',title:'Complete the job',description:'Coordinate the work and confirm completion. You can share feedback about your experience.',icon:CheckCircle2,number:'04'}
 ] as const;
 const INTERVAL=4800;
-function StepArtwork({step}:{step:number}){
- if(step===0)return <div className="jt-how-art-device" aria-hidden="true"><div className="jt-how-device-speaker"/><span className="jt-how-device-head">JiTap request</span><span className="jt-how-device-line"/><span className="jt-how-device-line jt-short"/><span className="jt-how-device-row"><CheckCircle2/><span>Service</span></span><span className="jt-how-device-row"><MapPin/><span>Location</span></span><span className="jt-how-device-row"><CalendarClock/><span>Time</span></span><span className="jt-how-device-cta"/></div>;
- if(step===1)return <div className="jt-how-art-team" aria-hidden="true"><span className="jt-how-person jt-person-side"><span className="jt-how-head"/><span className="jt-how-body"/></span><span className="jt-how-person jt-person-center"><span className="jt-how-helmet"/><span className="jt-how-head"/><span className="jt-how-body"/><CheckCircle2 className="jt-how-team-check"/></span><span className="jt-how-person jt-person-side"><span className="jt-how-cap"/><span className="jt-how-head"/><span className="jt-how-body"/></span></div>;
- if(step===2)return <div className="jt-how-art-calendar" aria-hidden="true"><div className="jt-how-calendar-top"><span/><span/></div><div className="jt-how-calendar-grid">{Array.from({length:12},(_,i)=><span key={i} className={i===8?'jt-date-selected':''}/>)}</div><CalendarClock className="jt-how-calendar-clock"/></div>;
- return <div className="jt-how-art-home" aria-hidden="true"><House size={164} strokeWidth={1.35}/><span className="jt-how-home-check"><CheckCircle2 size={66} fill="#00a83e" stroke="white" strokeWidth={1.8}/></span></div>;
-}
+const artworkLabels=['Original illustration of a service request on a phone','Original illustration of a Kenyan service-provider team','Original illustration of a scheduling calendar','Original illustration of a completed home'];
+function StepArtwork({step}:{step:number}){return <div role="img" aria-label={artworkLabels[step]} className={`jt-how-original-art jt-how-original-art-${step}`}/>;}
 export function HowJiTapWorks(){
  const [active,setActive]=useState(0);
  const [playing,setPlaying]=useState(true);

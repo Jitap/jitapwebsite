@@ -105,6 +105,10 @@ await check('four-stage JiTap carousel, animated timeline and manual step naviga
  await page.getByRole('heading',{name:'How JiTap Works'}).waitFor();
  assert.equal(await page.locator('.jt-how-node').count(),4);
  assert.equal(await page.locator('.jt-how-slide').count(),4);
+ assert.equal(await page.locator('.jt-how-original-art').count(),4);
+ const art=await page.request.get(base+'/images/how-it-works/original-illustrations.svg');
+ assert.equal(art.status(),200,'Original artwork sprite must load');
+ assert.ok((await art.text()).includes('data:image/webp;base64,'),'Original infographic artwork must be embedded');
  await page.getByRole('button',{name:'Show step 3: Connect and agree on a time'}).click();
  assert.ok((await page.locator('.jt-how-progress-fill').getAttribute('style')).includes('66.666'));
  assert.equal(await page.getByRole('heading',{name:'Connect and agree on a time'}).count(),1);
