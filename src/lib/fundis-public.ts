@@ -8,8 +8,7 @@ export const fundiListings:FundiListing[]=[
     "id": "fund-001",
     "name": "Interior designer",
     "categories": [
-      "Carpentry / Furniture",
-      "Other"
+      "Carpentry / Furniture"
     ],
     "areas": [
       "Bamburi"
@@ -21,8 +20,7 @@ export const fundiListings:FundiListing[]=[
     "categories": [
       "Carpentry / Furniture",
       "Masonry / Construction",
-      "Welding / Metalwork",
-      "Other"
+      "Welding / Metalwork"
     ],
     "areas": [
       "Bamburi",
@@ -34,8 +32,8 @@ export const fundiListings:FundiListing[]=[
     "id": "fund-005",
     "name": "NEXORA - CCTV Installation, Solar Installation, IT, Electric Fence",
     "categories": [
-      "IT / Phone / Computer Services",
-      "Other"
+      "Solar, CCTV & Security",
+      "IT / Phone / Computer Services"
     ],
     "areas": [
       "Mtwapa"
@@ -69,8 +67,7 @@ export const fundiListings:FundiListing[]=[
     "id": "fund-009",
     "name": "Carpentry",
     "categories": [
-      "Carpentry / Furniture",
-      "Other"
+      "Carpentry / Furniture"
     ],
     "areas": [
       "Bamburi",
@@ -134,8 +131,7 @@ export const fundiListings:FundiListing[]=[
     "id": "fund-014",
     "name": "Architect M.",
     "categories": [
-      "Masonry / Construction",
-      "Other"
+      "Masonry / Construction"
     ],
     "areas": [
       "Bamburi",
@@ -171,8 +167,7 @@ export const fundiListings:FundiListing[]=[
     "id": "fund-017",
     "name": "Winkitel solutions",
     "categories": [
-      "Electrical",
-      "Other"
+      "Electrical"
     ],
     "areas": [
       "Bamburi"
@@ -192,44 +187,10 @@ export const fundiListings:FundiListing[]=[
     ]
   },
   {
-    "id": "fund-020",
-    "name": "Channah cakes & events",
-    "categories": [
-      "Other"
-    ],
-    "areas": [
-      "Bamburi"
-    ]
-  },
-  {
-    "id": "fund-021",
-    "name": "Event management / Ink Concepts Ltd",
-    "categories": [
-      "Other"
-    ],
-    "areas": [
-      "Bamburi"
-    ]
-  },
-  {
     "id": "fund-022",
     "name": "House Moving",
     "categories": [
-      "Moving / Delivery",
-      "Other"
-    ],
-    "areas": [
-      "Bamburi",
-      "Nyali",
-      "Mtwapa",
-      "Tudor"
-    ]
-  },
-  {
-    "id": "fund-023",
-    "name": "Benzino M.",
-    "categories": [
-      "Other"
+      "Moving / Delivery"
     ],
     "areas": [
       "Bamburi",
@@ -244,24 +205,13 @@ export const fundiListings:FundiListing[]=[
     "categories": [
       "Cleaning",
       "Gardening / Landscaping",
-      "Pest Control",
-      "Other"
+      "Pest Control"
     ],
     "areas": [
       "Bamburi",
       "Nyali",
       "Mtwapa",
       "Tudor"
-    ]
-  },
-  {
-    "id": "fund-025",
-    "name": "Salonist",
-    "categories": [
-      "Beauty / Barber / Salon"
-    ],
-    "areas": [
-      "Bamburi"
     ]
   },
   {
@@ -281,7 +231,7 @@ export const fundiListings:FundiListing[]=[
     "id": "fund-027",
     "name": "Bicycle Sales and Repair",
     "categories": [
-      "Other"
+      "Bicycle Repair"
     ],
     "areas": [
       "Bamburi",
@@ -311,16 +261,6 @@ export const fundiListings:FundiListing[]=[
       "Nyali",
       "Mtwapa",
       "Tudor"
-    ]
-  },
-  {
-    "id": "fund-030",
-    "name": "Beauty / barber / salon",
-    "categories": [
-      "Beauty / Barber / Salon"
-    ],
-    "areas": [
-      "Bamburi"
     ]
   },
   {
@@ -357,7 +297,7 @@ export const fundiListings:FundiListing[]=[
     "id": "fund-033",
     "name": "Refrigeration and Air Conditioning",
     "categories": [
-      "Other"
+      "AC & Refrigeration"
     ],
     "areas": [
       "Bamburi"
