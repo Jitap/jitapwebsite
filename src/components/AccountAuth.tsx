@@ -1,5 +1,5 @@
 'use client';
-import {useState,type FormEvent} from 'react';
+import {useEffect,useState,type FormEvent} from 'react';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
 import {ArrowRight,CalendarCheck,CheckCircle2,Eye,EyeOff,MapPin,ShieldCheck,Smartphone,UsersRound,Wrench} from 'lucide-react';
@@ -15,6 +15,7 @@ export function AccountAuth(){
  const [code,setCode]=useState('');
  const [consent,setConsent]=useState(false);
  const [busy,setBusy]=useState(false);
+ useEffect(()=>{if(new URLSearchParams(window.location.search).get('mode')==='login')setMode('login')},[]);
  const [error,setError]=useState('');
  const [notice,setNotice]=useState('');
  const isProvider=role==='provider';
