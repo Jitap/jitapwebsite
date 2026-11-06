@@ -140,9 +140,25 @@ await check('fundi directory contains 36 profiles but exposes no phone contacts'
  assert.ok((await page.locator('.td-pro-card').count())>0);
  await page.screenshot({path:'ui-test-results/thumbtack-fundi-directory.png',fullPage:true});
 });
+await check('signup/login navigation, role selection and invalid phone validation',async()=>{
+ await page.setViewportSize({width:390,height:844});
+ await open();
+ await page.getByRole('button',{name:'Open menu'}).click();
+ await page.getByRole('navigation',{name:'Mobile navigation'}).getByRole('link',{name:'Sign Up/Login'}).click();
+ await page.waitForURL('**/login');
+ await page.getByRole('heading',{name:'Join JiTap',exact:true}).waitFor();
+ assert.equal(await page.getByRole('button',{name:/I provide services/}).getAttribute('aria-pressed'),'true');
+ await page.getByRole('button',{name:/I need services/}).click();
+ assert.equal(await page.getByRole('button',{name:/I need services/}).getAttribute('aria-pressed'),'true');
+ await page.getByRole('button',{name:'Log in'}).click();
+ await page.getByRole('heading',{name:'Log in to JiTap'}).waitFor();
+ const invalid=await page.request.post(base+'/api/auth/phone',{data:{action:'send',role:'customer',phone:'123'}});
+ assert.equal(invalid.status(),422);
+ await page.screenshot({path:'ui-test-results/jitap-signup-mobile.png'});
+});
 await check('provider application supports six areas and back/continue',async()=>{
  await open();
- await page.locator('header a.nav-button').click();
+ await page.goto(base+'/providers/apply');
  await page.waitForURL('**/providers/apply');
  await page.getByRole('textbox',{name:'Full name'}).fill('JiTap Browser QA');
  await page.getByRole('textbox',{name:'Mobile number'}).fill('0712345678');
