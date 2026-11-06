@@ -44,6 +44,8 @@ console.log('customer', JSON.stringify(customer));
 assert.equal(customer.status, 201, 'Customer request must be persisted');
 assert.equal(customer.data.ok, true);
 assert.match(customer.data.reference, /^[a-f\d-]{36}$/i);
+assert.equal(customer.data.serviceId,'JT-'+customer.data.reference.slice(0,8).toUpperCase());
+assert.equal(customer.data.smsAcknowledgement,'skipped','Synthetic automated tests must not send live SMS');
 
 const invalid = await submit('provider', {
   ...base,
