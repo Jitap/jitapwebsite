@@ -44,6 +44,7 @@ export default function ProviderDashboardPage(){
   const data:Dashboard=await res.json();
   setDashboard(current=>current?{...current,uploadedMedia:data.uploadedMedia,reviewStatus:data.reviewStatus}:data);
  },[]);
+ useEffect(()=>{if(new URLSearchParams(window.location.search).get('view')==='requests')setTab('requests')},[]);
  useEffect(()=>{let active=true;refresh().catch(()=>{if(active)setError('Could not load your provider dashboard. Please refresh.')}).finally(()=>{if(active)setLoading(false)});return()=>{active=false}},[refresh]);
  useEffect(()=>{
   if(!dashboard?.profile?.is_online||tab==='profile')return;
@@ -101,18 +102,20 @@ export default function ProviderDashboardPage(){
  const visible=!approved&&(tab==='profile'||!submitted);
  return <main className="jt-provider-app">
   <div className="jt-provider-shell">
-   <header className="jt-provider-app-header">
-    <span className="jt-provider-workspace-heading">Provider dashboard</span>
-    <div className="jt-provider-header-actions"><div className="jt-provider-badge"><ShieldCheck size={17}/> Provider workspace</div><button type="button" onClick={switchCustomer} disabled={busy} className="jt-provider-logout">Switch to Customer</button><button type="button" onClick={logout} className="jt-provider-logout">Log out</button></div>
-   </header>
    {loading?<div className="jt-provider-card" role="status">Loading your JiTap provider account…</div>:<>
-    <div className="jt-provider-greeting">
-     <div><p>JITAP FOR PROVIDERS</p><h1>Habari, <span>{firstName}!</span></h1><div className="jt-provider-subtext">{!submitted?'Complete onboarding to get started.':approved?'Manage availability and local BUZZ requests.':'Your provider profile is awaiting JiTap review.'}</div></div>
-     <button type="button" className="jt-provider-avatar" onClick={()=>approved?router.push('/provider/profile'):setTab('profile')} aria-label={dashboard?.uploadedMedia?.some(m=>m.kind==='profile_photo')?'View verified profile':'Add profile photo'} title="View provider profile">{dashboard?.uploadedMedia?.some(m=>m.kind==='profile_photo')?<img src={'/api/provider/media?kind=profile_photo&v='+encodeURIComponent(dashboard.uploadedMedia.find(m=>m.kind==='profile_photo')?.uploadedAt||'')} alt="Your profile photo"/>:<UserRound size={32}/>}</button>
-    </div>
-    <nav className="jt-provider-tabs" aria-label="Provider dashboard">
-     {(approved?(['home','requests','profile'] as Tab[]):(['home','requests','profile','verification'] as Tab[])).map(t=><button key={t} aria-current={tab===t?'page':undefined} className={tab===t?'selected':''} onClick={()=>{if(t==='profile'&&approved){router.push('/provider/profile');return}setTab(t);setError('');setSuccess('')}}>{t==='home'?<Radio size={18}/>:t==='requests'?<ClipboardList size={18}/>:t==='verification'?<ShieldCheck size={18}/>:<UserRound size={18}/>} {t==='home'?'Home':t==='requests'?'Requests':t==='verification'?'Verification':approved?'Verified Profile ✓':'My Profile'}</button>)}
-    </nav>
+    {approved?<header className="jt-provider-home-header">
+      <a href="/provider" aria-label="JiTap provider home"><img src="/images/jitap-logo.svg" alt="JiTap" width={104} height={60}/></a>
+      <div className="jt-provider-home-header-right"><a href="/provider?view=requests" aria-label="Live requests"><Bell size={25}/>{!!dashboard?.opportunities.length&&<span className="jt-provider-bell-dot"/>}</a>
+      <button type="button" className="jt-provider-home-avatar" onClick={()=>router.push('/provider/profile')} aria-label="Open your provider profile">{dashboard?.uploadedMedia?.some(m=>m.kind==='profile_photo')?<img src={'/api/provider/media?kind=profile_photo&v='+encodeURIComponent(dashboard.uploadedMedia.find(m=>m.kind==='profile_photo')?.uploadedAt||'')} alt="Provider profile"/>:<UserRound size={24}/>}</button></div>
+     </header>:<header className="jt-provider-app-header"><span className="jt-provider-workspace-heading">Provider dashboard</span><div className="jt-provider-header-actions"><div className="jt-provider-badge"><ShieldCheck size={17}/> Provider workspace</div><button type="button" onClick={switchCustomer} disabled={busy} className="jt-provider-logout">Switch to Customer</button><button type="button" onClick={logout} className="jt-provider-logout">Log out</button></div></header>}
+    {approved?<div className="jt-provider-home-greeting">
+       <h1>Hello, <span>{firstName}</span></h1><p>{online?'You’re online and available':'You’re currently offline'}</p>
+      </div>:<div className="jt-provider-greeting"><div><p>JITAP FOR PROVIDERS</p><h1>Habari, <span>{firstName}!</span></h1><div className="jt-provider-subtext">{!submitted?'Complete onboarding to get started.':'Your provider profile is awaiting JiTap review.'}</div></div>
+     <button type="button" className="jt-provider-avatar" onClick={()=>setTab('profile')} aria-label="Add profile photo">{dashboard?.uploadedMedia?.some(m=>m.kind==='profile_photo')?<img src={'/api/provider/media?kind=profile_photo&v='+encodeURIComponent(dashboard.uploadedMedia.find(m=>m.kind==='profile_photo')?.uploadedAt||'')} alt="Your profile photo"/>:<UserRound size={32}/>}</button>
+    </div>}
+    {!approved&&<nav className="jt-provider-tabs" aria-label="Provider dashboard">
+     {(['home','requests','profile','verification'] as Tab[]).map(t=><button key={t} aria-current={tab===t?'page':undefined} className={tab===t?'selected':''} onClick={()=>{setTab(t);setError('');setSuccess('')}}>{t==='home'?<Radio size={18}/>:t==='requests'?<ClipboardList size={18}/>:t==='verification'?<ShieldCheck size={18}/>:<UserRound size={18}/>} {t==='home'?'Home':t==='requests'?'Requests':t==='verification'?'Verification':'My Profile'}</button>)}
+    </nav>}
     {error&&<div className="jt-provider-error" role="alert">{error}</div>}
     {success&&<div className="jt-provider-success" role="status">{success}</div>}
     {approved&&tab==='profile'?<section className="jt-provider-card jt-verified-profile" aria-label="Verified provider profile">
@@ -165,22 +168,21 @@ export default function ProviderDashboardPage(){
      <button className="jt-provider-primary jt-provider-verify-done" type="button" disabled={!dashboard?.uploadedMedia?.some(m=>m.kind==='id_front')||!dashboard?.uploadedMedia?.some(m=>m.kind==='id_back')} onClick={()=>setTab('home')}>Continue <ArrowRight size={17}/></button>
     </section>:
     <div className="jt-provider-main">
-     {tab==='home'&&approved&&<div className="jt-provider-verified-banner"><CheckCircle2 size={18}/> Identity verified · Provider profile approved</div>}
-     {tab==='home'&&<section className="jt-provider-availability">
-      <div className="jt-provider-status-row"><div><strong>{online?'You’re online':'You’re offline'}</strong><p>{approved?'Get alerts for matching local service requests.':'Your profile must be reviewed before you can go online.'}</p></div>
-       <button className={'jt-provider-toggle '+(online?'active':'')} type="button" role="switch" aria-checked={online} disabled={busy||!approved} onClick={()=>act({action:'availability',online:!online})}><span/></button>
-      </div>
-      {!approved&&<div className="jt-provider-pending"><Clock3 size={17}/><span>{dashboard?.reviewStatus==='rejected'?'Your application needs changes. Contact JiTap Service Operations.':(!dashboard?.uploadedMedia?.some(m=>m.kind==='id_front')||!dashboard?.uploadedMedia?.some(m=>m.kind==='id_back'))?'Your identity photos are not complete. Upload both sides to request review.':'Your documents are submitted. JiTap staff will review them before enabling BUZZ.'}</span>{(!dashboard?.uploadedMedia?.some(m=>m.kind==='id_front')||!dashboard?.uploadedMedia?.some(m=>m.kind==='id_back'))&&<button type="button" className="jt-provider-id-cta" onClick={()=>setTab('verification')}>Upload ID</button>}</div>}
-      <div className="jt-provider-coverage"><MapPin size={19}/><div><strong>Service coverage</strong><p>{dashboard?.profile?.service_areas.join(' · ')||'No areas selected'}</p></div><button onClick={()=>approved?router.push('/provider/profile'):setTab('profile')} aria-label={approved?'View verified coverage':'Edit service coverage'}><ChevronRight size={19}/></button></div>
-     </section>}
+     
+     {tab==='home'&&(approved?<section className="jt-provider-home-online">
+       <div className="jt-provider-home-online-top"><span className="jt-provider-online-pill"><span className="jt-provider-live-dot"/>{online?'Online':'Offline'}</span>
+        <button className={'jt-provider-toggle '+(online?'active':'')} type="button" role="switch" aria-label="Available for requests" aria-checked={online} disabled={busy} onClick={()=>act({action:'availability',online:!online})}><span/></button></div>
+       <div className="jt-provider-online-copy"><h2>{online?'You’re online':'You’re offline'}</h2><p>{online?'You’ll receive service requests that match your skills.':'Go online when you are ready to receive matching local requests.'}</p></div>
+       <img className="jt-provider-robot" src="/images/mascot.webp" alt="JiTap assistant"/>
+      </section>:<section className="jt-provider-availability"><div className="jt-provider-status-row"><div><strong>You’re offline</strong><p>Complete verification to start receiving requests.</p></div></div><div className="jt-provider-pending"><Clock3 size={17}/>Finish your provider verification to get started.</div></section>)}
      {(tab==='home'||tab==='requests')&&<section className="jt-provider-requests">
-      <div className="jt-provider-requests-heading"><div><Bell size={19}/><h2>{tab==='home'?'Live Requests':'BUZZ Opportunities'}</h2></div><span>{dashboard?.opportunities.length||0}</span></div>
+      <div className="jt-provider-requests-heading"><div><ClipboardList size={20}/><h2>{tab==='home'?'Live Requests':'Requests'}</h2></div><span>{dashboard?.opportunities.length||0}</span></div>
       {!approved?<div className="jt-provider-empty"><ShieldCheck size={25}/><strong>Verification required</strong><p>Once your profile is approved, you can switch online and review requests that match your services and areas.</p></div>:
        !online?<div className="jt-provider-empty"><WifiOff size={27}/><strong>You are offline</strong><p>Go online to receive available matching requests.</p></div>:
        dashboard?.opportunities.length===0?<div className="jt-provider-empty"><ClipboardList size={27}/><strong>No new matching requests</strong><p>New opportunities will appear here when customers request your services in your selected areas.</p></div>:
        <div className="jt-provider-request-list">{dashboard?.opportunities.map(o=><article className="jt-provider-request jt-buzz-brief-card" key={o.request_id}>
         <div className="jt-provider-request-top"><span className="jt-provider-request-tag"><Wrench size={15}/> {SERVICE_OPTIONS.find(x=>x.value===o.category)?.label||o.category}</span><span className={'jt-buzz-urgency '+o.urgency}>Urgency: {o.urgency==='unspecified'?'Not specified':o.urgency==='normal'?'Normal':o.urgency==='high'?'High':'Low'}</span></div>
-        <h3>{SERVICE_OPTIONS.find(x=>x.value===o.category)?.label||'Service'} · {o.area}</h3>
+        <h3>{SERVICE_OPTIONS.find(x=>x.value===o.category)?.label||'Service'} <span className="jt-provider-request-area">· {o.area}</span></h3>
         <div className="jt-buzz-reference">Service ID: JT-{o.request_id.slice(0,8).toUpperCase()}</div>
         <div className="jt-buzz-brief-body"><strong>Service brief</strong><p>{o.technical_summary||'Customer requested a service assessment.'}</p>
          {o.proposed_scope&&<p><b>Proposed scope (subject to assessment):</b> {o.proposed_scope}</p>}
