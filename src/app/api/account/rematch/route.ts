@@ -14,7 +14,7 @@ export async function POST(req:NextRequest){
  if(session.kind!=='customer')return reply({error:'Sign in using the customer phone number associated with this request'},401);
  const input=schema.safeParse(await req.json().catch(()=>null));
  if(!input.success)return reply({error:'Invalid rematch decision'},422);
- const url=process.env.SUPABASE_URL?.replace(/\/$/,'');
+ const url=process.env.SUPABASE_URL?.replace(/[/]$/,'');
  const key=process.env.SUPABASE_ANON_KEY;
  if(!url||!key)return reply({error:'Rematching temporarily unavailable'},503);
  try{
