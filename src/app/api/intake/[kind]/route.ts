@@ -6,6 +6,7 @@ import {setAuthCookies} from '@/lib/jitap-auth';
 import {sendRequestReceiptSms,serviceReference} from '@/lib/request-receipt-sms';
 import {after} from 'next/server';
 import {saveServiceBrief} from '@/lib/service-brief-server';
+import {fundiListings} from '@/lib/fundis-public';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -130,6 +131,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{kind
     return respond({ error: 'Please correct the form fields.', issues: validated.error.flatten().fieldErrors }, 422);
   }
   const data = validated.data;
+  if(kind==='request'&&'preferredProviderId' in data&&data.preferredProviderId&&
+    !fundiListings.some(p=>p.id===data.preferredProviderId)){
+    return respond({error:'The selected provider is unavailable. Please choose a listed provider.'},422);
+  }
   if ('website' in data && data.website) return respond({ error: 'Submission rejected.' }, 400);
 
   const cfg = configured();
