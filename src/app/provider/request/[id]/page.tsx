@@ -27,7 +27,8 @@ export default function ProviderRequestView(){
   try{const response=await fetch('/api/provider/workspace',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'respond',requestId:params.id,decision,note:decision==='needs_clarification'?note.trim():''})});
    const data=await response.json().catch(()=>({}));if(!response.ok)throw Error(data.error||'Unable to send response');
    if(data.recorded!==true)throw Error('The request is no longer available.');
-   setDone('Your response was recorded. JiTap Service Operations will coordinate the next step; this is not a confirmed booking.');
+   if(decision==='accepted'){router.push('/provider/calendar?job='+encodeURIComponent(params.id));return}
+   setDone(decision==='declined'?'Request declined.':'Your question was sent to JiTap.');
   }catch(e){setError(e instanceof Error?e.message:'Unable to send response')}
   finally{setBusy(false)}
  }
@@ -40,7 +41,7 @@ export default function ProviderRequestView(){
    <article className="jt-request-detail-content">
     <div className="jt-request-detail-category"><Wrench size={17}/>{title}</div>
     <h2>{title}</h2><p className="jt-request-detail-reference">Service ID: JT-{opportunity.request_id.slice(0,8).toUpperCase()}</p>
-    <div className="jt-request-detail-schedule"><div><MapPin size={19}/><span><strong>Job location</strong>{opportunity.job_location||opportunity.area}{opportunity.job_location?'':' · Exact directions shared after confirmation'}</span></div>
+    <div className="jt-request-detail-schedule"><div><MapPin size={19}/><span><strong>Job location</strong>{opportunity.job_location||opportunity.area}{opportunity.job_location?'':' · Exact directions shared after acceptance'}</span></div>
      <div><Clock3 size={19}/><span><strong>Requested date</strong>{providerPreferredDate(opportunity.preferred_date)}</span></div>
      <div><Clock3 size={19}/><span><strong>Requested time</strong>{providerPreferredTime(opportunity.preferred_time)}</span></div>
     </div>
@@ -48,7 +49,7 @@ export default function ProviderRequestView(){
      {opportunity.proposed_scope&&<><h4>Proposed scope</h4><p>{opportunity.proposed_scope}</p></>}
      <small>{opportunity.brief_source==='ai'?'AI-organized from the customer’s description. Fault not independently diagnosed.':'Customer-reported issue. Technical assessment pending.'}</small>
     </section>
-    <div className="jt-request-detail-note"><ShieldCheck size={19}/> Customer contact details remain private until JiTap coordinates next steps.</div>
+    <div className="jt-request-detail-note"><ShieldCheck size={19}/> Customer phone and exact location are shared immediately after you accept.</div>
     {error&&<p className="jt-provider-error" role="alert">{error}</p>}
     {done?<p className="jt-provider-success" role="status">{done}</p>:<>
      <div className="jt-request-detail-actions"><button className="jt-detail-accept" disabled={busy} onClick={()=>respond('accepted')}>Accept</button><button className="jt-detail-decline" disabled={busy} onClick={()=>respond('declined')}>Decline</button></div>
