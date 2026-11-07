@@ -31,5 +31,5 @@ export async function DELETE(req:NextRequest){
  const access=req.cookies.get('jt_access')?.value;
  if(access)await goTrue('logout',undefined,access,'POST');
  const response=NextResponse.json({signedOut:true},{headers:noStore});
- clearAuthCookies(response);return response;
+ clearAuthCookies(response);response.cookies.delete('jt_mode');return response;
 }
