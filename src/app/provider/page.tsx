@@ -54,7 +54,7 @@ export default function ProviderDashboardPage(){
   if(!dashboard?.profile?.is_online||tab==='profile')return;
   const id=window.setInterval(()=>{
    if(document.visibilityState==='visible')void refresh().catch(()=>{});
-  },20000);
+  },5000);
   return()=>window.clearInterval(id);
  },[dashboard?.profile?.is_online,tab,refresh]);
  async function switchCustomer(){
