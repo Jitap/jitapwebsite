@@ -11,7 +11,7 @@ const daily=z.object({enabled:z.boolean(),from:z.string().regex(/^([01]\\d|2[0-3
 const service=z.object({id:z.string().uuid(),name:z.string().trim().min(2).max(80),category:z.string().min(1).max(80),description:z.string().trim().max(500),minPrice:z.number().int().min(0).max(10000000).nullable(),maxPrice:z.number().int().min(0).max(10000000).nullable()}).strict().refine(v=>v.minPrice===null||v.maxPrice===null||v.minPrice<=v.maxPrice,{message:'Invalid price range'});
 const schema=z.object({services:z.array(service).max(12),workingHours:z.record(z.enum(['monday','tuesday','wednesday','thursday','friday','saturday','sunday']),daily),language:z.enum(['en','sw']),notificationsEnabled:z.boolean()}).strict();
 function client(token:string,path:string,method='GET',data?:unknown){
- const url=process.env.SUPABASE_URL?.replace(/\\/$/,'');const key=process.env.SUPABASE_ANON_KEY;
+ const url=process.env.SUPABASE_URL?.replace(/\/$/,'');const key=process.env.SUPABASE_ANON_KEY;
  if(!url||!key)throw Error('Database unavailable');
  return fetch(url+'/rest/v1/'+path,{method,headers:{apikey:key,Authorization:'Bearer '+token,'Content-Type':'application/json',Accept:'application/json',...(method!=='GET'?{Prefer:'resolution=merge-duplicates,return=representation'}:{})},...(data?{body:JSON.stringify(data)}:{}),cache:'no-store',signal:AbortSignal.timeout(9000)});
 }
