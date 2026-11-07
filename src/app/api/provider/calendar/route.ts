@@ -88,6 +88,7 @@ export async function POST(req:NextRequest){
    if(!gateway.ok)return reply({error:'Job status has changed. Refresh and try again.'},409);
    return reply({status:await gateway.json(),recorded:true});
   }
+  if(data.data.action!=='reschedule')return reply({error:'Unsupported job action'},422);
   if(appointment.status!=='confirmed'&&appointment.status!=='on_my_way')return reply({error:'This appointment cannot be rescheduled'},409);
   const start=new Date(data.data.start),end=new Date(data.data.end);
   if(!(end>start)||end.getTime()-start.getTime()>24*3600000||start.getTime()<Date.now()-60000)return reply({error:'Choose a future date and valid end time'},422);
