@@ -26,6 +26,7 @@ export default function ProviderDashboardPage(){
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState('');
  const [success,setSuccess]=useState('');
+ const [notificationsOpen,setNotificationsOpen]=useState(false);
  const [decision,setDecision]=useState<Record<string,'accepted'|'declined'|'needs_clarification'>>({});
  const [notes,setNotes]=useState<Record<string,string>>({});
  const refresh=useCallback(async()=>{
@@ -102,13 +103,17 @@ export default function ProviderDashboardPage(){
  const visible=!approved&&(tab==='profile'||!submitted);
  return <main className="jt-provider-app">
   <div className="jt-provider-shell">
-   {loading?<div className="jt-provider-card" role="status">Loading your JiTap provider account…</div>:<>
+   {loading?<div className="jt-provider-loading" role="status" aria-label="Loading your JiTap provider account"><span/><span/><span/><span className="jt-provider-loading-label">Loading your account…</span></div>:<>
     {approved?<header className="jt-provider-home-header">
       <a href="/provider" aria-label="JiTap provider home"><img src="/images/jitap-logo.svg" alt="JiTap" width={104} height={60}/></a>
-      <div className="jt-provider-home-header-right"><a href="/provider?view=requests" aria-label="Live requests"><Bell size={25}/>{!!dashboard?.opportunities.length&&<span className="jt-provider-bell-dot"/>}</a>
+      <div className="jt-provider-home-header-right"><button type="button" className="jt-provider-notification-trigger" onClick={()=>setNotificationsOpen(v=>!v)} aria-expanded={notificationsOpen} aria-controls="jt-provider-notification-panel" aria-label="Open notifications"><Bell size={25}/>{!!dashboard?.opportunities.length&&<span className="jt-provider-bell-dot"/>}</button>
       <button type="button" className="jt-provider-home-avatar" onClick={()=>router.push('/provider/profile')} aria-label="Open your provider profile">{dashboard?.uploadedMedia?.some(m=>m.kind==='profile_photo')?<img src={'/api/provider/media?kind=profile_photo&v='+encodeURIComponent(dashboard.uploadedMedia.find(m=>m.kind==='profile_photo')?.uploadedAt||'')} alt="Provider profile"/>:<UserRound size={24}/>}</button></div>
-     </header>:<header className="jt-provider-app-header"><span className="jt-provider-workspace-heading">Provider dashboard</span><div className="jt-provider-header-actions"><div className="jt-provider-badge"><ShieldCheck size={17}/> Provider workspace</div><button type="button" onClick={switchCustomer} disabled={busy} className="jt-provider-logout">Switch to Customer</button><button type="button" onClick={logout} className="jt-provider-logout">Log out</button></div></header>}
-    {approved?<div className="jt-provider-home-greeting">
+     </header>:<header className="jt-provider-app-header"<span className="jt-provider-workspace-heading">Provider dashboard</span><div className="jt-provider-header-actions"><div className="jt-provider-badge"><ShieldCheck size={17}/> Provider workspace</div><button type="button" onClick={switchCustomer} disabled={busy} className="jt-provider-logout">Switch to Customer</button><button type="button" onClick={logout} className="jt-provider-logout">Log out</button></div></header>}
+    {approved&&notificationsOpen&&<aside className="jt-provider-notification-panel" id="jt-provider-notification-panel" aria-label="Provider notifications"><div className="jt-provider-notification-title"><strong>Notifications</strong><button onClick={()=>setNotificationsOpen(false)} aria-label="Close notifications">×</button></div>
+      {online&&!!dashboard?.opportunities.length?<p><strong>{dashboard.opportunities.length} live service {dashboard.opportunities.length===1?'request':'requests'} available</strong><small>Matching opportunities are ready for your review.</small></p>:<p><strong>No new live request notifications</strong><small>{online?'New matching service requests will appear here.':'Go online to receive matching requests.'}</small></p>}
+      {!!dashboard?.recentResponses.length&&<p><strong>Latest response recorded</strong><small>JT-{dashboard.recentResponses[0].request_id.slice(0,8).toUpperCase()} · {dashboard.recentResponses[0].decision.replaceAll('_',' ')}</small></p>}
+     </aside>}
+    {approved?<div className="jt-provider-home-greeting"
        <h1>Hello, <span>{firstName}</span></h1><p>{online?'You’re online and available':'You’re currently offline'}</p>
       </div>:<div className="jt-provider-greeting"><div><p>JITAP FOR PROVIDERS</p><h1>Habari, <span>{firstName}!</span></h1><div className="jt-provider-subtext">{!submitted?'Complete onboarding to get started.':'Your provider profile is awaiting JiTap review.'}</div></div>
      <button type="button" className="jt-provider-avatar" onClick={()=>setTab('profile')} aria-label="Add profile photo">{dashboard?.uploadedMedia?.some(m=>m.kind==='profile_photo')?<img src={'/api/provider/media?kind=profile_photo&v='+encodeURIComponent(dashboard.uploadedMedia.find(m=>m.kind==='profile_photo')?.uploadedAt||'')} alt="Your profile photo"/>:<UserRound size={32}/>}</button>
@@ -184,10 +189,6 @@ export default function ProviderDashboardPage(){
         <div className="jt-provider-request-top"><span className="jt-provider-request-tag"><Wrench size={15}/> {SERVICE_OPTIONS.find(x=>x.value===o.category)?.label||o.category}</span><span className={'jt-buzz-urgency '+o.urgency}>Urgency: {o.urgency==='unspecified'?'Not specified':o.urgency==='normal'?'Normal':o.urgency==='high'?'High':'Low'}</span></div>
         <h3>{SERVICE_OPTIONS.find(x=>x.value===o.category)?.label||'Service'} <span className="jt-provider-request-area">· {o.area}</span></h3>
         <div className="jt-buzz-reference">Service ID: JT-{o.request_id.slice(0,8).toUpperCase()}</div>
-        <div className="jt-buzz-brief-body"><strong>Service brief</strong><p>{o.technical_summary||'Customer requested a service assessment.'}</p>
-         {o.proposed_scope&&<p><b>Proposed scope (subject to assessment):</b> {o.proposed_scope}</p>}
-         <small>{o.brief_source==='ai'?'AI-organized from the customer’s description. Fault not independently diagnosed.':'Customer-reported issue. Technical assessment pending.'}</small>
-        </div>
         <div className="jt-buzz-schedule">
          <div><MapPin size={17}/><span><strong>Job location</strong>{o.job_location||o.area}, Mombasa · Exact directions shared after confirmation</span></div>
          <div><Clock3 size={17}/><span><strong>Requested date</strong>{o.preferred_date|| (o.requested_timing==='today'?'Requested urgently (date to confirm)':o.requested_timing==='this-week'?'This week (date to confirm)':'To be agreed')}</span></div>
@@ -196,9 +197,9 @@ export default function ProviderDashboardPage(){
         <div className="jt-buzz-card-actions">
          <button className={'jt-buzz-accept '+(decision[o.request_id]==='accepted'?'selected':'')} onClick={()=>setDecision(v=>({...v,[o.request_id]:'accepted'}))}>Accept Job</button>
          <button className={'jt-buzz-decline '+(decision[o.request_id]==='declined'?'selected':'')} onClick={()=>setDecision(v=>({...v,[o.request_id]:'declined'}))}>Decline</button>
-         <button className="jt-buzz-clarify" onClick={()=>setDecision(v=>({...v,[o.request_id]:'needs_clarification'}))}>Ask more info</button>
+         <Link className="jt-buzz-view" href={'/provider/request/'+o.request_id}>View <ChevronRight size={17}/></Link>
         </div>
-        {decision[o.request_id]==='needs_clarification'&&<textarea value={notes[o.request_id]||''} maxLength={500} rows={3} aria-label="Clarification question" placeholder="What details do you need before accepting?" onChange={e=>setNotes(v=>({...v,[o.request_id]:e.target.value}))}/>}
+        
         {decision[o.request_id]&&<button disabled={busy} className="jt-provider-primary jt-provider-send" onClick={()=>answer(o)}>{busy?'Submitting…':decision[o.request_id]==='accepted'?'Send acceptance to JiTap':decision[o.request_id]==='declined'?'Confirm decline':'Send question to SOC'} <ArrowRight size={16}/></button>}
         </article>)}</div>}
       <p className="jt-provider-disclaimer">Accepting a BUZZ expresses interest only. JiTap Service Operations coordinates and confirms appointments. Customer contact information is not shared here.</p>
