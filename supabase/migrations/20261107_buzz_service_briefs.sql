@@ -24,7 +24,8 @@ $$;
 revoke all on function public.jitap_reported_urgency(text,text) from public,anon;
 grant execute on function public.jitap_reported_urgency(text,text) to authenticated;
 
-create or replace function public.jitap_provider_available_buzz()
+drop function if exists public.jitap_provider_available_buzz();
+create function public.jitap_provider_available_buzz()
 returns table(
  request_id uuid,category text,area text,preferred_date text,preferred_time text,created_at timestamptz,
  technical_summary text,proposed_scope text,urgency text,brief_source text,requested_timing text
