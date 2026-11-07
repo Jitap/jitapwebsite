@@ -38,7 +38,9 @@ const customer = await submit('request', {
   locationLabel: 'Bamburi, Mombasa',
   description: `Automated QA TEST only — leaking sink in Bamburi ${run}`,
   area: 'Bamburi',
-  timing: 'today'
+  timing: 'this-week',
+  preferredDate: new Date(Date.now()+2*86400000).toISOString().slice(0,10),
+  preferredTime: '11:00'
 });
 console.log('customer', JSON.stringify(customer));
 assert.equal(customer.status, 201, 'Customer request must be persisted');
