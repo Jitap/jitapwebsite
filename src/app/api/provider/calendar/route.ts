@@ -59,7 +59,7 @@ export async function POST(req:NextRequest){
   if(!appointment)return reply({error:'Appointment not found'},404);
   if(data.data.action==='cancel'){
    if(appointment.status!=='confirmed'&&appointment.status!=='on_my_way')return reply({error:'Only an active job can be cancelled'},409);
-   const url=process.env.SUPABASE_URL?.replace(/\\/$/,'');
+   const url=process.env.SUPABASE_URL?.replace(/[/]$/,'');
    const key=process.env.SUPABASE_ANON_KEY;
    if(!url||!key)return reply({error:'Cancellation temporarily unavailable'},503);
    const gateway=await fetch(url+'/rest/v1/rpc/jitap_provider_cancel_job',{
