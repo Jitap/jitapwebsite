@@ -113,16 +113,20 @@ export async function GET(req:NextRequest){
   // Confirmed appointments belong to this authenticated provider only.
   // Contact information is never included in public BUZZ opportunities.
   const confirmed=await supabasePrivate<{id:string;request_id:string;provider_user_id:string;status:string}[]>(
-   'jitap_provider_appointments?provider_user_id=eq.'+encodeURIComponent(session.userId)+'&status=in.(confirmed,on_my_way)&select=id,request_id,provider_user_id,status&order=created_at.desc&limit=25');
+   'jitap_provider_appointments?provider_user_id=eq.'+encodeURIComponent(session.userId)+'&status=in.(confirmed,on_my_way,arrived,in_progress,completed)&select=id,request_id,provider_user_id,status&order=created_at.desc&limit=25');
   const confirmedRequests=confirmed.length?await supabasePrivate<{id:string;payload:Record<string,unknown>}[]>(
    'website_intake?id=in.('+confirmed.map(x=>x.request_id).join(',')+')&select=id,payload'):[];
   const confirmedById=new Map(confirmedRequests.map(x=>[x.id,x.payload]));
+  const ratings=confirmed.length?await supabasePrivate<{appointment_id:string;stars:number}[]>('jitap_customer_ratings?provider_user_id=eq.'+encodeURIComponent(session.userId)+'&select=appointment_id,stars'):[];
   const confirmedJobs=confirmed.map(a=>{
    const p=confirmedById.get(a.request_id)||{};
    const clean=(x:unknown,max=160)=>typeof x==='string'?x.slice(0,max):'';
    return {id:a.id,requestId:a.request_id,status:a.status,
     customerName:clean(p.name)||'Customer',customerPhone:clean(p.phone,30),
-    location:clean(p.locationLabel)||clean(p.area),service:clean(p.category)||'Service'};
+    location:clean(p.locationLabel)||clean(p.area),service:clean(p.category)||'Service',
+    latitude:typeof p.locationLat==='number'?p.locationLat:null,
+    longitude:typeof p.locationLng==='number'?p.locationLng:null,
+    placeId:clean(p.locationPlaceId),rated:ratings.some(r=>r.appointment_id===a.id)};
   });
   return responseWithSession({
    confirmedJobs,
