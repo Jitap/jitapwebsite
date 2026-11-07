@@ -42,7 +42,8 @@ export default function TrackTicketPage(){
    setTicket(data.ticket);
   }).catch(e=>{if(alive)setError(e instanceof Error?e.message:'Tracking is unavailable')})
    .finally(()=>{if(alive)setLoading(false)});
-  return()=>{alive=false};
+  const poll=window.setInterval(()=>{if(document.visibilityState!=='visible')return;void fetch('/api/account/track?ref='+encodeURIComponent(value),{cache:'no-store'}).then(async r=>r.ok?r.json():null).then(data=>{if(alive&&data?.ticket)setTicket(data.ticket)}).catch(()=>{})},10000);
+  return()=>{alive=false;window.clearInterval(poll)};
  },[router]);
  async function switchCustomer(){
   setSwitching(true);setError('');
