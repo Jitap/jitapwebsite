@@ -37,6 +37,9 @@ export function CoordinatorDashboard(){
  const [lastSynced,setLastSynced]=useState<Date|null>(null);
  const [refreshIssue,setRefreshIssue]=useState(false);
  const [notices,setNotices]=useState<Notice[]>([]);
+ const [providerQueue,setProviderQueue]=useState({pending:0,ready:0});
+ const [providerNotice,setProviderNotice]=useState('');
+ const previousProviderIds=useRef<Set<string>|null>(null);
  const previousCases=useRef<Map<string,string>|null>(null);
  const pollInFlight=useRef(false);
  const selectedRef=useRef<string|null>(null);
@@ -141,6 +144,36 @@ export function CoordinatorDashboard(){
   };
  },[staff?.email,checking,load,loadDetail]);
 
+ // SOC notifications for provider onboarding, independent from service-case alerts.
+ useEffect(()=>{
+  if(!staff?.email||checking)return;
+  let alive=true;
+  const refreshProviders=async()=>{
+   if(!alive||document.visibilityState==='hidden')return;
+   try{
+    const response=await fetch('/api/coordinator/provider-reviews',{cache:'no-store'});
+    if(!response.ok)return;
+    const result=await response.json() as {
+     pendingCount?:number;readyCount?:number;
+     providers?:{user_id:string;full_name:string;review:string;readyForApproval:boolean}[]
+    };
+    if(!alive)return;
+    setProviderQueue({pending:result.pendingCount||0,ready:result.readyCount||0});
+    const ready=(result.providers||[]).filter(p=>p.review==='pending'&&p.readyForApproval);
+    if(previousProviderIds.current!==null){
+     const fresh=ready.filter(p=>!previousProviderIds.current?.has(p.user_id));
+     if(fresh.length)setProviderNotice(fresh.length+' provider '+(fresh.length===1?'application is':'applications are')+' ready for identity review.');
+    }
+    previousProviderIds.current=new Set(ready.map(p=>p.user_id));
+   }catch{}
+  };
+  void refreshProviders();
+  const interval=window.setInterval(()=>void refreshProviders(),15000);
+  const focus=()=>void refreshProviders();
+  window.addEventListener('focus',focus);
+  return()=>{alive=false;window.clearInterval(interval);window.removeEventListener('focus',focus)};
+ },[staff?.email,checking]);
+
  async function authenticate(action:'send'|'verify'){
   setLogging(true);setAuthMessage('');
   try{
@@ -154,7 +187,7 @@ export function CoordinatorDashboard(){
  }
  async function logout(){
   await fetch('/api/coordinator/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'logout'})});
-  previousCases.current=null;setStaff(null);setCases([]);setSelected(null);setActivity([]);setNotices([]);setLastSynced(null);
+  previousCases.current=null;previousProviderIds.current=null;setProviderQueue({pending:0,ready:0});setProviderNotice('');setStaff(null);setCases([]);setSelected(null);setActivity([]);setNotices([]);setLastSynced(null);
  }
  async function update(action:string,value?:string|null,extraNote?:string){
   if(!selected)return;
@@ -188,9 +221,16 @@ export function CoordinatorDashboard(){
    {feedback&&<p role="status">{feedback}</p>}
   </div></section>;
  return <section className="coordinator-root">
-  <header className="coordinator-header"><div><span className="coordinator-kicker">JITAP SERVICE OPERATIONS</span><h1>Coordinator queue</h1><Link href="/coordinator/providers" className="coordinator-provider-link">Provider verification & BUZZ responses →</Link><p>Follow every request from intake to completion. No provider match? Escalate to human sourcing.</p></div>
+  <header className="coordinator-header"><div><span className="coordinator-kicker">JITAP SERVICE OPERATIONS</span><h1>Coordinator queue</h1><Link href="/coordinator/providers" className="coordinator-provider-link">Provider management {providerQueue.pending>0?' · '+providerQueue.pending+' pending':''} {providerQueue.ready>0?' · '+providerQueue.ready+' ready to approve':''} →</Link><p>Follow every request from intake to completion. No provider match? Escalate to human sourcing.</p></div>
   <div className="coordinator-header-actions"><span>{staff.email} · {staff.role}</span><div className="coordinator-live-indicator" aria-label="Automatic refresh enabled"><span className="coordinator-live-dot"/> Live updates · every 15s{lastSynced?' · '+lastSynced.toLocaleTimeString('en-KE',{hour:'2-digit',minute:'2-digit',timeZone:'Africa/Nairobi'}):''}</div><button onClick={()=>load().catch(()=>setFeedback('Refresh failed'))}><RefreshCw size={16}/> Refresh</button><button onClick={logout}><LogOut size={16}/> Sign out</button></div></header>
   {refreshIssue&&<p className="coordinator-sync-note" role="status">Connection interrupted. JiTap will automatically check again.</p>}
+  {(providerQueue.pending>0||providerNotice)&&<aside className="coordinator-provider-approval-alert" aria-live="polite">
+   <Bell size={23}/><div><strong>{providerNotice||'Provider applications awaiting review'}</strong>
+    <p>{providerQueue.pending} pending provider applications · {providerQueue.ready} with front and back ID ready for verification</p>
+    <Link href="/coordinator/providers">Open provider approval queue →</Link>
+   </div>
+   {providerNotice&&<button type="button" onClick={()=>setProviderNotice('')} aria-label="Dismiss new provider notification"><X size={16}/></button>}
+  </aside>}
   {notices.length>0&&<aside className="coordinator-notice-stack" aria-label="Service operations notifications" aria-live="polite">
    {notices.map(n=><div className="coordinator-notice" key={n.id}>
     <span className="coordinator-notice-icon"><Bell size={19}/></span>
