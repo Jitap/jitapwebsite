@@ -11,7 +11,7 @@ type ProviderProfile={
  full_name:string;business_name:string;categories:string[];service_areas:string[];
  base_area:string;experience_years:number;skills:string;is_online:boolean;submitted_at:string|null;
 };
-type Opportunity={request_id:string;category:string;area:string;preferred_date:string;preferred_time:string;created_at:string;technical_summary:string;proposed_scope:string;urgency:'high'|'normal'|'low'|'unspecified';brief_source:'ai'|'reported';requested_timing:string};
+type Opportunity={request_id:string;category:string;area:string;preferred_date:string;preferred_time:string;created_at:string;technical_summary:string;proposed_scope:string;urgency:'high'|'normal'|'low'|'unspecified';brief_source:'ai'|'reported';requested_timing:string;job_location:string};
 type PastResponse={request_id:string;decision:string;created_at:string};
 type Dashboard={profile:ProviderProfile|null;reviewStatus:string;opportunities:Opportunity[];recentResponses:PastResponse[];uploadedMedia:{kind:MediaKind;uploadedAt:string}[]};
 type Tab='home'|'profile'|'requests'|'verification';
@@ -173,8 +173,8 @@ export default function ProviderDashboardPage(){
          <small>{o.brief_source==='ai'?'AI-organized from the customer’s description. Fault not independently diagnosed.':'Customer-reported issue. Technical assessment pending.'}</small>
         </div>
         <div className="jt-buzz-schedule">
-         <div><MapPin size={17}/><span><strong>Service area</strong>{o.area}, Mombasa · Full site directions provided after job confirmation</span></div>
-         <div><Clock3 size={17}/><span><strong>Requested date</strong>{o.preferred_date|| (o.requested_timing==='today'?'Today (date to confirm)':o.requested_timing==='this-week'?'This week (date to confirm)':'To be agreed')}</span></div>
+         <div><MapPin size={17}/><span><strong>Job location</strong>{o.job_location||o.area}, Mombasa · Exact directions shared after confirmation</span></div>
+         <div><Clock3 size={17}/><span><strong>Requested date</strong>{o.preferred_date|| (o.requested_timing==='today'?'Requested urgently (date to confirm)':o.requested_timing==='this-week'?'This week (date to confirm)':'To be agreed')}</span></div>
          <div><Clock3 size={17}/><span><strong>Requested time</strong>{o.preferred_time||'To be agreed'}</span></div>
         </div>
         <div className="jt-buzz-card-actions">
