@@ -116,3 +116,14 @@
 .jt-provider-id-consent{display:flex;align-items:flex-start;gap:11px;padding:15px;border:1px solid #b8e7cd;border-radius:12px;background:#eefaf3;color:#245b42;font-size:13px;line-height:1.6;cursor:pointer}
 .jt-provider-id-consent input[type=checkbox]{flex:none;margin-top:4px;width:18px;height:18px;accent-color:#00a84d}
 .jt-provider-upload-card:has(input:disabled){opacity:.75;cursor:not-allowed}
+
+/* Mobile camera capture and gallery controls for provider verification. */
+.jt-provider-hidden-picker{display:none!important}
+.jt-provider-photo-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:5px}
+.jt-provider-photo-actions button{min-width:0;display:flex;justify-content:center;align-items:center;gap:8px;padding:13px 10px;min-height:48px;border:1px solid #0ba65f;border-radius:11px;background:#eefaf3;color:#066d42;font-size:13px;font-weight:760;cursor:pointer;touch-action:manipulation}
+.jt-provider-photo-actions button:first-child{background:#00b84e;border-color:#00b84e;color:#fff}
+.jt-provider-photo-actions button:focus-visible{outline:3px solid #123a98;outline-offset:2px}
+.jt-provider-photo-actions button:disabled{opacity:.5;cursor:not-allowed}
+.jt-provider-upload-card{cursor:default}
+.jt-provider-id-consent{scroll-margin-top:115px}
+@media(max-width:400px){.jt-provider-photo-actions{gap:7px}.jt-provider-photo-actions button{font-size:12px;padding:11px 7px;gap:5px}}
