@@ -4,6 +4,7 @@ import {useParams,useRouter} from 'next/navigation';
 import Link from 'next/link';
 import {ArrowLeft,Clock3,MapPin,ShieldCheck,Wrench} from 'lucide-react';
 import {SERVICE_OPTIONS} from '@/lib/provider-options';
+import {providerPreferredDate,providerPreferredTime} from '@/lib/provider-schedule';
 import '../request-detail.css';
 
 type Opportunity={request_id:string;category:string;area:string;preferred_date:string;preferred_time:string;technical_summary:string;proposed_scope:string;urgency:string;brief_source:string;requested_timing:string;job_location:string};
@@ -40,8 +41,8 @@ export default function ProviderRequestView(){
     <div className="jt-request-detail-category"><Wrench size={17}/>{title}</div>
     <h2>{title}</h2><p className="jt-request-detail-reference">Service ID: JT-{opportunity.request_id.slice(0,8).toUpperCase()}</p>
     <div className="jt-request-detail-schedule"><div><MapPin size={19}/><span><strong>Job location</strong>{opportunity.job_location||opportunity.area}{opportunity.job_location?'':' · Exact directions shared after confirmation'}</span></div>
-     <div><Clock3 size={19}/><span><strong>Requested date</strong>{opportunity.preferred_date||(opportunity.requested_timing==='today'?'Requested urgently (date to confirm)':opportunity.requested_timing==='this-week'?'This week (date to confirm)':'To be agreed')}</span></div>
-     <div><Clock3 size={19}/><span><strong>Requested time</strong>{opportunity.preferred_time||'To be agreed'}</span></div>
+     <div><Clock3 size={19}/><span><strong>Requested date</strong>{providerPreferredDate(opportunity.preferred_date)}</span></div>
+     <div><Clock3 size={19}/><span><strong>Requested time</strong>{providerPreferredTime(opportunity.preferred_time)}</span></div>
     </div>
     <section className="jt-request-detail-brief"><h3>Service brief</h3><p>{opportunity.technical_summary||'Customer requested a service assessment.'}</p>
      {opportunity.proposed_scope&&<><h4>Proposed scope</h4><p>{opportunity.proposed_scope}</p></>}
