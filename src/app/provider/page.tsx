@@ -93,15 +93,15 @@ export default function ProviderDashboardPage(){
    experienceYears:form.experience_years,skills:form.skills,submit});
   if(result){setSuccess(submit?'Profile saved. Upload both sides of your national ID for verification.':'Profile saved.');if(submit)setTab('verification')}
  }
- async function answer(o:Opportunity){
-  const d=decision[o.request_id];if(!d)return;
+ async function answer(o:Opportunity,choice?:'accepted'|'declined'|'needs_clarification'){
+  const d=choice||decision[o.request_id];if(!d)return;
   if(d==='needs_clarification'&&(!notes[o.request_id]||notes[o.request_id].trim().length<3)){setError('Please write your question before submitting.');return}
   setBusy(true);setError('');setSuccess('');
   try{
    const response=await fetch('/api/provider/workspace',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'respond',requestId:o.request_id,decision:d,note:notes[o.request_id]||''})});
    const result=await response.json().catch(()=>({}));
    if(!response.ok||result.recorded!==true)throw new Error(result.error||'This request is no longer available. Please refresh.');
-   setSuccess(d==='declined'?'Request declined. It has been removed from your live opportunities.':'Your BUZZ response was recorded. JiTap will coordinate the next step; this is not yet a confirmed booking.');
+   setSuccess(d==='declined'?'Request declined. It has been removed from your live opportunities.':d==='accepted'?'Booking confirmed! The customer can now contact you.':'Your question was sent to JiTap.');
    if(d==='declined'){
     // The card remains in the DOM during the dissolve; the badge reflects
     // only actual visible opportunities once the animation completes.
@@ -113,6 +113,7 @@ export default function ProviderDashboardPage(){
     },440);
    }else{
     setDismissedIds(old=>old.includes(o.request_id)?old:[...old,o.request_id]);
+    if(d==='accepted'){router.push('/provider/calendar?job='+encodeURIComponent(o.request_id));return}
     await refresh();
    }
   }catch(e){setError(e instanceof Error?e.message:'Could not send your response. Try again.')}
@@ -220,20 +221,20 @@ export default function ProviderDashboardPage(){
         <div className="jt-buzz-reference">Service ID: JT-{o.request_id.slice(0,8).toUpperCase()}</div>
 
         <div className="jt-buzz-schedule">
-         <div><MapPin size={17}/><span><strong>Job location</strong>{o.job_location||o.area}{(o.job_location||o.area).toLowerCase().includes('mombasa')?'':' · Mombasa'} · Exact directions shared after confirmation</span></div>
+         <div><MapPin size={17}/><span><strong>Job location</strong>{o.job_location||o.area}{(o.job_location||o.area).toLowerCase().includes('mombasa')?'':' · Mombasa'} · Exact directions shared when you accept</span></div>
          <div><Clock3 size={17}/><span><strong>Requested date</strong>{providerPreferredDate(o.preferred_date)}</span></div>
          <div><Clock3 size={17}/><span><strong>Requested time</strong>{providerPreferredTime(o.preferred_time)}</span></div>
         </div>
         <div className="jt-buzz-card-actions">
-         <button className={'jt-buzz-accept '+(decision[o.request_id]==='accepted'?'selected':'')} onClick={()=>setDecision(v=>({...v,[o.request_id]:'accepted'}))}>Accept</button>
+         <button className={'jt-buzz-accept '+(decision[o.request_id]==='accepted'?'selected':'')} disabled={busy} onClick={()=>void answer(o,'accepted')}>Accept</button>
          <button className={'jt-buzz-decline '+(decision[o.request_id]==='declined'?'selected':'')} onClick={()=>setDecision(v=>({...v,[o.request_id]:'declined'}))}>Decline</button>
          <Link className="jt-buzz-view" href={'/provider/request/'+o.request_id}>View <ChevronRight size={17}/></Link>
         </div>
 
         
-        {decision[o.request_id]&&<button disabled={busy} className="jt-provider-primary jt-provider-send" onClick={()=>answer(o)}>{busy?'Submitting…':decision[o.request_id]==='accepted'?'Send acceptance to JiTap':decision[o.request_id]==='declined'?'Confirm decline':'Send question to SOC'} <ArrowRight size={16}/></button>}
+        {decision[o.request_id]&&decision[o.request_id]!=='accepted'&&<button disabled={busy} className="jt-provider-primary jt-provider-send" onClick={()=>answer(o)}>{busy?'Submitting…':decision[o.request_id]==='declined'?'Confirm decline':'Send question to SOC'} <ArrowRight size={16}/></button>}
         </article>)}</div>}
-      <p className="jt-provider-disclaimer">Accepting a BUZZ expresses interest only. JiTap Service Operations coordinates and confirms appointments. Customer contact information is not shared here.</p>
+      <p className="jt-provider-disclaimer">Accepting a request immediately confirms the booking. Both parties can then view each other’s contact details; the customer’s exact location is shared with the accepting provider.</p>
      </section>}
      {tab==='requests'&&<section className="jt-provider-card jt-provider-response-history"><h2>Your recent BUZZ responses</h2>{dashboard?.recentResponses.length?dashboard.recentResponses.map(r=><div key={r.request_id}><span>JT-{r.request_id.slice(0,8).toUpperCase()}</span><strong>{r.decision.replaceAll('_',' ')}</strong></div>):<p className="jt-provider-muted">No responses recorded yet.</p>}</section>}
     </div>}
