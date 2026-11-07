@@ -71,8 +71,12 @@ export async function GET(req:NextRequest){
   if(oldBriefs.length)after(async()=>{
    try{
     const ids=oldBriefs.map(o=>o.request_id);
+    const existing=await supabasePrivate<{request_id:string}[]>(
+     'jitap_request_service_briefs?select=request_id&request_id=in.('+ids.join(',')+')');
+    const processed=new Set(existing.map(b=>b.request_id));
+    if(processed.size===ids.length)return;
     const rows=await supabasePrivate<{id:string;payload:Record<string,unknown>}[]>(
-     'website_intake?select=id,payload&id=in.('+ids.join(',')+')');
+     'website_intake?select=id,payload&id=in.('+ids.filter(id=>!processed.has(id)).join(',')+')');
     for(const row of rows){
      const p=row.payload;
      if(typeof p.description!=='string'||typeof p.category!=='string')continue;
