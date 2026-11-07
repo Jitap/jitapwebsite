@@ -28,6 +28,7 @@ export async function POST(req:NextRequest){
  try{
   // Approved providers cannot silently replace verified national IDs.
   const approved=await supabasePrivate<{status:string}[]>('jitap_provider_reviews?user_id=eq.'+encodeURIComponent(session.userId)+'&select=status');
+  const previouslyUploaded=await getProviderMedia(session.userId);
   const data=await req.formData();
   const kind=data.get('kind'),file=data.get('file');
   if(!valid(kind)||!(file instanceof File))return NextResponse.json({error:'Select an image'},{status:422,headers});
@@ -35,6 +36,28 @@ export async function POST(req:NextRequest){
    return NextResponse.json({error:'Contact JiTap Service Operations to update verified identity documents.'},{status:403,headers});
   }
   const saved=await uploadProviderMedia(session.userId,kind,file);
+  // Alert Service Operations once, when the second identity image arrives.
+  // Never attach document images, credentials or ID numbers to the email.
+  if((kind==='id_front'||kind==='id_back')&&
+    !['id_front','id_back'].every(k=>previouslyUploaded.some(m=>m.kind===k))){
+   const now=await getProviderMedia(session.userId);
+   if(['id_front','id_back'].every(k=>now.some(m=>m.kind===k))){
+    const apiKey=process.env.RESEND_API_KEY,from=process.env.JITAP_EMAIL_FROM;
+    if(apiKey&&from){
+     try{
+      await fetch('https://api.resend.com/emails',{
+       method:'POST',
+       headers:{Authorization:'Bearer '+apiKey,'Content-Type':'application/json',
+        'Idempotency-Key':'jitap-provider-verification-'+session.userId},
+       body:JSON.stringify({from,to:['providers@jitap.app'],
+        subject:'JiTap provider application ready for ID review',
+        text:'A JiTap provider has uploaded both sides of their ID. Sign in to Service Operations to review the private documents and approve or reject: https://www.jitap.app/coordinator/providers'})
+       ,signal:AbortSignal.timeout(5000),cache:'no-store'
+      });
+     }catch{console.error('JiTap provider review email unavailable')}
+    }
+   }
+  }
   const response=NextResponse.json(saved,{headers});
   if(session.rotated)setAuthCookies(response,session.rotated.access,session.rotated.refresh,session.rotated.expires);
   return response;
