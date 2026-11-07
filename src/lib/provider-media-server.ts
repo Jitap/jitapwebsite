@@ -32,7 +32,7 @@ export async function readProviderMedia(userId:string,kind:MediaKind):Promise<{b
  if(!r.ok)throw new Error('Provider image not available');
  return {body:await r.arrayBuffer(),contentType:found.content_type};
 }
-export async function uploadProviderMedia(userId:string,kind:MediaKind,file:File){
+export async function uploadProviderMedia(userId:string,kind:MediaKind,file:File,consented=false){
  const isJpeg=file.type==='image/jpeg',isPng=file.type==='image/png';
  if(!isJpeg&&!isPng)throw new Error('Only JPG and PNG photos are accepted.');
  if(file.size<80||file.size>5*1024*1024)throw new Error('Images must be under 5 MB.');
@@ -52,7 +52,7 @@ export async function uploadProviderMedia(userId:string,kind:MediaKind,file:File
  try{
   const saved=await supabasePrivate<MediaRecord[]>('jitap_provider_media?on_conflict=user_id,kind',{
    method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=representation'},
-   body:JSON.stringify({user_id:userId,kind,object_path:path,content_type:file.type,uploaded_at:new Date().toISOString()})
+   body:JSON.stringify({user_id:userId,kind,object_path:path,content_type:file.type,uploaded_at:new Date().toISOString(),consented_at:consented?new Date().toISOString():null})
   });
   if(!saved.length)throw new Error('Photo metadata not saved');
  }catch(e){
