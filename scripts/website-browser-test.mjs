@@ -218,6 +218,29 @@ await check('provider onboarding renders Kenya areas and no wallet or payments',
  await page.screenshot({path:'ui-test-results/jitap-provider-onboarding.png',fullPage:true});
  await page.unroute('**/api/provider/workspace');
 });
+await check('provider verification requires both ID images and protects media endpoints',async()=>{
+ assert.equal((await page.request.get(base+'/api/provider/media?kind=id_front')).status(),401);
+ assert.equal((await page.request.get(base+'/api/coordinator/provider-media?kind=id_front&userId=00000000-0000-0000-0000-000000000001')).status(),401);
+ await page.route('**/api/provider/workspace',async route=>{
+  if(route.request().method()==='GET'){
+   await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+    profile:{full_name:'Kenyan Test Provider',business_name:'',categories:['plumbing'],service_areas:['Bamburi'],
+     base_area:'Bamburi',experience_years:4,skills:'',is_online:false,submitted_at:'2026-11-07T01:00:00Z'},
+    reviewStatus:'pending',opportunities:[],recentResponses:[],uploadedMedia:[]
+   })});
+  }else await route.continue();
+ });
+ await page.setViewportSize({width:390,height:844});
+ await open('/provider');
+ await page.getByRole('button',{name:/Verification/}).click();
+ await page.getByRole('heading',{name:'Verify your ID'}).waitFor();
+ assert.equal(await page.getByLabel('Front side of national ID *').count(),1);
+ assert.equal(await page.getByLabel('Back side of national ID *').count(),1);
+ assert.equal(await page.getByRole('button',{name:/Continue/}).isDisabled(),true);
+ assert.equal(await page.locator('.jt-provider-app-header img').count(),0,'Global header is only JiTap logo');
+ await page.screenshot({path:'ui-test-results/jitap-provider-verification-mobile.png',fullPage:true});
+ await page.unroute('**/api/provider/workspace');
+});
 await check('provider application supports six areas and back/continue',async()=>{
  await open();
  await page.goto(base+'/providers/apply');

@@ -3,6 +3,7 @@ import {z} from 'zod';
 import {getProviderSession} from '@/lib/provider-session-server';
 import {sameOrigin,setAuthCookies} from '@/lib/jitap-auth';
 import {SERVICE_OPTIONS,KENYAN_SERVICE_AREAS} from '@/lib/provider-options';
+import {getProviderMedia} from '@/lib/provider-media-server';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -51,18 +52,20 @@ export async function GET(req:NextRequest){
  if(!session)return error('Sign in with your provider account.',401);
  try{
   const id='eq.'+encodeURIComponent(session.userId);
-  const [profileResult,reviewResult,responses,opportunities]=await Promise.all([
+  const [profileResult,reviewResult,responses,opportunities,media]=await Promise.all([
    dbRequest(session.accessToken,'jitap_provider_workspaces?user_id='+id+'&select=*'),
    dbRequest(session.accessToken,'jitap_provider_reviews?user_id='+id+'&select=status,reviewed_at'),
    dbRequest(session.accessToken,'jitap_provider_buzz_responses?provider_user_id='+id+'&select=request_id,decision,created_at&order=created_at.desc&limit=15'),
-   dbRequest(session.accessToken,'rpc/jitap_provider_available_buzz','POST',{})
+   dbRequest(session.accessToken,'rpc/jitap_provider_available_buzz','POST',{}),
+   getProviderMedia(session.userId)
   ]);
   if(!profileResult.ok||!reviewResult.ok||!responses.ok||!opportunities.ok)throw Error('read failed');
   return responseWithSession({
    profile:Array.isArray(profileResult.data)?profileResult.data[0]||null:null,
    reviewStatus:Array.isArray(reviewResult.data)?reviewResult.data[0]?.status||'not_submitted':'not_submitted',
    recentResponses:Array.isArray(responses.data)?responses.data:[],
-   opportunities:Array.isArray(opportunities.data)?opportunities.data:[]
+   opportunities:Array.isArray(opportunities.data)?opportunities.data:[],
+   uploadedMedia:media.map(x=>({kind:x.kind,uploadedAt:x.uploaded_at}))
   },session);
  }catch{return error('Unable to load your provider dashboard.',503)}
 }
