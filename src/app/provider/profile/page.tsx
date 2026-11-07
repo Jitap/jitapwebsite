@@ -28,7 +28,7 @@ export default function ProviderProfilePage(){
   if(!workspace.ok||!prefs.ok)throw Error('Unable to load provider profile');
   const w=await workspace.json(),p=await prefs.json();
   setProfile(w.profile);setReview(w.reviewStatus);setMedia(w.uploadedMedia||[]);setPhone(p.phone||'');
-  setServices(p.preferences?.services||[]);setHours({...defaultHours,...(p.preferences?.working_hours||{})});
+  setServices(p.preferences?.services||((w.profile?.categories||[]) as string[]).map((category:string)=>({id:crypto.randomUUID(),name:SERVICE_OPTIONS.find(x=>x.value===category)?.label||category,category,description:'',minPrice:null,maxPrice:null})));setHours({...defaultHours,...(p.preferences?.working_hours||{})});
   setLanguage(p.preferences?.language||'en');setNotifications(p.preferences?.notifications_enabled??true);
  },[router]);
  useEffect(()=>{refresh().catch(e=>setError(e.message)).finally(()=>setLoading(false))},[refresh]);
