@@ -12,7 +12,7 @@ const asText=(value:unknown,max=700)=>typeof value==='string'?value.slice(0,max)
 const labels:Record<string,string>={
  new:'Received',incomplete:'Information needed',needs_sourcing:'Finding a provider',
  matching:'Matching',provider_contacted:'Provider contacted',awaiting_quote:'Awaiting quotation',
- scheduled:'Scheduled',in_progress:'In progress',completed:'Completed',cancelled:'Cancelled',closed:'Closed',
+ scheduled:'Booking confirmed',on_my_way:'Provider on my way',in_progress:'In progress',completed:'Completed',cancelled:'Cancelled',closed:'Closed',
  reviewing:'Under review',handled:'Handled',archived:'Archived'
 };
 function customerSummary(raw:string){
@@ -62,7 +62,7 @@ export async function formatCustomerTickets(rows:RequestRecord[]){
   const appointment=appointmentById.get(r.id);
   const assignedProvider=appointment?providerById.get(appointment.provider_user_id):null;
   const assignedPhone=appointment?phoneById.get(appointment.provider_user_id)||'':'';
-  const status=appointment?(appointment.status==='on_my_way'?'in_progress':appointment.status==='confirmed'?'scheduled':appointment.status):caseRow?.status||r.status;
+  const status=appointment?(appointment.status==='on_my_way'?'on_my_way':appointment.status==='confirmed'?'scheduled':appointment.status):caseRow?.status||r.status;
   return {
    reference:r.id,serviceId:'JT-'+r.id.slice(0,8).toUpperCase(),
    category:asText(p.category,70)||'Service',
