@@ -37,7 +37,7 @@ export default function AccountPage(){
     {requestsLoading?<p role="status">Loading your service requests…</p>:requestsError?<p role="alert">{requestsError}</p>:requests.length===0?<div className="jt-requests-empty"><ClipboardList size={29}/><p>No service requests linked to your account yet.</p><small>When you submit a new request while signed in, it will appear here.</small></div>:
      <div className="jt-requests-list">{requests.map(r=><CustomerTicketCard key={r.reference} ticket={r}/>)}</div>}
    </section>}
-   <p className="jt-account-disclaimer">{account.accountType==='provider'?'A provider account does not automatically mean verification, active work allocation, or guaranteed jobs.':'Service requests are coordinated during the pilot; submission does not guarantee a provider match.'}</p>
+   <p className="jt-account-disclaimer">{account.accountType==='provider'?'A provider account does not automatically mean verification, active work allocation, or guaranteed jobs.':'Your request is confirmed as soon as an available verified provider accepts it. Their contact details will then appear in My Requests.'}</p>
    {account.primaryAccountType==='provider'&&account.accountType==='customer'&&<button type="button" className="jt-account-signout" onClick={switchProvider}><BriefcaseBusiness size={18}/> Switch to Provider</button>}
    {error&&<p role="alert" className="jt-auth-error">{error}</p>}
    <button type="button" className="jt-account-signout" onClick={signOut}><LogOut size={18}/> Log out</button>
