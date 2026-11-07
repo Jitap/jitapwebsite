@@ -37,6 +37,12 @@ export default function ProviderDashboardPage(){
   setForm(data.profile||empty);
   if(!data.profile?.submitted_at)setTab('profile');
  },[router]);
+ const refreshMedia=useCallback(async()=>{
+  const res=await fetch('/api/provider/workspace',{cache:'no-store'});
+  if(!res.ok)throw Error('Unable to refresh uploaded photos');
+  const data:Dashboard=await res.json();
+  setDashboard(current=>current?{...current,uploadedMedia:data.uploadedMedia,reviewStatus:data.reviewStatus}:data);
+ },[]);
  useEffect(()=>{let active=true;refresh().catch(()=>{if(active)setError('Could not load your provider dashboard. Please refresh.')}).finally(()=>{if(active)setLoading(false)});return()=>{active=false}},[refresh]);
  useEffect(()=>{
   if(!dashboard?.profile?.is_online||tab==='profile')return;
@@ -115,7 +121,7 @@ export default function ProviderDashboardPage(){
       <label>Skills and experience <small>(optional)</small><textarea maxLength={1200} rows={4} value={form.skills} placeholder="Describe your skills and the types of work you do" onChange={e=>update('skills',e.target.value)}/></label>
       <div className="jt-provider-media-profile">
        <h3>Profile & business photos</h3><p>Show customers who you are. These images are stored privately while your account is reviewed.</p>
-       <ProviderMediaFields uploaded={dashboard?.uploadedMedia||[]} kinds={['profile_photo','business_logo']} onUploaded={refresh}/>
+       <ProviderMediaFields uploaded={dashboard?.uploadedMedia||[]} kinds={['profile_photo','business_logo']} onUploaded={refreshMedia}/>
       </div>
       <div className="jt-provider-verification-note"><ShieldCheck size={22}/><div><strong>Next step: identity verification</strong><p>After saving your profile, upload the front and back of your national ID in the Verification tab. Only approved JiTap staff may inspect your documents.</p></div></div>
       <div className="jt-provider-form-actions"><button type="button" className="jt-provider-secondary" disabled={busy} onClick={()=>save(false)}>{busy?'Saving…':'Save draft'}</button><button className="jt-provider-primary" disabled={busy||!form.categories.length||!form.service_areas.length}>{busy?'Saving…':submitted?'Save profile':'Submit for review'} <ArrowRight size={17}/></button></div>
@@ -125,7 +131,7 @@ export default function ProviderDashboardPage(){
      <div className="jt-provider-id-progress"><span className="done">✓ Phone</span><span className="done">✓ OTP</span><span className="done">✓ Profile</span><span className={(dashboard?.uploadedMedia?.some(m=>m.kind==='id_front')&&dashboard?.uploadedMedia?.some(m=>m.kind==='id_back'))?'done':'current'}>4 Verification</span></div>
      <h2 id="jt-verify-title">Verify your ID</h2>
      <p className="jt-provider-muted">Upload both sides of your Kenyan national ID. JiTap Service Operations will review your documents before approving the account.</p>
-     <ProviderMediaFields uploaded={dashboard?.uploadedMedia||[]} kinds={['id_front','id_back']} lockedIDs={approved} onUploaded={refresh}/>
+     <ProviderMediaFields uploaded={dashboard?.uploadedMedia||[]} kinds={['id_front','id_back']} lockedIDs={approved} onUploaded={refreshMedia}/>
      {dashboard?.uploadedMedia?.some(m=>m.kind==='id_front')&&dashboard?.uploadedMedia?.some(m=>m.kind==='id_back')
       ?<div className="jt-provider-success" role="status">Both ID images received. {approved?'Your identity has been approved.':'Your application is ready for JiTap Service Operations review.'}</div>
       :<div className="jt-provider-verification-note"><ShieldCheck size={20}/><div><strong>Identity review incomplete</strong><p>Both photos must be uploaded before staff can approve your profile.</p></div></div>}
