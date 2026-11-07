@@ -5,7 +5,7 @@ import {ArrowLeft,CalendarDays,ChevronLeft,ChevronRight,Clock3,MapPin,Navigation
 import './calendar.css';
 
 type Appointment={
- id:string;requestId:string;startsAt:string;endsAt:string;status:string;
+ id:string;requestId:string;startsAt:string|null;endsAt:string|null;status:string;
  title:string;category:string;area:string;location:string;latitude:number|null;longitude:number|null;
  placeId:string;customerName:string;customerPhone:string;description:string;
  pendingReschedule:{id:string;proposed_start_at:string;proposed_end_at:string}|null
@@ -54,8 +54,9 @@ export default function ProviderCalendar(){
  },[router]);
  useEffect(()=>{let active=true;load().catch(e=>{if(active)setError(e.message)}).finally(()=>{if(active)setLoading(false)});return()=>{active=false}},[load]);
  const active=appointments.filter(a=>a.status!=='cancelled');
+ const unscheduled=active.filter(a=>!a.startsAt||!a.endsAt);
  const detail=active.find(a=>a.id===detailId);
- const dayJobs=active.filter(a=>dayKey(a.startsAt)===selected).sort((a,b)=>a.startsAt.localeCompare(b.startsAt));
+ const dayJobs=active.filter(a=>a.startsAt&&a.endsAt&&dayKey(a.startsAt)===selected).sort((a,b)=>(a.startsAt||'').localeCompare(b.startsAt||''));
  const start=startWeek(selected);
  const days=useMemo(()=>{
   if(!monthView)return Array.from({length:7},(_,i)=>addDays(start,i));
@@ -64,6 +65,7 @@ export default function ProviderCalendar(){
   return Array.from({length:42},(_,i)=>addDays(base,i));
  },[selected,monthView,start]);
  const monthLabel=fmt(dayDate(selected),{month:'long',year:'numeric'});
+ useEffect(()=>{if(!appointments.length)return;const job=new URLSearchParams(window.location.search).get('job');if(job){const found=appointments.find(a=>a.requestId===job);if(found)setDetailId(found.id)}},[appointments]);
  async function send(body:Record<string,unknown>){
   setBusy(true);setError('');setMessage('');
   try{
@@ -76,7 +78,7 @@ export default function ProviderCalendar(){
   finally{setBusy(false)}
  }
  function openReschedule(a:Appointment){
-  setNewDate(dayKey(a.startsAt));setNewStart(fmt(new Date(a.startsAt),{hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).replace(/\s/g,''));setNewEnd(fmt(new Date(a.endsAt),{hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).replace(/\s/g,''));setReason('');setShowReschedule(true);
+  setNewDate(a.startsAt?dayKey(a.startsAt):today);setNewStart(a.startsAt?fmt(new Date(a.startsAt),{hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).replace(/\s/g,''):'09:00');setNewEnd(a.endsAt?fmt(new Date(a.endsAt),{hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).replace(/\s/g,''):'10:00');setReason('');setShowReschedule(true);
  }
  async function reschedule(e:FormEvent<HTMLFormElement>){
   e.preventDefault();if(!detail)return;
@@ -96,7 +98,7 @@ export default function ProviderCalendar(){
       <div className="jcal-map-placeholder"><MapPin size={24}/><span>{detail.location}</span></div>)}
     <a href={directions(detail)} target="_blank" rel="noopener noreferrer"><Navigation size={17}/> Directions in Google Maps</a>
    </section>
-   <section className="jcal-info"><h2>Schedule</h2><p><CalendarDays size={20}/>{dateTime(detail.startsAt)} · {time(detail.startsAt)} – {time(detail.endsAt)}</p>{detail.pendingReschedule&&<p className="jcal-pending"><Clock3 size={18}/> Reschedule awaiting JiTap confirmation</p>}</section>
+   <section className="jcal-info"><h2>Schedule</h2><p><CalendarDays size={20}/>{detail.startsAt&&detail.endsAt?dateTime(detail.startsAt)+' · '+time(detail.startsAt)+' – '+time(detail.endsAt):'Confirmed · Date and time to arrange'}</p>{detail.pendingReschedule&&<p className="jcal-pending"><Clock3 size={18}/> Reschedule awaiting JiTap confirmation</p>}</section>
    <section className="jcal-info"><h2>Service details</h2><p>{detail.description||'The confirmed service request is scheduled for this time.'}</p><p className="jcal-ref">Ref: JT-{detail.requestId.slice(0,8).toUpperCase()}</p></section>
    {error&&<p role="alert" className="jcal-error">{error}</p>}{message&&<p role="status" className="jcal-success">{message}</p>}
    <div className="jcal-detail-actions"><button className="jcal-primary" disabled={busy||detail.status!=='confirmed'} onClick={async()=>{const r=await send({action:'on_my_way',appointmentId:detail.id});if(r)setMessage('Your status is now On my way.')}}>{detail.status==='on_my_way'?'✓ On my way':busy?'Updating…':'On my way'}</button><button className="jcal-secondary" disabled={busy||!!detail.pendingReschedule} onClick={()=>openReschedule(detail)}>Reschedule</button></div>
@@ -106,20 +108,21 @@ export default function ProviderCalendar(){
    <section className="jcal-date-panel" aria-label="Choose calendar day">
     <div className="jcal-month-switch"><button onClick={()=>setSelected(addDays(selected,monthView?-28:-7))} aria-label="Previous dates"><ChevronLeft size={20}/></button><span>{monthLabel}</span><button onClick={()=>setSelected(addDays(selected,monthView?28:7))} aria-label="Next dates"><ChevronRight size={20}/></button></div>
     <div className="jcal-days-head">{['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=><span key={d}>{d}</span>)}</div>
-    <div className={'jcal-days '+(monthView?'is-month':'')}>{days.map(d=><button key={d} aria-pressed={selected===d} onClick={()=>setSelected(d)} className={(selected===d?'selected ':'')+(d.slice(0,7)!==selected.slice(0,7)?'muted':'')}><span>{Number(d.slice(-2))}</span>{active.some(a=>dayKey(a.startsAt)===d)&&<i aria-label="Appointments scheduled"/>}</button>)}</div>
+    <div className={'jcal-days '+(monthView?'is-month':'')}>{days.map(d=><button key={d} aria-pressed={selected===d} onClick={()=>setSelected(d)} className={(selected===d?'selected ':'')+(d.slice(0,7)!==selected.slice(0,7)?'muted':'')}><span>{Number(d.slice(-2))}</span>{active.some(a=>a.startsAt&&dayKey(a.startsAt)===d)&&<i aria-label="Appointments scheduled"/>}</button>)}</div>
     <button className="jcal-expand" onClick={()=>setMonthView(v=>!v)} aria-label={monthView?'Collapse calendar':'Expand calendar'}><span/></button>
    </section>
    {loading?<p className="jcal-state" role="status">Loading appointments…</p>:error?<p className="jcal-error" role="alert">{error}</p>:
-    active.length===0?<section className="jcal-empty"><img src="/images/approved/mascot-original.png" alt="JiTap assistant with calendar"/><h2>No appointments yet</h2><p>Once JiTap confirms a service request you’ve accepted, your scheduled jobs will appear here.</p></section>:
-    dayJobs.length===0?<section className="jcal-empty jcal-empty-day"><CalendarDays size={56}/><h2>Nothing scheduled for this day</h2><p>Choose another date to see your confirmed appointments.</p></section>:
+    active.length===0?<section className="jcal-empty"><img src="/images/approved/mascot-original.png" alt="JiTap assistant with calendar"/><h2>No appointments yet</h2><p>Once you accept a request, it is confirmed and will appear here.</p></section>:
+    dayJobs.length===0&&unscheduled.length===0?<section className="jcal-empty jcal-empty-day"><CalendarDays size={56}/><h2>Nothing scheduled for this day</h2><p>Choose another date to see your confirmed appointments.</p></section>:
     <section className="jcal-timeline" aria-label={'Appointments for '+selected}>
      {Array.from({length:14},(_,i)=>i+7).map(h=><div key={h} className="jcal-hour"><span>{h%12||12} {h<12?'AM':'PM'}</span><i/></div>)}
      <div className="jcal-events">{dayJobs.map((a,i)=>{
-      const top=Math.max(0,(hour(a.startsAt)-7)*58);
-      const duration=Math.max(1,hour(a.endsAt)-hour(a.startsAt));
-      return <button key={a.id} style={{top:top+'px',height:Math.max(65,duration*58-5)+'px'}} className={'jcal-event jcal-event-'+i%3} onClick={()=>setDetailId(a.id)}><span className="jcal-event-dot"/><span><strong>{a.title}</strong><small>{time(a.startsAt)} – {time(a.endsAt)}</small><small>{a.location||a.area}</small></span></button>
+      const top=Math.max(0,(hour(a.startsAt!)-7)*58);
+      const duration=Math.max(1,hour(a.endsAt!)-hour(a.startsAt!));
+      return <button key={a.id} style={{top:top+'px',height:Math.max(65,duration*58-5)+'px'}} className={'jcal-event jcal-event-'+i%3} onClick={()=>setDetailId(a.id)}><span className="jcal-event-dot"/><span><strong>{a.title}</strong><small>{time(a.startsAt!)} – {time(a.endsAt!)}</small><small>{a.location||a.area}</small></span></button>
      })}</div>
     </section>}
+   {!loading&&unscheduled.length>0&&<section className="jcal-unscheduled"><h2>Confirmed jobs · Time to arrange</h2>{unscheduled.map(a=><button key={a.id} onClick={()=>setDetailId(a.id)}><strong>{a.title}</strong><span>{a.location||a.area} · Booking confirmed</span><small>View job and tap On my way</small></button>)}</section>}
   </>}
   {showReschedule&&detail&&<div className="jcal-overlay" role="presentation" onClick={()=>setShowReschedule(false)}><section className="jcal-sheet" role="dialog" aria-modal="true" aria-labelledby="jcal-reschedule-title" onClick={e=>e.stopPropagation()}>
    <header><h2 id="jcal-reschedule-title">Reschedule Appointment</h2><button onClick={()=>setShowReschedule(false)} aria-label="Close"><X size={22}/></button></header>
