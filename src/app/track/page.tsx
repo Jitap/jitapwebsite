@@ -3,7 +3,20 @@ import {useEffect,useState} from 'react';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
 import {ArrowRight,ClipboardCheck,ShieldCheck,LogIn} from 'lucide-react';
-type Ticket={serviceId:string;status:string;category:string;description:string;area:string;createdAt:string};
+type Ticket={serviceId:string;status:string;category:string;description:string;area:string;createdAt:string;updatedAt:string};
+const progressLabels:Record<string,string>={
+ new:'Received — JiTap is reviewing your request',
+ incomplete:'Information needed',
+ needs_sourcing:'Finding a suitable provider',
+ matching:'Matching with local providers',
+ provider_contacted:'Provider contacted — awaiting confirmation',
+ awaiting_quote:'Waiting for provider quotation',
+ scheduled:'Visit scheduled',
+ in_progress:'Service in progress',
+ completed:'Completed',
+ cancelled:'Cancelled',
+ closed:'Closed'
+};
 export default function TrackTicketPage(){
  const router=useRouter();
  const [ref,setRef]=useState('');
@@ -48,9 +61,9 @@ export default function TrackTicketPage(){
    ticket?<div className="jt-account-summary">
     <span style={{display:'flex',alignItems:'center',gap:9,color:'#06844b',fontWeight:800}}><ShieldCheck size={20}/> Phone ownership verified</span>
     <h2 style={{fontSize:28,margin:'15px 0'}}>Service ID: {ticket.serviceId}</h2>
-    <p><strong>Request:</strong> {title}</p><p><strong>Status:</strong> {ticket.status==='new'?'Received – JiTap is reviewing your request':ticket.status.replaceAll('_',' ')}</p>
+    <p><strong>Request:</strong> {title}</p><p><strong>Status:</strong> {progressLabels[ticket.status]||ticket.status.replaceAll('_',' ')}</p>
     <p><strong>Service area:</strong> {ticket.area||'To be confirmed'}</p>
-    <p><strong>Submitted:</strong> {new Date(ticket.createdAt).toLocaleString('en-KE',{timeZone:'Africa/Nairobi'})}</p>
+    <p><strong>Submitted:</strong> {new Date(ticket.createdAt).toLocaleString('en-KE',{timeZone:'Africa/Nairobi'})}</p><p><strong>Last updated:</strong> {new Date(ticket.updatedAt||ticket.createdAt).toLocaleString('en-KE',{timeZone:'Africa/Nairobi'})}</p>
     <div style={{borderTop:'1px solid #dce8ee',paddingTop:15,marginTop:15}}><strong>Your service brief</strong><p>{ticket.description}</p></div>
     <p style={{fontSize:13,color:'#64748b'}}>JiTap Service Operations coordinates provider availability and confirms the next step. A request is not a confirmed appointment.</p>
     <Link href="/account#my-requests" className="button">View My Requests <ArrowRight size={17}/></Link>
