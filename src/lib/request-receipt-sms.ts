@@ -23,8 +23,8 @@ export function requestReceivedMessage(options:Pick<Options,'reference'|'name'|'
  const category=options.category.toLowerCase().replace(/[^a-z0-9 -]/g,' ').trim().slice(0,35)||'service';
  const name=cleanFirstName(options.name);
  // No passwords, confirmation of a provider assignment, or false status claims.
- const link=options.linkedToAccount?' Track it at https://jitap.app/account#my-requests.':' Keep this ID for follow-up.';
- return `Habari ${name}, JiTap has received your ${category} request. Service ID: ${ref}.${link} We will update you after reviewing it.`;
+ const link='https://www.jitap.app/track?ref='+ref;
+ return `Habari ${name}, JiTap has received your ${category} request. Service ID: ${ref}. You can follow up the progress here: ${link}`;
 }
 export async function sendRequestReceiptSms(options:Options):Promise<SmsReceiptState>{
  const number=normalizeKenyanPhone(options.phone);
