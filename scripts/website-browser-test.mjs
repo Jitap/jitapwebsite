@@ -279,6 +279,49 @@ await check('verified provider profile is read-only and BUZZ shows a technical b
  await page.screenshot({path:'ui-test-results/jitap-verified-provider-profile.png',fullPage:true});
  await page.unroute('**/api/provider/workspace');
 });
+await check('SMS ticket link requires OTP and preserves tracking destination',async()=>{
+ const unauthorized=await page.request.get(base+'/api/account/track?ref=JT-0FF6AEA3');
+ assert.equal(unauthorized.status(),401,'Unauthenticated customers cannot see ticket details');
+ await open('/track?ref=JT-0FF6AEA3');
+ await page.waitForURL(/\/login\?/);
+ const next=new URL(page.url()).searchParams.get('next');
+ assert.equal(next,'/track?ref=JT-0FF6AEA3');
+});
+await check('verified provider can add missing portrait and switch customer mode',async()=>{
+ await page.route('**/api/provider/workspace',async route=>{
+  if(route.request().method()==='GET')await route.fulfill({
+   status:200,contentType:'application/json',body:JSON.stringify({
+    profile:{full_name:'JiTap Test Provider',business_name:'Approved Services',categories:['plumbing'],service_areas:['Bamburi'],
+     base_area:'Bamburi',experience_years:4,skills:'Service experience',is_online:false,submitted_at:'2026-11-07T01:00:00Z'},
+    reviewStatus:'approved',opportunities:[],recentResponses:[],uploadedMedia:[]
+   })
+  });else await route.continue();
+ });
+ await page.setViewportSize({width:390,height:844});
+ await open('/provider');
+ await page.getByRole('button',{name:'Add profile photo'}).click();
+ await page.getByRole('heading',{name:'Add your profile photo'}).waitFor();
+ assert.equal(await page.getByRole('button',{name:'Take photo: Profile photo (optional)'}).count(),1);
+ assert.equal(await page.getByRole('button',{name:'Switch to Customer'}).count(),1);
+ await page.unroute('**/api/provider/workspace');
+});
+await check('matched provider request resumes at location without a second intake',async()=>{
+ await page.setViewportSize({width:390,height:844});
+ await open('/fundis/fund-001?fromMatch=1');
+ await page.evaluate(()=>{
+  sessionStorage.setItem('jitap:matched-brief',JSON.stringify({
+   savedAt:Date.now(),category:'carpentry',area:'Bamburi',
+   description:'I need a carpenter to fix a kitchen cabinet door that is falling off.',
+   preferredDate:'2026-11-12',preferredTime:'09:30',timing:'this-week'
+  }));
+ });
+ const continueLink=page.locator('a[href="/request?resume=1&providerId=fund-001"]');
+ await continueLink.waitFor();
+ await continueLink.click();
+ await page.getByRole('heading',{name:'Where is the service needed?'}).waitFor();
+ assert.equal(await page.getByText('Edit job details').count(),1);
+ assert.equal(await page.getByRole('heading',{name:/What kind of carpentry/i}).count(),0);
+});
 await check('provider application supports six areas and back/continue',async()=>{
  await open();
  await page.goto(base+'/providers/apply');
