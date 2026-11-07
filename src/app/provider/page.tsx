@@ -30,6 +30,8 @@ export default function ProviderDashboardPage(){
  const [notificationsOpen,setNotificationsOpen]=useState(false);
  const [decision,setDecision]=useState<Record<string,'accepted'|'declined'|'needs_clarification'>>({});
  const [notes,setNotes]=useState<Record<string,string>>({});
+ const [dissolvingIds,setDissolvingIds]=useState<string[]>([]);
+ const [dismissedIds,setDismissedIds]=useState<string[]>([]);
  const refresh=useCallback(async()=>{
   const res=await fetch('/api/provider/workspace',{cache:'no-store'});
   if(res.status===401){router.replace('/login?mode=login');return}
@@ -94,12 +96,39 @@ export default function ProviderDashboardPage(){
  async function answer(o:Opportunity){
   const d=decision[o.request_id];if(!d)return;
   if(d==='needs_clarification'&&(!notes[o.request_id]||notes[o.request_id].trim().length<3)){setError('Please write your question before submitting.');return}
-  const r=await act({action:'respond',requestId:o.request_id,decision:d,note:notes[o.request_id]||''});
-  if(r)setSuccess('Your BUZZ response was recorded. JiTap will coordinate the next step; this is not yet a confirmed booking.');
+  setBusy(true);setError('');setSuccess('');
+  try{
+   const response=await fetch('/api/provider/workspace',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'respond',requestId:o.request_id,decision:d,note:notes[o.request_id]||''})});
+   const result=await response.json().catch(()=>({}));
+   if(!response.ok||result.recorded!==true)throw new Error(result.error||'This request is no longer available. Please refresh.');
+   setSuccess(d==='declined'?'Request declined. It has been removed from your live opportunities.':'Your BUZZ response was recorded. JiTap will coordinate the next step; this is not yet a confirmed booking.');
+   if(d==='declined'){
+    // The card remains in the DOM during the dissolve; the badge reflects
+    // only actual visible opportunities once the animation completes.
+    setDissolvingIds(old=>old.includes(o.request_id)?old:[...old,o.request_id]);
+    window.setTimeout(()=>{
+     setDismissedIds(old=>old.includes(o.request_id)?old:[...old,o.request_id]);
+     setDissolvingIds(old=>old.filter(id=>id!==o.request_id));
+     void refresh().catch(()=>{});
+    },440);
+   }else{
+    setDismissedIds(old=>old.includes(o.request_id)?old:[...old,o.request_id]);
+    await refresh();
+   }
+  }catch(e){setError(e instanceof Error?e.message:'Could not send your response. Try again.')}
+  finally{setBusy(false)}
  }
  const approved=dashboard?.reviewStatus==='approved';
  const submitted=!!dashboard?.profile?.submitted_at;
  const online=!!dashboard?.profile?.is_online;
+ // Use the same filtered list for the badge, notifications and visible cards.
+ // Keep locally handled IDs excluded across periodic refreshes, so a declined
+ // request cannot briefly reappear while the server updates.
+ const liveOpportunities=(dashboard?.opportunities||[]).filter(o=>
+  !!dashboard?.profile?.categories.includes(o.category)&&
+  !!dashboard?.profile?.service_areas.includes(o.area)&&
+  !dismissedIds.includes(o.request_id)
+ );
  const firstName=(dashboard?.profile?.full_name||form.full_name||'Provider').split(' ')[0];
  const visible=!approved&&(tab==='profile'||!submitted);
  return <main className="jt-provider-app">
@@ -107,11 +136,11 @@ export default function ProviderDashboardPage(){
    {loading?<div className="jt-provider-loading" role="status" aria-label="Loading your JiTap provider account"><span/><span/><span/><span className="jt-provider-loading-label">Loading your account…</span></div>:<>
     {approved?<header className="jt-provider-home-header">
       <a href="/provider" aria-label="JiTap provider home"><img src="/images/jitap-logo.svg" alt="JiTap" width={104} height={60}/></a>
-      <div className="jt-provider-home-header-right"><button type="button" className="jt-provider-notification-trigger" onClick={()=>setNotificationsOpen(v=>!v)} aria-expanded={notificationsOpen} aria-controls="jt-provider-notification-panel" aria-label="Open notifications"><Bell size={25}/>{!!dashboard?.opportunities.length&&<span className="jt-provider-bell-dot"/>}</button>
+      <div className="jt-provider-home-header-right"><button type="button" className="jt-provider-notification-trigger" onClick={()=>setNotificationsOpen(v=>!v)} aria-expanded={notificationsOpen} aria-controls="jt-provider-notification-panel" aria-label="Open notifications"><Bell size={25}/>{!!liveOpportunities.length&&<span className="jt-provider-bell-dot"/>}</button>
       <button type="button" className="jt-provider-home-avatar" onClick={()=>router.push('/provider/profile')} aria-label="Open your provider profile">{dashboard?.uploadedMedia?.some(m=>m.kind==='profile_photo')?<img src={'/api/provider/media?kind=profile_photo&v='+encodeURIComponent(dashboard.uploadedMedia.find(m=>m.kind==='profile_photo')?.uploadedAt||'')} alt="Provider profile"/>:<UserRound size={24}/>}</button></div>
      </header>:<header className="jt-provider-app-header"><span className="jt-provider-workspace-heading">Provider dashboard</span><div className="jt-provider-header-actions"><div className="jt-provider-badge"><ShieldCheck size={17}/> Provider workspace</div><button type="button" onClick={switchCustomer} disabled={busy} className="jt-provider-logout">Switch to Customer</button><button type="button" onClick={logout} className="jt-provider-logout">Log out</button></div></header>}
     {approved&&notificationsOpen&&<aside className="jt-provider-notification-panel" id="jt-provider-notification-panel" aria-label="Provider notifications"><div className="jt-provider-notification-title"><strong>Notifications</strong><button onClick={()=>setNotificationsOpen(false)} aria-label="Close notifications">×</button></div>
-      {online&&!!dashboard?.opportunities.length?<p><strong>{dashboard.opportunities.length} live service {dashboard.opportunities.length===1?'request':'requests'} available</strong><small>Matching opportunities are ready for your review.</small></p>:<p><strong>No new live request notifications</strong><small>{online?'New matching service requests will appear here.':'Go online to receive matching requests.'}</small></p>}
+      {online&&!!liveOpportunities.length?<p><strong>{liveOpportunities.length} live service {liveOpportunities.length===1?'request':'requests'} available</strong><small>Matching opportunities are ready for your review.</small></p>:<p><strong>No new live request notifications</strong><small>{online?'New matching service requests will appear here.':'Go online to receive matching requests.'}</small></p>}
       {!!dashboard?.recentResponses.length&&<p><strong>Latest response recorded</strong><small>JT-{dashboard.recentResponses[0].request_id.slice(0,8).toUpperCase()} · {dashboard.recentResponses[0].decision.replaceAll('_',' ')}</small></p>}
      </aside>}
     {approved?<div className="jt-provider-home-greeting">
@@ -181,11 +210,11 @@ export default function ProviderDashboardPage(){
 
       </section>:<section className="jt-provider-availability"><div className="jt-provider-status-row"><div><strong>You’re offline</strong><p>Complete verification to start receiving requests.</p></div></div><div className="jt-provider-pending"><Clock3 size={17}/>Finish your provider verification to get started.</div></section>)}
      {(tab==='home'||tab==='requests')&&<section className="jt-provider-requests">
-      <div className="jt-provider-requests-heading"><div><ClipboardList size={20}/><h2>{tab==='home'?'Live Requests':'Requests'}</h2></div><span>{dashboard?.opportunities.length||0}</span></div>
+      <div className="jt-provider-requests-heading"><div><ClipboardList size={20}/><h2>{tab==='home'?'Live Requests':'Requests'}</h2></div><span>{liveOpportunities.length>=100?'100+':liveOpportunities.length}</span></div>
       {!approved?<div className="jt-provider-empty"><ShieldCheck size={25}/><strong>Verification required</strong><p>Once your profile is approved, you can switch online and review requests that match your services and areas.</p></div>:
        !online?<div className="jt-provider-empty"><WifiOff size={27}/><strong>You are offline</strong><p>Go online to receive available matching requests.</p></div>:
-       dashboard?.opportunities.length===0?<div className="jt-provider-empty"><ClipboardList size={27}/><strong>No new matching requests</strong><p>New opportunities will appear here when customers request your services in your selected areas.</p></div>:
-       <div className="jt-provider-request-list">{dashboard?.opportunities.map(o=><article className="jt-provider-request jt-buzz-brief-card" key={o.request_id}>
+       liveOpportunities.length===0?<div className="jt-provider-empty"><ClipboardList size={27}/><strong>No new matching requests</strong><p>New opportunities will appear here when customers request your services in your selected areas.</p></div>:
+       <div className="jt-provider-request-list">{liveOpportunities.map(o=><article className={'jt-provider-request jt-buzz-brief-card'+(dissolvingIds.includes(o.request_id)?' jt-request-dissolving':'')} key={o.request_id} aria-hidden={dissolvingIds.includes(o.request_id)?true:undefined}>
         <div className="jt-provider-request-top"><span className="jt-provider-request-tag"><Wrench size={15}/> {SERVICE_OPTIONS.find(x=>x.value===o.category)?.label||o.category}</span><span className={'jt-buzz-urgency '+o.urgency}>Urgency: {o.urgency==='unspecified'?'Not specified':o.urgency==='normal'?'Normal':o.urgency==='high'?'High':'Low'}</span></div>
         <h3>{SERVICE_OPTIONS.find(x=>x.value===o.category)?.label||'Service'} <span className="jt-provider-request-area">· {o.area}</span></h3>
         <div className="jt-buzz-reference">Service ID: JT-{o.request_id.slice(0,8).toUpperCase()}</div>
