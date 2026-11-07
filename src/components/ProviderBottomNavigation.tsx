@@ -7,14 +7,15 @@ export default function ProviderBottomNavigation(){
  const profile=pathname.startsWith('/provider/profile');
  const requestDetail=pathname.startsWith('/provider/request/');
  const wallet=pathname==='/provider/wallet';
+ const calendar=pathname==='/provider/calendar';
  const [section,setSection]=useState('');
  useEffect(()=>{setSection(new URLSearchParams(window.location.search).get('view')==='requests'?'requests':new URLSearchParams(window.location.search).get('section')==='availability'?'calendar':'')},[pathname]);
  // The wallet feature is not active yet; its tab opens the coming-soon preview.
  const items=[
-  {name:'Home',href:'/provider',icon:Home,active:!profile&&!requestDetail&&!wallet&&section!=='requests'},
+  {name:'Home',href:'/provider',icon:Home,active:!profile&&!requestDetail&&!wallet&&!calendar&&section!=='requests'},
   {name:'Requests',href:'/provider?view=requests',icon:ClipboardList,active:requestDetail||(!profile&&section==='requests')},
   {name:'Wallet',href:'/provider/wallet',icon:Wallet,active:wallet},
-  {name:'Calendar',href:'/provider/profile?section=availability',icon:CalendarDays,active:profile&&section==='calendar'},
+  {name:'Calendar',href:'/provider/calendar',icon:CalendarDays,active:calendar},
   {name:'Profile',href:'/provider/profile',icon:UserRound,active:profile&&section!=='calendar'},
  ];
  return <nav className="jt-provider-bottom-nav" aria-label="Provider main navigation">
