@@ -220,3 +220,22 @@
 .jt-provider-notification-panel p strong,.jt-provider-notification-panel p small{display:block;font-size:13px}
 .jt-provider-notification-panel p strong{color:#203b59}.jt-provider-notification-panel p small{color:#667990;margin-top:5px}
 @media(max-width:370px){.jt-provider-layout .jt-buzz-card-actions{gap:6px}.jt-provider-layout .jt-buzz-card-actions button,.jt-provider-layout .jt-buzz-card-actions .jt-buzz-view{font-size:12px;padding:9px 4px}}
+
+/* Above-the-fold service decisions: short availability row, no mascot or descriptive copy. */
+.jt-provider-layout .jt-provider-home-online{
+ min-height:0!important;height:auto!important;padding:12px 16px!important;
+ border-radius:16px!important;margin-bottom:12px!important;
+ background:#e8faf1!important;box-shadow:none!important;
+}
+.jt-provider-layout .jt-provider-home-online-top{min-height:40px!important;}
+.jt-provider-layout .jt-provider-online-pill{padding:7px 11px!important;background:rgba(255,255,255,.62)!important;}
+.jt-provider-layout .jt-provider-home-online .jt-provider-toggle{width:60px;height:36px;}
+.jt-provider-layout .jt-provider-home-online .jt-provider-toggle span{width:27px;height:27px;}
+.jt-provider-layout .jt-provider-home-online .jt-provider-online-copy,
+.jt-provider-layout .jt-provider-home-online .jt-provider-robot{display:none!important;}
+.jt-provider-layout .jt-buzz-brief-card .jt-buzz-card-actions{margin:12px 0 14px!important;}
+.jt-provider-layout .jt-buzz-brief-card .jt-buzz-schedule{margin-top:0!important;}
+.jt-provider-layout .jt-buzz-brief-card h3{margin-top:9px!important;}
+.jt-provider-layout .jt-buzz-reference{margin-bottom:0!important;}
+.jt-provider-layout .jt-provider-requests-heading{margin-bottom:9px!important;padding:11px 14px!important;}
+@media(max-width:540px){.jt-provider-layout .jt-buzz-brief-card{padding:14px!important;}}
