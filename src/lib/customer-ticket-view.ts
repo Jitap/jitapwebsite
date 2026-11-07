@@ -42,7 +42,11 @@ export async function formatCustomerTickets(rows:RequestRecord[]){
   const b=briefById.get(r.id),caseRow=caseById.get(r.id);
   const raw=asText(p.description,1500);
   const preferredProviderId=asText(p.preferredProviderId,20);
-  const provider=fundiListings.find(f=>f.id===preferredProviderId);
+  const provider=fundiListings.find(f=>f.id===preferredProviderId)||
+   // Older requests sometimes named a specific provider in the original
+   // customer description, before the preference field was introduced.
+   // Use exact known listing name only; never interpret this as assignment.
+   fundiListings.find(f=>f.name.length>=6&&raw.toLocaleLowerCase('en-KE').includes(f.name.toLocaleLowerCase('en-KE')));
   const status=caseRow?.status||r.status;
   return {
    reference:r.id,serviceId:'JT-'+r.id.slice(0,8).toUpperCase(),
