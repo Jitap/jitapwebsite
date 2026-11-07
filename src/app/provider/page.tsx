@@ -35,7 +35,8 @@ export default function ProviderDashboardPage(){
   const data:Dashboard=await res.json();
   setDashboard(data);
   setForm(data.profile||empty);
-  if(!data.profile?.submitted_at)setTab('profile');
+  if(data.reviewStatus==='approved')setTab(t=>t==='verification'?'home':t);
+  else if(!data.profile?.submitted_at)setTab('profile');
  },[router]);
  const refreshMedia=useCallback(async()=>{
   const res=await fetch('/api/provider/workspace',{cache:'no-store'});
