@@ -3,8 +3,9 @@ import {useEffect,useState} from 'react';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
 import {BriefcaseBusiness,ClipboardList,LogOut,MapPin,UserRound,Wrench} from 'lucide-react';
+import {CustomerTicketCard,type CustomerTicket} from '@/components/CustomerTicketCard';
 type Account={authenticated:boolean;accountType:'customer'|'provider';primaryAccountType?:'customer'|'provider';phone:string;fullName?:string|null};
-type CustomerRequest={reference:string;category:string;description:string;area:string;status:string;createdAt:string};
+type CustomerRequest=CustomerTicket;
 export default function AccountPage(){
  const [account,setAccount]=useState<Account|null>(null),[loading,setLoading]=useState(true),[error,setError]=useState('');
  const [requests,setRequests]=useState<CustomerRequest[]>([]);
@@ -34,11 +35,7 @@ export default function AccountPage(){
    {account.accountType==='customer'&&<section className="jt-customer-requests" id="my-requests" aria-labelledby="jt-my-requests-title">
     <div className="jt-customer-requests-head"><div><span>YOUR SERVICE HISTORY</span><h2 id="jt-my-requests-title">My Requests</h2></div><Link href="/request">+ New request</Link></div>
     {requestsLoading?<p role="status">Loading your service requests…</p>:requestsError?<p role="alert">{requestsError}</p>:requests.length===0?<div className="jt-requests-empty"><ClipboardList size={29}/><p>No service requests linked to your account yet.</p><small>When you submit a new request while signed in, it will appear here.</small></div>:
-     <div className="jt-requests-list">{requests.map(r=><article key={r.reference} className="jt-request-history-card">
-      <div><strong>{r.category.replace(/-/g,' ')}</strong><span className="jt-request-history-status">{r.status==='new'?'Received':r.status==='reviewing'?'Under review':r.status==='handled'?'Handled':r.status==='archived'?'Archived':'In progress'}</span></div>
-      <p>{r.description}</p>
-      <small>{r.area? r.area+' · ':''}{new Date(r.createdAt).toLocaleDateString('en-KE',{dateStyle:'medium'})} · Ref: JT-{r.reference.slice(0,8).toUpperCase()}</small>
-     </article>)}</div>}
+     <div className="jt-requests-list">{requests.map(r=><CustomerTicketCard key={r.reference} ticket={r}/>)}</div>}}
    </section>}
    <p className="jt-account-disclaimer">{account.accountType==='provider'?'A provider account does not automatically mean verification, active work allocation, or guaranteed jobs.':'Service requests are coordinated during the pilot; submission does not guarantee a provider match.'}</p>
    {account.primaryAccountType==='provider'&&account.accountType==='customer'&&<button type="button" className="jt-account-signout" onClick={switchProvider}><BriefcaseBusiness size={18}/> Switch to Provider</button>}
