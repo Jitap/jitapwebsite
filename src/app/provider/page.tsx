@@ -177,8 +177,7 @@ export default function ProviderDashboardPage(){
      {tab==='home'&&(approved?<section className="jt-provider-home-online">
        <div className="jt-provider-home-online-top"><span className="jt-provider-online-pill"><span className="jt-provider-live-dot"/>{online?'Online':'Offline'}</span>
         <button className={'jt-provider-toggle '+(online?'active':'')} type="button" role="switch" aria-label="Available for requests" aria-checked={online} disabled={busy} onClick={()=>act({action:'availability',online:!online})}><span/></button></div>
-       <div className="jt-provider-online-copy"><h2>{online?'You’re online':'You’re offline'}</h2><p>{online?'You’ll receive service requests that match your skills.':'Go online when you are ready to receive matching local requests.'}</p></div>
-       <img className="jt-provider-robot" src="/images/mascot.webp" alt="JiTap assistant"/>
+
       </section>:<section className="jt-provider-availability"><div className="jt-provider-status-row"><div><strong>You’re offline</strong><p>Complete verification to start receiving requests.</p></div></div><div className="jt-provider-pending"><Clock3 size={17}/>Finish your provider verification to get started.</div></section>)}
      {(tab==='home'||tab==='requests')&&<section className="jt-provider-requests">
       <div className="jt-provider-requests-heading"><div><ClipboardList size={20}/><h2>{tab==='home'?'Live Requests':'Requests'}</h2></div><span>{dashboard?.opportunities.length||0}</span></div>
@@ -189,16 +188,17 @@ export default function ProviderDashboardPage(){
         <div className="jt-provider-request-top"><span className="jt-provider-request-tag"><Wrench size={15}/> {SERVICE_OPTIONS.find(x=>x.value===o.category)?.label||o.category}</span><span className={'jt-buzz-urgency '+o.urgency}>Urgency: {o.urgency==='unspecified'?'Not specified':o.urgency==='normal'?'Normal':o.urgency==='high'?'High':'Low'}</span></div>
         <h3>{SERVICE_OPTIONS.find(x=>x.value===o.category)?.label||'Service'} <span className="jt-provider-request-area">· {o.area}</span></h3>
         <div className="jt-buzz-reference">Service ID: JT-{o.request_id.slice(0,8).toUpperCase()}</div>
-        <div className="jt-buzz-schedule">
-         <div><MapPin size={17}/><span><strong>Job location</strong>{o.job_location||o.area}, Mombasa · Exact directions shared after confirmation</span></div>
-         <div><Clock3 size={17}/><span><strong>Requested date</strong>{o.preferred_date|| (o.requested_timing==='today'?'Requested urgently (date to confirm)':o.requested_timing==='this-week'?'This week (date to confirm)':'To be agreed')}</span></div>
-         <div><Clock3 size={17}/><span><strong>Requested time</strong>{o.preferred_time||'To be agreed'}</span></div>
-        </div>
         <div className="jt-buzz-card-actions">
          <button className={'jt-buzz-accept '+(decision[o.request_id]==='accepted'?'selected':'')} onClick={()=>setDecision(v=>({...v,[o.request_id]:'accepted'}))}>Accept</button>
          <button className={'jt-buzz-decline '+(decision[o.request_id]==='declined'?'selected':'')} onClick={()=>setDecision(v=>({...v,[o.request_id]:'declined'}))}>Decline</button>
          <Link className="jt-buzz-view" href={'/provider/request/'+o.request_id}>View <ChevronRight size={17}/></Link>
         </div>
+        <div className="jt-buzz-schedule">
+         <div><MapPin size={17}/><span><strong>Job location</strong>{o.job_location||o.area}{(o.job_location||o.area).toLowerCase().includes('mombasa')?'':' · Mombasa'} · Exact directions shared after confirmation</span></div>
+         <div><Clock3 size={17}/><span><strong>Requested date</strong>{o.preferred_date|| (o.requested_timing==='today'?'Requested urgently (date to confirm)':o.requested_timing==='this-week'?'This week (date to confirm)':'To be agreed')}</span></div>
+         <div><Clock3 size={17}/><span><strong>Requested time</strong>{o.preferred_time||'To be agreed'}</span></div>
+        </div>
+
         
         {decision[o.request_id]&&<button disabled={busy} className="jt-provider-primary jt-provider-send" onClick={()=>answer(o)}>{busy?'Submitting…':decision[o.request_id]==='accepted'?'Send acceptance to JiTap':decision[o.request_id]==='declined'?'Confirm decline':'Send question to SOC'} <ArrowRight size={16}/></button>}
         </article>)}</div>}
