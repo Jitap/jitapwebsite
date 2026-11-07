@@ -11,7 +11,7 @@ type ProviderProfile={
  full_name:string;business_name:string;categories:string[];service_areas:string[];
  base_area:string;experience_years:number;skills:string;is_online:boolean;submitted_at:string|null;
 };
-type Opportunity={request_id:string;category:string;area:string;preferred_date:string;preferred_time:string;created_at:string};
+type Opportunity={request_id:string;category:string;area:string;preferred_date:string;preferred_time:string;created_at:string;technical_summary:string;proposed_scope:string;urgency:'high'|'normal'|'low'|'unspecified';brief_source:'ai'|'reported';requested_timing:string;job_location:string};
 type PastResponse={request_id:string;decision:string;created_at:string};
 type Dashboard={profile:ProviderProfile|null;reviewStatus:string;opportunities:Opportunity[];recentResponses:PastResponse[];uploadedMedia:{kind:MediaKind;uploadedAt:string}[]};
 type Tab='home'|'profile'|'requests'|'verification';
@@ -35,7 +35,8 @@ export default function ProviderDashboardPage(){
   const data:Dashboard=await res.json();
   setDashboard(data);
   setForm(data.profile||empty);
-  if(!data.profile?.submitted_at)setTab('profile');
+  if(data.reviewStatus==='approved')setTab(t=>t==='verification'?'home':t);
+  else if(!data.profile?.submitted_at)setTab('profile');
  },[router]);
  const refreshMedia=useCallback(async()=>{
   const res=await fetch('/api/provider/workspace',{cache:'no-store'});
@@ -88,7 +89,7 @@ export default function ProviderDashboardPage(){
  const submitted=!!dashboard?.profile?.submitted_at;
  const online=!!dashboard?.profile?.is_online;
  const firstName=(dashboard?.profile?.full_name||form.full_name||'Provider').split(' ')[0];
- const visible=tab==='profile'||!submitted;
+ const visible=!approved&&(tab==='profile'||!submitted);
  return <main className="jt-provider-app">
   <div className="jt-provider-shell">
    <header className="jt-provider-app-header">
@@ -101,11 +102,23 @@ export default function ProviderDashboardPage(){
      <span className="jt-provider-avatar">{dashboard?.uploadedMedia?.some(m=>m.kind==='profile_photo')?<img src={'/api/provider/media?kind=profile_photo&v='+encodeURIComponent(dashboard.uploadedMedia.find(m=>m.kind==='profile_photo')?.uploadedAt||'')} alt="Your profile photo"/>:<UserRound size={32}/>}</span>
     </div>
     <nav className="jt-provider-tabs" aria-label="Provider dashboard">
-     {(['home','requests','profile','verification'] as Tab[]).map(t=><button key={t} aria-current={tab===t?'page':undefined} className={tab===t?'selected':''} onClick={()=>{setTab(t);setError('');setSuccess('')}}>{t==='home'?<Radio size={18}/>:t==='requests'?<ClipboardList size={18}/>:t==='verification'?<ShieldCheck size={18}/>:<UserRound size={18}/>} {t==='home'?'Home':t==='requests'?'Requests':t==='verification'?'Verification':'My Profile'}</button>)}
+     {(approved?(['home','requests','profile'] as Tab[]):(['home','requests','profile','verification'] as Tab[])).map(t=><button key={t} aria-current={tab===t?'page':undefined} className={tab===t?'selected':''} onClick={()=>{setTab(t);setError('');setSuccess('')}}>{t==='home'?<Radio size={18}/>:t==='requests'?<ClipboardList size={18}/>:t==='verification'?<ShieldCheck size={18}/>:<UserRound size={18}/>} {t==='home'?'Home':t==='requests'?'Requests':t==='verification'?'Verification':approved?'Verified Profile ✓':'My Profile'}</button>)}
     </nav>
     {error&&<div className="jt-provider-error" role="alert">{error}</div>}
     {success&&<div className="jt-provider-success" role="status">{success}</div>}
-    {visible?
+    {approved&&tab==='profile'?<section className="jt-provider-card jt-verified-profile" aria-label="Verified provider profile">
+     <div className="jt-verified-stamp"><CheckCircle2 size={27}/><div><h2>Verified provider</h2><p>Your account, professional profile and ID verification are approved by JiTap.</p></div></div>
+     <dl>
+      <dt>Full name</dt><dd>{dashboard?.profile?.full_name}</dd>
+      <dt>Business</dt><dd>{dashboard?.profile?.business_name||'Individual provider'}</dd>
+      <dt>Services</dt><dd>{dashboard?.profile?.categories.map(c=>SERVICE_OPTIONS.find(x=>x.value===c)?.label||c).join(' · ')}</dd>
+      <dt>Coverage</dt><dd>{dashboard?.profile?.service_areas.join(' · ')}</dd>
+      <dt>Experience</dt><dd>{dashboard?.profile?.experience_years} years</dd>
+      <dt>Skills</dt><dd>{dashboard?.profile?.skills||'Not specified'}</dd>
+      <dt>Identity check</dt><dd><span className="jt-verified-tag"><CheckCircle2 size={15}/> Verified ✓</span></dd>
+     </dl>
+     <p className="jt-provider-disclaimer">Your verified details are locked to protect your account. Contact JiTap Service Operations to request changes.</p>
+    </section>:visible?
     <section className="jt-provider-card" aria-labelledby="jt-provider-onboarding-heading">
      <div className="jt-provider-progress"><span><CheckCircle2 size={17}/> Phone verified</span><span>{submitted?'Submitted for review':'Final step · Your profile'}</span></div>
      <div className="jt-provider-progress-line"><span/></div>
@@ -138,27 +151,39 @@ export default function ProviderDashboardPage(){
      <button className="jt-provider-primary jt-provider-verify-done" type="button" disabled={!dashboard?.uploadedMedia?.some(m=>m.kind==='id_front')||!dashboard?.uploadedMedia?.some(m=>m.kind==='id_back')} onClick={()=>setTab('home')}>Continue <ArrowRight size={17}/></button>
     </section>:
     <div className="jt-provider-main">
+     {tab==='home'&&approved&&<div className="jt-provider-verified-banner"><CheckCircle2 size={18}/> Identity verified · Provider profile approved</div>}
      {tab==='home'&&<section className="jt-provider-availability">
       <div className="jt-provider-status-row"><div><strong>{online?'You’re online':'You’re offline'}</strong><p>{approved?'Get alerts for matching local service requests.':'Your profile must be reviewed before you can go online.'}</p></div>
        <button className={'jt-provider-toggle '+(online?'active':'')} type="button" role="switch" aria-checked={online} disabled={busy||!approved} onClick={()=>act({action:'availability',online:!online})}><span/></button>
       </div>
       {!approved&&<div className="jt-provider-pending"><Clock3 size={17}/><span>{dashboard?.reviewStatus==='rejected'?'Your application needs changes. Contact JiTap Service Operations.':(!dashboard?.uploadedMedia?.some(m=>m.kind==='id_front')||!dashboard?.uploadedMedia?.some(m=>m.kind==='id_back'))?'Your identity photos are not complete. Upload both sides to request review.':'Your documents are submitted. JiTap staff will review them before enabling BUZZ.'}</span>{(!dashboard?.uploadedMedia?.some(m=>m.kind==='id_front')||!dashboard?.uploadedMedia?.some(m=>m.kind==='id_back'))&&<button type="button" className="jt-provider-id-cta" onClick={()=>setTab('verification')}>Upload ID</button>}</div>}
-      <div className="jt-provider-coverage"><MapPin size={19}/><div><strong>Service coverage</strong><p>{dashboard?.profile?.service_areas.join(' · ')||'No areas selected'}</p></div><button onClick={()=>setTab('profile')} aria-label="Edit service coverage"><ChevronRight size={19}/></button></div>
+      <div className="jt-provider-coverage"><MapPin size={19}/><div><strong>Service coverage</strong><p>{dashboard?.profile?.service_areas.join(' · ')||'No areas selected'}</p></div><button onClick={()=>setTab('profile')} aria-label={approved?'View verified coverage':'Edit service coverage'}><ChevronRight size={19}/></button></div>
      </section>}
      {(tab==='home'||tab==='requests')&&<section className="jt-provider-requests">
       <div className="jt-provider-requests-heading"><div><Bell size={19}/><h2>{tab==='home'?'Live Requests':'BUZZ Opportunities'}</h2></div><span>{dashboard?.opportunities.length||0}</span></div>
       {!approved?<div className="jt-provider-empty"><ShieldCheck size={25}/><strong>Verification required</strong><p>Once your profile is approved, you can switch online and review requests that match your services and areas.</p></div>:
        !online?<div className="jt-provider-empty"><WifiOff size={27}/><strong>You are offline</strong><p>Go online to receive available matching requests.</p></div>:
        dashboard?.opportunities.length===0?<div className="jt-provider-empty"><ClipboardList size={27}/><strong>No new matching requests</strong><p>New opportunities will appear here when customers request your services in your selected areas.</p></div>:
-       <div className="jt-provider-request-list">{dashboard?.opportunities.map(o=><article className="jt-provider-request" key={o.request_id}>
-         <div className="jt-provider-request-top"><span className="jt-provider-request-tag"><Wrench size={15}/> {SERVICE_OPTIONS.find(s=>s.value===o.category)?.label||o.category}</span><span><Clock3 size={13}/> New request</span></div>
-         <h3>{SERVICE_OPTIONS.find(s=>s.value===o.category)?.label||'Service'} in {o.area}</h3>
-         <p><MapPin size={16}/> {o.area}, Mombasa area</p>
-         {(o.preferred_date||o.preferred_time)&&<p><Clock3 size={16}/> Requested: {[o.preferred_date,o.preferred_time].filter(Boolean).join(' · ')}</p>}
-         <small>Service ID: JT-{o.request_id.slice(0,8).toUpperCase()} · Customer contact and exact location are protected.</small>
-         <div className="jt-provider-request-actions"><button className={decision[o.request_id]==='accepted'?'active':''} onClick={()=>setDecision(v=>({...v,[o.request_id]:'accepted'}))}>Accept</button><button className={decision[o.request_id]==='declined'?'active':''} onClick={()=>setDecision(v=>({...v,[o.request_id]:'declined'}))}>Decline</button><button className={decision[o.request_id]==='needs_clarification'?'active':''} onClick={()=>setDecision(v=>({...v,[o.request_id]:'needs_clarification'}))}>Ask more info</button></div>
-         {decision[o.request_id]==='needs_clarification'&&<textarea value={notes[o.request_id]||''} maxLength={500} rows={3} placeholder="What do you need JiTap to clarify?" onChange={e=>setNotes(v=>({...v,[o.request_id]:e.target.value}))}/>}
-         {decision[o.request_id]&&<button disabled={busy} className="jt-provider-primary jt-provider-send" onClick={()=>answer(o)}>{busy?'Submitting…':'Send response to JiTap'} <ArrowRight size={16}/></button>}
+       <div className="jt-provider-request-list">{dashboard?.opportunities.map(o=><article className="jt-provider-request jt-buzz-brief-card" key={o.request_id}>
+        <div className="jt-provider-request-top"><span className="jt-provider-request-tag"><Wrench size={15}/> {SERVICE_OPTIONS.find(x=>x.value===o.category)?.label||o.category}</span><span className={'jt-buzz-urgency '+o.urgency}>Urgency: {o.urgency==='unspecified'?'Not specified':o.urgency==='normal'?'Normal':o.urgency==='high'?'High':'Low'}</span></div>
+        <h3>{SERVICE_OPTIONS.find(x=>x.value===o.category)?.label||'Service'} · {o.area}</h3>
+        <div className="jt-buzz-reference">Service ID: JT-{o.request_id.slice(0,8).toUpperCase()}</div>
+        <div className="jt-buzz-brief-body"><strong>Service brief</strong><p>{o.technical_summary||'Customer requested a service assessment.'}</p>
+         {o.proposed_scope&&<p><b>Proposed scope (subject to assessment):</b> {o.proposed_scope}</p>}
+         <small>{o.brief_source==='ai'?'AI-organized from the customer’s description. Fault not independently diagnosed.':'Customer-reported issue. Technical assessment pending.'}</small>
+        </div>
+        <div className="jt-buzz-schedule">
+         <div><MapPin size={17}/><span><strong>Job location</strong>{o.job_location||o.area}, Mombasa · Exact directions shared after confirmation</span></div>
+         <div><Clock3 size={17}/><span><strong>Requested date</strong>{o.preferred_date|| (o.requested_timing==='today'?'Requested urgently (date to confirm)':o.requested_timing==='this-week'?'This week (date to confirm)':'To be agreed')}</span></div>
+         <div><Clock3 size={17}/><span><strong>Requested time</strong>{o.preferred_time||'To be agreed'}</span></div>
+        </div>
+        <div className="jt-buzz-card-actions">
+         <button className={'jt-buzz-accept '+(decision[o.request_id]==='accepted'?'selected':'')} onClick={()=>setDecision(v=>({...v,[o.request_id]:'accepted'}))}>Accept Job</button>
+         <button className={'jt-buzz-decline '+(decision[o.request_id]==='declined'?'selected':'')} onClick={()=>setDecision(v=>({...v,[o.request_id]:'declined'}))}>Decline</button>
+         <button className="jt-buzz-clarify" onClick={()=>setDecision(v=>({...v,[o.request_id]:'needs_clarification'}))}>Ask more info</button>
+        </div>
+        {decision[o.request_id]==='needs_clarification'&&<textarea value={notes[o.request_id]||''} maxLength={500} rows={3} aria-label="Clarification question" placeholder="What details do you need before accepting?" onChange={e=>setNotes(v=>({...v,[o.request_id]:e.target.value}))}/>}
+        {decision[o.request_id]&&<button disabled={busy} className="jt-provider-primary jt-provider-send" onClick={()=>answer(o)}>{busy?'Submitting…':decision[o.request_id]==='accepted'?'Send acceptance to JiTap':decision[o.request_id]==='declined'?'Confirm decline':'Send question to SOC'} <ArrowRight size={16}/></button>}
         </article>)}</div>}
       <p className="jt-provider-disclaimer">Accepting a BUZZ expresses interest only. JiTap Service Operations coordinates and confirms appointments. Customer contact information is not shared here.</p>
      </section>}

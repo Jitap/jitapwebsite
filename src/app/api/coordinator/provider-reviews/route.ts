@@ -8,18 +8,24 @@ type Workspace={user_id:string;full_name:string;business_name:string;categories:
 type Review={user_id:string;status:string;reviewed_at:string|null};
 type Response={request_id:string;provider_user_id:string;decision:string;note:string;created_at:string};
 type ProviderMedia={user_id:string;kind:string;uploaded_at:string};
+type CaseLink={id:string;source_id:string;status:string;priority:string};
+type JobBrief={request_id:string;technical_summary:string;urgency:string;source:string};
 export async function GET(req:NextRequest){
  const staff=await requireCoordinator(req);
  if(!staff)return reply({error:'Staff authentication required'},401);
  try{
-  const [profiles,reviews,responses,media]=await Promise.all([
+  const [profiles,reviews,responses,media,cases,briefs]=await Promise.all([
    supabasePrivate<Workspace[]>('jitap_provider_workspaces?submitted_at=not.is.null&select=user_id,full_name,business_name,categories,service_areas,experience_years,skills,submitted_at,is_online&order=submitted_at.desc&limit=80'),
    supabasePrivate<Review[]>('jitap_provider_reviews?select=user_id,status,reviewed_at&limit=300'),
    supabasePrivate<Response[]>('jitap_provider_buzz_responses?select=request_id,provider_user_id,decision,note,created_at&order=created_at.desc&limit=50'),
-   supabasePrivate<ProviderMedia[]>('jitap_provider_media?select=user_id,kind,uploaded_at&limit=400')
+   supabasePrivate<ProviderMedia[]>('jitap_provider_media?select=user_id,kind,uploaded_at&limit=400'),
+   supabasePrivate<CaseLink[]>('coordinator_cases?source_kind=eq.website_request&select=id,source_id,status,priority&limit=500'),
+   supabasePrivate<JobBrief[]>('jitap_request_service_briefs?select=request_id,technical_summary,urgency,source&limit=500')
   ]);
   const map=new Map(reviews.map(r=>[r.user_id,r]));
   const nameMap=new Map(profiles.map(p=>[p.user_id,p.full_name]));
+  const caseMap=new Map(cases.map(c=>[c.source_id,c]));
+  const briefMap=new Map(briefs.map(b=>[b.request_id,b]));
   const providers=profiles.map(p=>{
    const kinds=media.filter(m=>m.user_id===p.user_id).map(m=>m.kind);
    return {...p,review:map.get(p.user_id)?.status||'pending',mediaKinds:kinds,
@@ -30,7 +36,12 @@ export async function GET(req:NextRequest){
   return reply({role:staff.role,pendingCount,readyCount,providers,
    buzzResponses:responses.map(r=>({serviceId:'JT-'+r.request_id.slice(0,8).toUpperCase(),
     provider:nameMap.get(r.provider_user_id)||'JiTap provider',
-    decision:r.decision,note:r.note,createdAt:r.created_at}))});
+    decision:r.decision,note:r.note,createdAt:r.created_at,
+    caseId:caseMap.get(r.request_id)?.id||null,
+    caseStatus:caseMap.get(r.request_id)?.status||'untracked',
+    priority:caseMap.get(r.request_id)?.priority||'normal',
+    technicalSummary:briefMap.get(r.request_id)?.technical_summary||'Customer-reported issue available in the service ticket.',
+    briefSource:briefMap.get(r.request_id)?.source||'reported'}))});
  }catch{return reply({error:'Unable to load provider reviews'},503)}
 }
 const schema=z.object({

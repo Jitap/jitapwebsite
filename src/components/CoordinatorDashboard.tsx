@@ -72,6 +72,16 @@ export function CoordinatorDashboard(){
   previousCases.current=new Map(incoming.map(item=>[item.id,item.status]));
   setStaff(data.staff);setCases(incoming);setLastSynced(new Date());setRefreshIssue(false);
  },[]);
+ // Deep-link a BUZZ response directly to its existing customer service ticket.
+ useEffect(()=>{
+  if(!cases.length)return;
+  const id=new URLSearchParams(window.location.search).get('case');
+  if(!id||!cases.some(c=>c.id===id))return;
+  setSelected(id);setCaseTab('workflow');setFilter('all');setSearch('');
+  window.history.replaceState(null,'',window.location.pathname);
+  window.setTimeout(()=>document.getElementById('coordinator-detail-panel')?.scrollIntoView({behavior:'smooth',block:'start'}),120);
+ },[cases]);
+
  const loadDetail=useCallback(async(id:string)=>{
   const res=await fetch('/api/coordinator/cases?id='+encodeURIComponent(id),{cache:'no-store'});
   if(!res.ok)throw new Error('Could not load case details');

@@ -249,6 +249,36 @@ await check('provider verification requires both ID images and protects media en
  await page.screenshot({path:'ui-test-results/jitap-provider-verification-mobile.png',fullPage:true});
  await page.unroute('**/api/provider/workspace');
 });
+await check('verified provider profile is read-only and BUZZ shows a technical brief',async()=>{
+ await page.setViewportSize({width:390,height:844});
+ await page.route('**/api/provider/workspace',async route=>{
+  if(route.request().method()==='GET'){
+   await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+    profile:{full_name:'JiTap QA Fundi',business_name:'Fundi Works',categories:['plumbing'],service_areas:['Bamburi'],
+     base_area:'Bamburi',experience_years:6,skills:'Leak repairs',is_online:true,submitted_at:'2026-11-07T01:00:00Z'},
+    reviewStatus:'approved',recentResponses:[],uploadedMedia:[],
+    opportunities:[{request_id:'00000000-0000-4000-8000-000000000001',category:'plumbing',area:'Bamburi',
+      preferred_date:'2026-11-11',preferred_time:'09:30',created_at:'2026-11-07T07:00:00Z',
+      technical_summary:'Inspect reported kitchen sink trap leakage; source of leak to be confirmed on site.',
+      proposed_scope:'Assess sink waste trap and propose repair after inspection.',urgency:'normal',brief_source:'ai',
+      requested_timing:'this-week'}]
+   })});
+  }else await route.continue();
+ });
+ await open('/provider');
+ await page.getByText('Inspect reported kitchen sink trap leakage').waitFor();
+ assert.equal(await page.locator('.jt-buzz-urgency.normal').count(),1);
+ assert.equal(await page.getByText('11-11-2026').count(),0); // Existing ISO date is rendered honestly.
+ assert.equal(await page.getByText('09:30').count(),1);
+ assert.equal(await page.getByRole('button',{name:'Accept Job'}).count(),1);
+ assert.equal(await page.getByRole('button',{name:'Decline'}).count(),1);
+ await page.getByRole('button',{name:/Verified Profile/}).click();
+ await page.getByRole('heading',{name:'Verified provider'}).waitFor();
+ assert.equal(await page.getByRole('heading',{name:'Build your provider profile'}).count(),0);
+ assert.equal(await page.getByRole('button',{name:'Verification',exact:true}).count(),0);
+ await page.screenshot({path:'ui-test-results/jitap-verified-provider-profile.png',fullPage:true});
+ await page.unroute('**/api/provider/workspace');
+});
 await check('provider application supports six areas and back/continue',async()=>{
  await open();
  await page.goto(base+'/providers/apply');
