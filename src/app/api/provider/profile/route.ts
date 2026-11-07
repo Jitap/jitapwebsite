@@ -39,7 +39,7 @@ export async function POST(req:NextRequest){
   const profile=await client(session.accessToken,'jitap_provider_workspaces?user_id=eq.'+encodeURIComponent(session.userId)+'&select=categories');
   if(!profile.ok)throw Error('profile');
   const rows=await profile.json();const approved:string[]=rows[0]?.categories||[];
-  const known=new Set(SERVICE_OPTIONS.map(o=>o.value));
+  const known=new Set<string>(SERVICE_OPTIONS.map(o=>o.value));
   if(input.data.services.some(s=>!known.has(s.category)||!approved.includes(s.category)))return out({error:'New service categories require JiTap review. Choose an approved category or contact Service Operations.'},session,422);
   const ids=input.data.services.map(s=>s.id);if(new Set(ids).size!==ids.length)return out({error:'Duplicate service'},session,422);
   const saved=await client(session.accessToken,'jitap_provider_profile_preferences?on_conflict=user_id','POST',{
