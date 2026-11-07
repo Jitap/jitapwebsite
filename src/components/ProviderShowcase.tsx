@@ -31,6 +31,6 @@ export function ProviderShowcase({detail=false,profile,profileId='fund-022',from
    </div>
    {detail&&<div className="jt-provider-feature-extra"><p>{p.description||(isTech?'Computer services and IT support.':'House moving and relocation services.')}</p><h3>Service coverage</h3><p>{p.service_areas.join(' · ')}</p>{isTech&&<p><a href="https://share.google/sw7NGTin3byTlEmrD" target="_blank" rel="noopener noreferrer">View Google listing and reviews</a></p>}</div>}
   </div>
-  <div className="jt-provider-feature-actions">{detail?<Link href={'/request?resume=1&providerId='+encodeURIComponent(p.id)} className="jt-provider-profile-button">{isTech?'Request':'Request'} <ArrowRight size={18}/></Link>:<Link href={'/fundis/'+encodeURIComponent(p.id)+(fromMatch?'?fromMatch=1':'')} className="jt-provider-profile-button">View profile</Link>}</div>
+  <div className="jt-provider-feature-actions">{detail?<Link href={fromMatch?'/request?resume=1&providerId='+encodeURIComponent(p.id):request} className="jt-provider-profile-button">{isTech?'Request':'Request'} <ArrowRight size={18}/></Link>:<Link href={'/fundis/'+encodeURIComponent(p.id)+(fromMatch?'?fromMatch=1':'')} className="jt-provider-profile-button">View profile</Link>}</div>
  </article>;
 }
