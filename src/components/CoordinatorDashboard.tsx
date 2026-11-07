@@ -40,6 +40,7 @@ export function CoordinatorDashboard(){
  const [providerQueue,setProviderQueue]=useState({pending:0,ready:0});
  const [providerNotice,setProviderNotice]=useState('');
  const previousProviderIds=useRef<Set<string>|null>(null);
+ const previousReadyProviderIds=useRef<Set<string>|null>(null);
  const previousCases=useRef<Map<string,string>|null>(null);
  const pollInFlight=useRef(false);
  const selectedRef=useRef<string|null>(null);
@@ -159,12 +160,16 @@ export function CoordinatorDashboard(){
     };
     if(!alive)return;
     setProviderQueue({pending:result.pendingCount||0,ready:result.readyCount||0});
-    const ready=(result.providers||[]).filter(p=>p.review==='pending'&&p.readyForApproval);
+    const pending=(result.providers||[]).filter(p=>p.review==='pending');
+    const ready=pending.filter(p=>p.readyForApproval);
     if(previousProviderIds.current!==null){
-     const fresh=ready.filter(p=>!previousProviderIds.current?.has(p.user_id));
-     if(fresh.length)setProviderNotice(fresh.length+' provider '+(fresh.length===1?'application is':'applications are')+' ready for identity review.');
+     const newApplications=pending.filter(p=>!previousProviderIds.current?.has(p.user_id));
+     const readyNow=ready.filter(p=>!previousReadyProviderIds.current?.has(p.user_id));
+     if(readyNow.length)setProviderNotice(readyNow.length+' provider '+(readyNow.length===1?'application is':'applications are')+' ready for ID review.');
+     else if(newApplications.length)setProviderNotice(newApplications.length+' new provider '+(newApplications.length===1?'application':'applications')+' received.');
     }
-    previousProviderIds.current=new Set(ready.map(p=>p.user_id));
+    previousProviderIds.current=new Set(pending.map(p=>p.user_id));
+    previousReadyProviderIds.current=new Set(ready.map(p=>p.user_id));
    }catch{}
   };
   void refreshProviders();
@@ -187,7 +192,7 @@ export function CoordinatorDashboard(){
  }
  async function logout(){
   await fetch('/api/coordinator/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'logout'})});
-  previousCases.current=null;previousProviderIds.current=null;setProviderQueue({pending:0,ready:0});setProviderNotice('');setStaff(null);setCases([]);setSelected(null);setActivity([]);setNotices([]);setLastSynced(null);
+  previousCases.current=null;previousProviderIds.current=null;previousReadyProviderIds.current=null;setProviderQueue({pending:0,ready:0});setProviderNotice('');setStaff(null);setCases([]);setSelected(null);setActivity([]);setNotices([]);setLastSynced(null);
  }
  async function update(action:string,value?:string|null,extraNote?:string){
   if(!selected)return;
