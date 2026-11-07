@@ -7,6 +7,7 @@ import {getProviderMedia} from '@/lib/provider-media-server';
 import {supabasePrivate} from '@/lib/coordinator-server';
 import {saveServiceBrief} from '@/lib/service-brief-server';
 import {inferService} from '@/lib/data';
+import {notifyProviderAccepted} from '@/lib/wasiliana-booking-notifications';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -182,6 +183,7 @@ export async function POST(req:NextRequest){
     p_request_id:parsed.data.requestId,p_decision:parsed.data.decision,p_note:parsed.data.note
    });
    if(!r.ok)return error('This request has already been accepted or is no longer available.',409);
+   if(r.data===true&&parsed.data.decision==='accepted')after(async()=>{try{await notifyProviderAccepted(parsed.data.requestId,session.userId)}catch{console.warn('Wasiliana booking SMS could not be queued')}});
    return responseWithSession({recorded:r.data===true,confirmedBooking:parsed.data.decision==='accepted'},session);
   }
   return error('Unsupported provider action',400);
