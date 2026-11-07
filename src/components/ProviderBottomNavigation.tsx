@@ -1,17 +1,19 @@
 'use client';
 import {usePathname} from 'next/navigation';
+import {useEffect,useState} from 'react';
 import {Home,ClipboardList,Wallet,CalendarDays,UserRound} from 'lucide-react';
-import Link from 'next/link';
 export default function ProviderBottomNavigation(){
  const pathname=usePathname();
  const profile=pathname.startsWith('/provider/profile');
+ const [section,setSection]=useState('');
+ useEffect(()=>{setSection(new URLSearchParams(window.location.search).get('view')==='requests'?'requests':new URLSearchParams(window.location.search).get('section')==='availability'?'calendar':'')},[pathname]);
  // These labels describe real routes. Wallet isn't released, so it isn't a link.
  const items=[
-  {name:'Home',href:'/provider',icon:Home,active:!profile},
-  {name:'Requests',href:'/provider?view=requests',icon:ClipboardList,active:false},
+  {name:'Home',href:'/provider',icon:Home,active:!profile&&section!=='requests'},
+  {name:'Requests',href:'/provider?view=requests',icon:ClipboardList,active:!profile&&section==='requests'},
   {name:'Wallet',href:'',icon:Wallet,active:false,disabled:true},
-  {name:'Calendar',href:'/provider/profile?section=availability',icon:CalendarDays,active:false},
-  {name:'Profile',href:'/provider/profile',icon:UserRound,active:profile},
+  {name:'Calendar',href:'/provider/profile?section=availability',icon:CalendarDays,active:profile&&section==='calendar'},
+  {name:'Profile',href:'/provider/profile',icon:UserRound,active:profile&&section!=='calendar'},
  ];
  return <nav className="jt-provider-bottom-nav" aria-label="Provider main navigation">
   <div className="jt-provider-nav-items">{items.map(item=>{
