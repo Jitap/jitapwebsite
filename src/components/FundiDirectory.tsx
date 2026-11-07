@@ -47,7 +47,7 @@ export function FundiDirectory(){
       const label=p.name.split(/\s+/).map(s=>s[0]||'').slice(0,2).join('').toUpperCase()||'JF';
       const description='I would like help with '+p.categories.join(', ')+' from '+p.name+'. Please review my request.';
       const url='/request?category='+encodeURIComponent(categorySlug)+'&area='+encodeURIComponent(selectedArea)+'&description='+encodeURIComponent(description);
-      return (p.id==='fund-022'||p.id==='fund-036')?<ProviderShowcase key={p.id} profileId={p.id}/>:<article className="td-pro-card" key={p.id}>
+      return (p.id==='fund-022'||p.id==='fund-036')?<ProviderShowcase key={p.id} profileId={p.id} fromMatch/>:<article className="td-pro-card" key={p.id}>
         <div className={'td-pro-avatar td-avatar-'+(i%5)} aria-hidden="true">{label}</div>
         <div className="td-pro-detail"><h3>{p.name}</h3><p className="td-pro-cats">{p.categories.join(' · ')}</p><div className="td-pro-areas"><MapPin size={15}/>{p.areas.join(' · ')}</div></div>
         <div className="td-pro-action"><Link href={"/fundis/"+encodeURIComponent(p.id)} className="td-outline-button">View profile</Link></div>
@@ -75,7 +75,7 @@ export function MatchedFundis({category,area,onQuotes,specialty}:{category:strin
   <div className="td-pro-list">{visible.map((p,i)=>(p.id==='fund-022'||p.id==='fund-036')?<ProviderShowcase key={p.id} profileId={p.id}/>:<article className="td-pro-card" key={p.id}>
    <div className={'td-pro-avatar td-avatar-'+(i%5)} aria-hidden="true">{p.name.split(/\s+/).map(w=>w[0]||'').slice(0,2).join('').toUpperCase()}</div>
    <div className="td-pro-detail"><h3>{p.name}</h3><p className="td-pro-cats">{p.categories.join(' · ')}</p><div className="td-pro-areas"><MapPin size={15}/>{p.areas.join(' · ')}</div></div>
-   <div className="td-pro-action"><Link className="td-outline-button" href={'/fundis/'+encodeURIComponent(p.id)}>View profile</Link></div>
+   <div className="td-pro-action"><Link className="td-outline-button" href={'/fundis/'+encodeURIComponent(p.id)+'?fromMatch=1'}>View profile</Link></div>
   </article>)}</div>{matched.length>4&&<p className="jt-more-matches">Showing 4 of {matched.length} matching profiles. <Link href={'/fundis'}>Browse the network</Link></p>}</>:
   <div className="td-empty"><h3>No matching profiles listed for {area} yet.</h3><p>Submit your service brief and JiTap can review your request against network coverage.</p><button type="button" className="td-outline-button" onClick={onQuotes}>Send service request</button></div>}
  </section>;
@@ -91,5 +91,5 @@ export function FundiProfile({id}:{id:string}){
  <div className="td-pro-avatar" aria-hidden="true">{p.name.split(/\s+/).map(w=>w[0]||'').slice(0,2).join('').toUpperCase()}</div>
  <div><span className="th-overline">LOCAL SERVICE PROFESSIONAL</span><h1>{p.name}</h1><h2>Services</h2><p>{p.categories.join(' · ')}</p><h2>Service areas</h2><p>{p.areas.join(' · ')}</p>
  <p className="jt-profile-disclaimer">Service details are provided for discovery. Availability, ratings and credentials have not been independently confirmed.</p>
- <Link className="td-outline-button" href={href}>Request</Link></div></article></section>;
+ <Link className="td-outline-button" href={'/request?resume=1&providerId='+encodeURIComponent(p.id)}>Request this provider · Continue to contact</Link></div></article></section>;
 }
