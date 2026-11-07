@@ -275,3 +275,34 @@
 .jt-confirmed-job-actions .jt-confirmed-action{background:#00bd5c;color:#fff;border:1px solid #00bd5c}
 .jt-confirmed-job-actions .jt-confirmed-view{background:#fff;color:#163a74;border:1px solid #bad5c8}
 .jt-confirmed-job-actions button:disabled{opacity:.62;cursor:default}
+
+
+/* Shared stage actions, travel estimate and customer rating */
+.jt-travel-estimate{display:grid;gap:8px;margin:10px 0 15px}
+.jt-travel-location{display:flex;align-items:center;gap:7px;color:#1372c6!important;text-decoration:none;font-size:14px;font-weight:650;overflow-wrap:anywhere}
+.jt-travel-location svg{flex-shrink:0}
+.jt-travel-location span{flex:1}
+.jt-travel-eta{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:10px 12px;background:#ecfaf3;border:1px solid #c5eedd;border-radius:10px;color:#154c38}
+.jt-travel-eta strong{font-size:16px;font-weight:800}
+.jt-travel-eta small{font-size:12px;color:#517468}
+.jt-work-action{display:grid;gap:9px;width:100%;min-width:0}
+.jt-work-stage-button{background:#00bc5b;color:#fff;border:0;border-radius:10px;min-height:47px;padding:11px 13px;font-size:15px;font-weight:760;cursor:pointer;width:100%}
+.jt-work-stage-button:disabled{opacity:.55;cursor:wait}
+.jt-work-stage-done{display:flex;justify-content:center;align-items:center;color:#0c8653;background:#e8fbf0;font-weight:700;border-radius:10px;min-height:47px;padding:9px}
+.jt-work-rating{display:grid;gap:9px;padding:13px;background:#f4f8ff;border:1px solid #dce7f2;border-radius:11px}
+.jt-work-rating strong{font-size:16px;color:#123766}
+.jt-work-rating p{font-size:13px!important;margin:0!important;color:#637790}
+.jt-work-stars{display:flex;align-items:center;gap:3px}
+.jt-work-stars button{background:none;border:0;padding:4px;cursor:pointer}
+.jt-work-rating textarea{border:1px solid #d5dfed;border-radius:9px;padding:10px;font:inherit;width:100%;resize:vertical;background:white;color:#163a74}
+.jt-work-rating-cancel{background:transparent;border:0;color:#4e6684;padding:7px;cursor:pointer}
+.jt-work-action-error{color:#af263b;line-height:1.4}
+.jt-confirmed-job-actions{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.jt-confirmed-job-actions .jt-work-action{min-width:0}
+.jt-confirmed-job-actions .jt-work-stage-button{font-size:13px;line-height:1.2}
+.jt-confirmed-job-actions .jt-work-rating{grid-column:1/-1}
+.jcal-detail-actions>.jt-work-action>.jt-work-stage-button{min-height:54px;font-size:18px;border-radius:12px}
+.jcal-map .jt-travel-estimate{margin:0}
+.jcal-map .jt-travel-location{padding:10px;background:#f1faff}
+.jcal-map .jt-travel-eta{margin:8px}
+@media(max-width:360px){.jt-confirmed-job-actions{grid-template-columns:1fr}}
