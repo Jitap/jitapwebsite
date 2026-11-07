@@ -13,7 +13,7 @@ const asText=(value:unknown,max=700)=>typeof value==='string'?value.slice(0,max)
 const labels:Record<string,string>={
  new:'Received',incomplete:'Information needed',needs_sourcing:'Finding a provider',
  matching:'Matching',provider_contacted:'Provider contacted',awaiting_quote:'Awaiting quotation',
- scheduled:'Booking confirmed',rematch_approval:'Approve rematch',rematching:'Finding a new provider',on_my_way:'Provider on my way',in_progress:'In progress',completed:'Completed',cancelled:'Cancelled',closed:'Closed',
+ scheduled:'Booking confirmed',rematch_approval:'Approve rematch',rematching:'Finding a new provider',on_my_way:'Provider on my way',arrived:'Provider arrived',in_progress:'Work in progress',completed:'Completed',cancelled:'Cancelled',closed:'Closed',
  reviewing:'Under review',handled:'Handled',archived:'Archived'
 };
 function customerSummary(raw:string){
@@ -77,8 +77,8 @@ export async function formatCustomerTickets(rows:RequestRecord[]){
    location:asText(p.locationLabel,180)||asText(p.area,100),
    area:asText(p.area,100),
    provider:awaitingRematch?(assignedProvider?.business_name||assignedProvider?.full_name||'Previous provider'):approvedRematch?'Finding a new provider':appointment?(assignedProvider?.business_name||assignedProvider?.full_name||'Confirmed provider'):provider?.name||'To be matched',
-   providerPhone:appointment?.status==='confirmed'||appointment?.status==='on_my_way'?assignedPhone:'',
-   providerStatus:awaitingRematch?'Provider cancelled — your decision is needed':approvedRematch?'Your request is available to eligible providers':appointment?(appointment.status==='on_my_way'?'On my way':'Booking confirmed'):provider?'Requested provider — awaiting confirmation':'Awaiting matching',
+   providerPhone:appointment&&['confirmed','on_my_way','arrived','in_progress','completed'].includes(appointment.status)?assignedPhone:'',
+   providerStatus:awaitingRematch?'Provider cancelled — your decision is needed':approvedRematch?'Your request is available to eligible providers':appointment?(appointment.status==='on_my_way'?'On my way':appointment.status==='arrived'?'Arrived at your location':appointment.status==='in_progress'?'Working on your job':appointment.status==='completed'?'Work marked completed':'Booking confirmed'):provider?'Requested provider — awaiting confirmation':'Awaiting matching',
    rematch:awaitingRematch?{reason:cancellation?.reason||'other',details:cancellation?.details||''}:null,
    status,statusLabel:labels[status]||status.replace(/_/g,' '),
    brief:b?.source==='ai'?asText(b.technical_summary,700):customerSummary(raw),
