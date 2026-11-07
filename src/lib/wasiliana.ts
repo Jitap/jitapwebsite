@@ -3,8 +3,8 @@
  * confirmed before live dispatch is enabled.
  * API: POST https://api.wasiliana.com/api/v1/send/sms, header apiKey.
  */
-import type {DeliveryResult} from './smsleopard';
-import {normalizeKenyanMobile} from './smsleopard';
+export type DeliveryResult={accepted:boolean;httpStatus:number;providerMessageId?:string;errorCode?:string;providerReason?:string};
+function normalizeKenyanMobile(phone:string){const digits=phone.replace(/[^0-9]/g,'');const normalized=digits.startsWith('0')?'254'+digits.slice(1):digits;if(!/^254[17][0-9]{8}$/.test(normalized))throw new Error('invalid_kenyan_mobile');return normalized;}
 
 export function wasilianaSettings(){
  const key=process.env.WASILIANA_API_KEY?.trim();
