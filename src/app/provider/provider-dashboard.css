@@ -202,3 +202,21 @@
 .jt-provider-layout .jt-provider-empty{margin:12px 0;border:1px solid #dde6eb;border-radius:18px;padding:30px 17px}
 .jt-provider-layout .jt-provider-disclaimer{padding-bottom:5px}
 @media(max-width:370px){.jt-provider-online-copy{width:58%}.jt-provider-robot{max-width:48%!important}.jt-provider-home-online{min-height:195px}.jt-provider-layout .jt-buzz-brief-card{padding:13px}}
+
+/* Live Request is the primary action: service summary first, decisions next. */
+.jt-provider-layout .jt-buzz-brief-card .jt-buzz-schedule{margin-top:12px}
+.jt-provider-layout .jt-buzz-card-actions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;margin-top:17px}
+.jt-provider-layout .jt-buzz-card-actions button,
+.jt-provider-layout .jt-buzz-card-actions .jt-buzz-view{min-width:0;min-height:46px;padding:10px 7px;display:inline-flex;align-items:center;justify-content:center;border-radius:12px;text-align:center;font-size:13px;font-weight:800}
+.jt-provider-layout .jt-buzz-card-actions .jt-buzz-view{background:#eff4fd;color:#14276a;border:1px solid #b9c9e7;gap:3px;grid-column:auto}
+.jt-provider-layout .jt-buzz-card-actions .jt-buzz-accept{grid-column:auto}
+.jt-provider-layout .jt-buzz-card-actions .jt-buzz-decline{grid-column:auto}
+.jt-provider-notification-trigger{position:relative;display:grid;place-items:center;border:0;background:transparent;color:#132573;padding:6px;cursor:pointer}
+.jt-provider-notification-panel{position:relative;z-index:9;margin:-5px 0 18px;border:1px solid #dbe8e4;border-radius:18px;background:#fff;box-shadow:0 12px 30px rgba(15,33,75,.13);padding:16px 18px}
+.jt-provider-notification-title{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.jt-provider-notification-title strong{font-size:17px;color:#17276a}
+.jt-provider-notification-title button{border:0;background:#f1f5f8;border-radius:50%;height:30px;width:30px;font-size:22px;color:#43526c;cursor:pointer}
+.jt-provider-notification-panel p{margin:12px 0 0;padding-top:11px;border-top:1px solid #ebeff3;line-height:1.45}
+.jt-provider-notification-panel p strong,.jt-provider-notification-panel p small{display:block;font-size:13px}
+.jt-provider-notification-panel p strong{color:#203b59}.jt-provider-notification-panel p small{color:#667990;margin-top:5px}
+@media(max-width:370px){.jt-provider-layout .jt-buzz-card-actions{gap:6px}.jt-provider-layout .jt-buzz-card-actions button,.jt-provider-layout .jt-buzz-card-actions .jt-buzz-view{font-size:12px;padding:9px 4px}}
