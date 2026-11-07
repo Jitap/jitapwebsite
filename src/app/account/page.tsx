@@ -15,8 +15,10 @@ export default function AccountPage(){
  useEffect(()=>{
   if(account?.accountType!=='customer')return;
   let active=true;
-  fetch('/api/account/requests',{cache:'no-store'}).then(async r=>{if(!r.ok)throw Error('Unable to load');return r.json()}).then(data=>{if(active)setRequests(Array.isArray(data.requests)?data.requests:[])}).catch(()=>{if(active)setRequestsError('Request history is temporarily unavailable.')}).finally(()=>{if(active)setRequestsLoading(false)});
-  return()=>{active=false};
+  const refresh=()=>fetch('/api/account/requests',{cache:'no-store'}).then(async r=>{if(!r.ok)throw Error('Unable to load');return r.json()}).then(data=>{if(active){setRequests(Array.isArray(data.requests)?data.requests:[]);setRequestsError('')}}).catch(()=>{if(active)setRequestsError('Request history is temporarily unavailable.')}).finally(()=>{if(active)setRequestsLoading(false)});
+  void refresh();
+  const interval=window.setInterval(()=>{if(document.visibilityState==='visible')void refresh()},10000);
+  return()=>{active=false;window.clearInterval(interval)};
  },[account?.accountType]);
  useEffect(()=>{let active=true;fetch('/api/auth/session',{cache:'no-store'}).then(async r=>{if(!r.ok)throw Error('Sign in required');return r.json()}).then(data=>{if(active){setAccount(data);if(data.accountType==='provider')router.replace('/provider')}}).catch(()=>{if(active)router.replace('/login?mode=login')}).finally(()=>{if(active)setLoading(false)});return()=>{active=false}},[router]);
  async function switchProvider(){
