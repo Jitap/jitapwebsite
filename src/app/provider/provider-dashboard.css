@@ -259,3 +259,19 @@
  }
  @keyframes jt-provider-request-accessible-dismiss{to{opacity:0;max-height:0;padding:0;margin:0;border-width:0}}
 }
+
+/* Confirmed assignments are separate from public BUZZ opportunities. */
+.jt-confirmed-jobs{margin:14px 0 23px;padding:0}
+.jt-confirmed-jobs>h2{display:flex;align-items:center;gap:8px;color:#0e8654;font-size:19px;margin:0 0 12px}
+.jt-confirmed-jobs>h2 span{border-radius:30px;color:#fff;background:#00be60;min-width:26px;padding:4px 8px;text-align:center;font-size:13px}
+.jt-confirmed-job{padding:17px;border:1px solid #b8ead0;background:#f5fff9;border-radius:16px;margin-bottom:11px}
+.jt-confirmed-job-meta{display:flex;justify-content:space-between;gap:9px;align-items:center;color:#163a74;font-size:17px}
+.jt-confirmed-job-meta small{font-size:11px;color:#66869a}
+.jt-confirmed-job p{display:flex;align-items:center;gap:9px;color:#334e67;font-size:14px;margin:12px 0;overflow-wrap:anywhere}
+.jt-confirmed-job p a{color:#0675d6;font-weight:750;text-decoration:none}
+.jt-confirmed-job p svg{flex-shrink:0;color:#098d5d}
+.jt-confirmed-job-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:18px}
+.jt-confirmed-job-actions button{display:flex;align-items:center;justify-content:center;gap:3px;min-height:47px;font-size:13px;font-weight:750;border-radius:10px;cursor:pointer}
+.jt-confirmed-job-actions .jt-confirmed-action{background:#00bd5c;color:#fff;border:1px solid #00bd5c}
+.jt-confirmed-job-actions .jt-confirmed-view{background:#fff;color:#163a74;border:1px solid #bad5c8}
+.jt-confirmed-job-actions button:disabled{opacity:.62;cursor:default}
