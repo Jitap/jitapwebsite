@@ -1,8 +1,7 @@
 'use client';
 import {useCallback,useEffect,useMemo,useState,type FormEvent} from 'react';
-import Link from 'next/link';
 import {useRouter} from 'next/navigation';
-import {ArrowLeft,CalendarDays,ChevronLeft,ChevronRight,Clock3,Home,MapPin,Navigation,Phone,SlidersHorizontal,Wallet,UserRound,ClipboardList,X,CheckCircle2} from 'lucide-react';
+import {ArrowLeft,CalendarDays,ChevronLeft,ChevronRight,Clock3,MapPin,Navigation,Phone,SlidersHorizontal,UserRound,X,CheckCircle2} from 'lucide-react';
 import './calendar.css';
 
 type Appointment={
@@ -29,9 +28,6 @@ const directions=(a:Appointment)=>{
  const parameter=a.placeId?'&destination_place_id='+encodeURIComponent(a.placeId):'';
  return 'https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(destination)+parameter+'&travelmode=driving';
 };
-function NavBar(){return <nav className="jcal-nav" aria-label="Provider navigation">
- {([{label:'Home',href:'/provider',icon:Home},{label:'Requests',href:'/provider?view=requests',icon:ClipboardList},{label:'Calendar',href:'/provider/calendar',icon:CalendarDays},{label:'Wallet',href:'/provider/wallet',icon:Wallet},{label:'Profile',href:'/provider/profile',icon:UserRound}] as const).map(item=><Link key={item.label} aria-current={item.label==='Calendar'?'page':undefined} className={item.label==='Calendar'?'active':''} href={item.href}><item.icon size={22}/><span>{item.label}</span></Link>)}
- </nav>}
 export default function ProviderCalendar(){
  const router=useRouter();
  const [today]=useState(()=>dayKey(new Date()));
@@ -124,7 +120,6 @@ export default function ProviderCalendar(){
       return <button key={a.id} style={{top:top+'px',height:Math.max(65,duration*58-5)+'px'}} className={'jcal-event jcal-event-'+i%3} onClick={()=>setDetailId(a.id)}><span className="jcal-event-dot"/><span><strong>{a.title}</strong><small>{time(a.startsAt)} – {time(a.endsAt)}</small><small>{a.location||a.area}</small></span></button>
      })}</div>
     </section>}
-   <NavBar/>
   </>}
   {showReschedule&&detail&&<div className="jcal-overlay" role="presentation" onClick={()=>setShowReschedule(false)}><section className="jcal-sheet" role="dialog" aria-modal="true" aria-labelledby="jcal-reschedule-title" onClick={e=>e.stopPropagation()}>
    <header><h2 id="jcal-reschedule-title">Reschedule Appointment</h2><button onClick={()=>setShowReschedule(false)} aria-label="Close"><X size={22}/></button></header>
