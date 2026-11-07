@@ -221,7 +221,7 @@ export function GuidedRequest(){
   return ()=>{cancelled=true;clearTimeout(timer);controller.abort()};
  },[hydrated,description,category,area,ready,showMatches,stage,knownQuestions,requestKey,aiResolvedKey]);
  if(aiWaiting)return <main className="th-request-flow"><div className="container th-request-layout"><section className="th-questions jt-ai-intake-loading" role="status" aria-label="JiTap is preparing your service questions"><span className="jt-ai-typing-dots" aria-hidden="true"><span/><span/><span/></span></section></div></main>;
- if(category==='moving')return <MovingRequest/>;
+ if(category==='moving'&&!ready)return <MovingRequest/>;
  return <div className="th-request-flow">
   <div className="container th-request-layout">
    
