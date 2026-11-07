@@ -62,7 +62,7 @@ export default function TrackTicketPage(){
    ticket?<div className="jt-account-summary">
     <span style={{display:'flex',alignItems:'center',gap:9,color:'#06844b',fontWeight:800}}><ShieldCheck size={20}/> Phone ownership verified</span>
     <CustomerTicketCard ticket={ticket} detail/>
-    <p style={{fontSize:13,color:'#64748b'}}>JiTap Service Operations coordinates provider availability and confirms the next step. A request is not a confirmed appointment.</p>
+    <p style={{fontSize:13,color:'#64748b'}}>Accepting your request confirms your provider. When confirmed, their phone number appears in your service details.</p>
     <Link href="/account#my-requests" className="button">View My Requests <ArrowRight size={17}/></Link>
    </div>:<div className="jt-account-summary" role="alert"><p>{error}</p><p>If this is your first visit, sign up using the same phone number that received your JiTap SMS.</p>
     <Link className="button" href={'/login?next='+encodeURIComponent('/track?ref='+ref)}>Sign up or log in <LogIn size={17}/></Link></div>}
