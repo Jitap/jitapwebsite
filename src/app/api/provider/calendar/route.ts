@@ -9,7 +9,7 @@ export const runtime='nodejs';
 export const dynamic='force-dynamic';
 const headers={'Cache-Control':'private, no-store','X-Robots-Tag':'noindex'};
 const reply=(data:unknown,status=200)=>NextResponse.json(data,{status,headers});
-type Appointment={id:string;request_id:string;provider_user_id:string;starts_at:string;ends_at:string;status:string;on_my_way_at:string|null};
+type Appointment={id:string;request_id:string;provider_user_id:string;starts_at:string|null;ends_at:string|null;status:string;on_my_way_at:string|null};
 type Brief={id:string;payload:Record<string,unknown>;customer_user_id:string|null};
 const safeText=(value:unknown)=>typeof value==='string'?value.slice(0,1200):'';
 async function myAppointment(userId:string,id:string){
@@ -24,6 +24,7 @@ export async function GET(req:NextRequest){
   const ids=appointments.map(a=>a.request_id);
   const briefs=ids.length?await supabasePrivate<Brief[]>('website_intake?id=in.('+ids.map(encodeURIComponent).join(',')+')&select=id,payload,customer_user_id'):[];
   const byId=new Map(briefs.map(b=>[b.id,b]));
+  const ratings=appointments.length?await supabasePrivate<{appointment_id:string;stars:number}[]>('jitap_customer_ratings?provider_user_id=eq.'+encodeURIComponent(session.userId)+'&select=appointment_id,stars'):[];
   const pending=appointments.length?await supabasePrivate<{appointment_id:string;id:string;proposed_start_at:string;proposed_end_at:string;status:string}[]>('jitap_appointment_reschedule_requests?provider_user_id=eq.'+encodeURIComponent(session.userId)+'&status=eq.pending&select=id,appointment_id,proposed_start_at,proposed_end_at,status'):[];
   return reply({appointments:appointments.map(a=>{
    const record=byId.get(a.request_id);
@@ -35,7 +36,7 @@ export async function GET(req:NextRequest){
     latitude:typeof p.locationLat==='number'?p.locationLat:null,
     longitude:typeof p.locationLng==='number'?p.locationLng:null,
     placeId:safeText(p.locationPlaceId),
-    customerName:safeText(p.name)||'Customer',
+    customerName:safeText(p.name)||'Customer',rated:ratings.some(x=>x.appointment_id===a.id),
     customerPhone:safeText(p.phone),
     description:safeText(p.description),
     pendingReschedule:pending.find(x=>x.appointment_id===a.id)||null};
@@ -43,7 +44,8 @@ export async function GET(req:NextRequest){
  }catch{return reply({error:'Calendar is temporarily unavailable'},503)}
 }
 const action=z.discriminatedUnion('action',[
- z.object({action:z.literal('on_my_way'),appointmentId:z.string().uuid()}).strict(),
+ z.object({action:z.enum(['on_my_way','arrived','start_work','complete']),appointmentId:z.string().uuid()}).strict(),
+ z.object({action:z.literal('rate_customer'),appointmentId:z.string().uuid(),stars:z.number().int().min(1).max(5),comment:z.string().trim().max(500).default('')}).strict(),
  z.object({action:z.literal('cancel'),appointmentId:z.string().uuid(),reason:z.enum(['schedule_conflict','unavailable','too_far','tools_or_skills','scope_changed','personal_emergency','other']),details:z.string().trim().max(500).default('')}).strict(),
  z.object({action:z.literal('reschedule'),appointmentId:z.string().uuid(),start:z.string().datetime({offset:true}),end:z.string().datetime({offset:true}),reason:z.string().trim().max(500).default('')}).strict()
 ]);
@@ -72,14 +74,19 @@ export async function POST(req:NextRequest){
    after(async()=>{try{await notifyProviderCancelled(appointment.request_id,cancellationId)}catch{console.warn('Wasiliana cancellation SMS could not be queued')}});
    return reply({cancelled:true,cancellationId,status:'awaiting_customer',message:'Cancellation recorded. Customer approval is required before rematching.'});
   }
-  if(data.data.action==='on_my_way'){
-   if(appointment.status==='on_my_way')return reply({status:'on_my_way',alreadyUpdated:true});
-   if(appointment.status!=='confirmed')return reply({error:'Only confirmed upcoming appointments can be marked on my way'},409);
-   const updated=await supabasePrivate<Appointment[]>('jitap_provider_appointments?id=eq.'+encodeURIComponent(appointment.id)+'&provider_user_id=eq.'+encodeURIComponent(session.userId)+'&status=eq.confirmed',{
-    method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({status:'on_my_way',on_my_way_at:new Date().toISOString(),updated_at:new Date().toISOString()})
+  if(data.data.action==='on_my_way'||data.data.action==='arrived'||data.data.action==='start_work'||data.data.action==='complete'||data.data.action==='rate_customer'){
+   const url=process.env.SUPABASE_URL?.replace(/[/]$/,'');
+   const key=process.env.SUPABASE_ANON_KEY;
+   if(!url||!key)return reply({error:'Job updates unavailable'},503);
+   const gateway=await fetch(url+'/rest/v1/rpc/jitap_provider_job_step',{
+    method:'POST',headers:{apikey:key,Authorization:'Bearer '+session.accessToken,'Content-Type':'application/json'},
+    body:JSON.stringify({p_appointment_id:appointment.id,p_action:data.data.action,
+     p_stars:data.data.action==='rate_customer'?data.data.stars:null,
+     p_comment:data.data.action==='rate_customer'?data.data.comment:''}),
+    cache:'no-store',signal:AbortSignal.timeout(10000)
    });
-   if(!updated.length)return reply({error:'Appointment was changed; refresh and try again'},409);
-   return reply({status:'on_my_way',recorded:true});
+   if(!gateway.ok)return reply({error:'Job status has changed. Refresh and try again.'},409);
+   return reply({status:await gateway.json(),recorded:true});
   }
   if(appointment.status!=='confirmed'&&appointment.status!=='on_my_way')return reply({error:'This appointment cannot be rescheduled'},409);
   const start=new Date(data.data.start),end=new Date(data.data.end);
