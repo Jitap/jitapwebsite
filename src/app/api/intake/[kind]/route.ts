@@ -122,7 +122,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{kind
   // comes from Supabase, never from name/phone/user_id in the browser payload.
   const customer = kind === 'request' ? await getCustomerIdentity(req) : {kind:'guest' as const};
   if(customer.kind === 'invalid') return respond({error:'Please sign in again to submit this request.'},401);
-  if(customer.kind === 'provider') return respond({error:'Switch to customer mode to submit a service request.',403});
+  if(customer.kind === 'provider') return respond({error:'Switch to customer mode to submit a service request.'},403);
   if(customer.kind === 'customer' && kind === 'request' && payload && typeof payload === 'object' && !Array.isArray(payload)){
     payload = {...payload,phone:customer.identity.phone,name:customer.identity.fullName?.trim() || 'JiTap Customer'};
   }
