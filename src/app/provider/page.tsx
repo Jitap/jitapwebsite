@@ -52,6 +52,15 @@ export default function ProviderDashboardPage(){
   },20000);
   return()=>window.clearInterval(id);
  },[dashboard?.profile?.is_online,tab,refresh]);
+ async function switchCustomer(){
+  setBusy(true);setError('');
+  try{
+   const r=await fetch('/api/auth/mode',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'customer'})});
+   if(!r.ok)throw Error('Could not switch to customer mode');
+   window.dispatchEvent(new Event('jitap:auth-changed'));router.push('/account');router.refresh();
+  }catch(e){setError(e instanceof Error?e.message:'Could not switch modes')}
+  finally{setBusy(false)}
+ }
  async function logout(){
   const r=await fetch('/api/auth/session',{method:'DELETE'});
   if(r.ok){window.dispatchEvent(new Event('jitap:auth-changed'));router.replace('/login?mode=login');router.refresh()}
@@ -94,7 +103,7 @@ export default function ProviderDashboardPage(){
   <div className="jt-provider-shell">
    <header className="jt-provider-app-header">
     <span className="jt-provider-workspace-heading">Provider dashboard</span>
-    <div className="jt-provider-header-actions"><div className="jt-provider-badge"><ShieldCheck size={17}/> Provider workspace</div><button type="button" onClick={logout} className="jt-provider-logout">Log out</button></div>
+    <div className="jt-provider-header-actions"><div className="jt-provider-badge"><ShieldCheck size={17}/> Provider workspace</div><button type="button" onClick={switchCustomer} disabled={busy} className="jt-provider-logout">Switch to Customer</button><button type="button" onClick={logout} className="jt-provider-logout">Log out</button></div>
    </header>
    {loading?<div className="jt-provider-card" role="status">Loading your JiTap provider account…</div>:<>
     <div className="jt-provider-greeting">
@@ -117,6 +126,11 @@ export default function ProviderDashboardPage(){
       <dt>Skills</dt><dd>{dashboard?.profile?.skills||'Not specified'}</dd>
       <dt>Identity check</dt><dd><span className="jt-verified-tag"><CheckCircle2 size={15}/> Verified ✓</span></dd>
      </dl>
+     {!dashboard?.uploadedMedia?.some(m=>m.kind==='profile_photo')&&<div className="jt-provider-media-profile">
+      <h3>Add your profile photo</h3>
+      <p>Your account is verified. You can add a missing profile photo once, without reopening identity verification.</p>
+      <ProviderMediaFields uploaded={dashboard?.uploadedMedia||[]} kinds={['profile_photo']} onUploaded={refreshMedia}/>
+     </div>}
      <p className="jt-provider-disclaimer">Your verified details are locked to protect your account. Contact JiTap Service Operations to request changes.</p>
     </section>:visible?
     <section className="jt-provider-card" aria-labelledby="jt-provider-onboarding-heading">
