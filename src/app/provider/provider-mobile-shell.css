@@ -1,0 +1,14 @@
+/* Provider-only mobile shell: the marketplace header/footer remain unchanged elsewhere. */
+.jt-provider-layout{min-height:100dvh;background:#fff;padding-bottom:calc(92px + env(safe-area-inset-bottom));}
+.jt-provider-layout .jt-provider-content{min-height:55vh;}
+body:has(.jt-provider-layout)>.header{display:none}
+body:has(.jt-provider-layout) .header{display:none}
+body:has(.jt-provider-layout) .footer{display:none}
+.jt-provider-bottom-nav{position:fixed!important;z-index:1000;bottom:0;left:0;right:0;width:100%;background:#fff;border-top:1px solid #e3e8f2;box-shadow:0 -5px 22px rgba(12,26,86,.08);padding-bottom:env(safe-area-inset-bottom);}
+.jt-provider-nav-items{max-width:620px;margin:auto;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));align-items:center;min-height:70px;}
+.jt-provider-nav-item{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-width:0;padding:9px 2px;color:#7a8295;text-decoration:none;background:none;border:0;font-size:12px;line-height:1;white-space:nowrap;}
+.jt-provider-nav-item small{font-size:11px;color:inherit}
+.jt-provider-nav-active{color:#00b95e;font-weight:800}
+.jt-provider-nav-disabled{color:#b8bec9;cursor:not-allowed}
+.jt-provider-nav-blue-strip{height:7px;width:100%;background:#151e73}
+@media(min-width:900px){.jt-provider-nav-items{min-height:74px}.jt-provider-bottom-nav{left:50%;transform:translateX(-50%);max-width:960px;border-left:1px solid #e3e8f2;border-right:1px solid #e3e8f2}}

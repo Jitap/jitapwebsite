@@ -31,7 +31,7 @@ export default function ProviderProfilePage(){
   setServices(p.preferences?.services||((w.profile?.categories||[]) as string[]).map((category:string)=>({id:crypto.randomUUID(),name:SERVICE_OPTIONS.find(x=>x.value===category)?.label||category,category,description:'',minPrice:null,maxPrice:null})));setHours({...defaultHours,...(p.preferences?.working_hours||{})});
   setLanguage(p.preferences?.language||'en');setNotifications(p.preferences?.notifications_enabled??true);
  },[router]);
- useEffect(()=>{refresh().catch(e=>setError(e.message)).finally(()=>setLoading(false))},[refresh]);
+ useEffect(()=>{if(new URLSearchParams(window.location.search).get('section')==='availability')setPane('availability');refresh().catch(e=>setError(e.message)).finally(()=>setLoading(false))},[refresh]);
  const uploadRefresh=async()=>{await refresh();setNotice('Photo saved successfully.')};
  const navigate=(next:Pane)=>{setError('');setNotice('');setPane(next)};
  async function persist(nextServices=services,nextHours=hours,nextLang=language,nextNotifs=notifications){
@@ -51,6 +51,14 @@ export default function ProviderProfilePage(){
    const data=await res.json();if(!res.ok)throw Error(data.error||'Unable to update availability');
    setProfile(p=>p?{...p,is_online:value}:p);
   }catch(e){setError(e instanceof Error?e.message:'Unable to update availability')}finally{setSaving(false)}
+ }
+ async function switchToCustomer(){
+  setSaving(true);setError('');
+  try{
+   const response=await fetch('/api/auth/mode',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'customer'})});
+   if(!response.ok)throw new Error('Unable to switch to customer mode');
+   window.dispatchEvent(new Event('jitap:auth-changed'));router.push('/account');router.refresh();
+  }catch(e){setError(e instanceof Error?e.message:'Unable to switch modes');setSaving(false)}
  }
  async function logout(){setSaving(true);const r=await fetch('/api/auth/session',{method:'DELETE'});if(r.ok){window.dispatchEvent(new Event('jitap:auth-changed'));router.replace('/login?mode=login')}else{setError('Unable to sign out');setSaving(false)}}
  const [editing,setEditing]=useState<Service>({id:'',name:'',category:'',description:'',minPrice:null,maxPrice:null});
@@ -74,8 +82,8 @@ export default function ProviderProfilePage(){
   {pane==='account'&&<div className="jpf-group">{item('Full Name',profile.full_name,<UserRound/>,'account',<LockKeyhole size={18}/>)}{item('Phone Number',phone||'Verified via OTP',<Phone/>,'account',<LockKeyhole size={18}/>)}{item('Location',profile.base_area+', Kenya',<MapPin/>,'account',<LockKeyhole size={18}/>) }<p className="jpf-helper">Verified identity and contact details are protected. Contact JiTap Service Operations to request corrections. Your service coverage: {profile.service_areas.join(', ')}.</p></div>}
   {pane==='verification'&&<div className="jpf-verification"><span className="jpf-verify-symbol"><CheckCircle2 size={43}/></span><h2>{review==='approved'?'Verified':'Verification '+review.replaceAll('_',' ')}</h2><p>{review==='approved'?'Your identity has been successfully verified.':'Your verification is managed by JiTap Service Operations.'}</p><div className="jpf-group">{item('National ID',review==='approved'?'Verified':'Under review',<ShieldCheck/>,'verification',review==='approved'?<CheckCircle2 color="#00b958"/>:<ChevronRight/>)}</div></div>}
   {pane==='support'&&<div className="jpf-group"><a className="jpf-menu-row" href="mailto:providers@jitap.app?subject=JiTap%20Provider%20Support"><span className="jpf-icon"><HelpCircle/></span><span className="jpf-menu-text"><strong>FAQs & Support</strong><small>Ask JiTap Service Operations</small></span><ChevronRight/></a><Link className="jpf-menu-row" href="/terms"><span className="jpf-icon"><FileText/></span><span className="jpf-menu-text"><strong>Terms & Conditions</strong></span><ChevronRight/></Link><Link className="jpf-menu-row" href="/privacy"><span className="jpf-icon"><ShieldCheck/></span><span className="jpf-menu-text"><strong>Privacy Policy</strong></span><ChevronRight/></Link></div>}
-  {pane==='settings'&&<div className="jpf-group"><div className="jpf-menu-row"><span className="jpf-icon"><Bell/></span><span className="jpf-menu-text"><strong>Notifications</strong></span>{toggle(notifications,()=>void persist(services,hours,language,!notifications))}</div><div className="jpf-menu-row"><span className="jpf-icon"><Globe/></span><span className="jpf-menu-text"><strong>Language</strong></span><select aria-label="Language" value={language} onChange={e=>void persist(services,hours,e.target.value as 'en'|'sw',notifications)}><option value="en">English</option><option value="sw">Kiswahili</option></select></div><div className="jpf-menu-row"><span className="jpf-icon"><LockKeyhole/></span><span className="jpf-menu-text"><strong>Account security</strong><small>Phone OTP sign-in — no password to change</small></span></div><button className="jpf-menu-row jpf-logout" onClick={logout} disabled={saving}><LogOut size={22}/> Log Out</button></div>}
-  <nav className="jpf-bottom" aria-label="Provider navigation"><Link href="/provider">Home</Link><Link href="/provider">Requests</Link><span aria-disabled="true">Wallet</span><button onClick={()=>navigate('availability')}>Calendar</button><button className="selected" onClick={()=>navigate('profile')}>Profile</button></nav>
+  {pane==='settings'&&<div className="jpf-group"><div className="jpf-menu-row"><span className="jpf-icon"><Bell/></span><span className="jpf-menu-text"><strong>Notifications</strong></span>{toggle(notifications,()=>void persist(services,hours,language,!notifications))}</div><div className="jpf-menu-row"><span className="jpf-icon"><Globe/></span><span className="jpf-menu-text"><strong>Language</strong></span><select aria-label="Language" value={language} onChange={e=>void persist(services,hours,e.target.value as 'en'|'sw',notifications)}><option value="en">English</option><option value="sw">Kiswahili</option></select></div><div className="jpf-menu-row"><span className="jpf-icon"><LockKeyhole/></span><span className="jpf-menu-text"><strong>Account security</strong><small>Phone OTP sign-in — no password to change</small></span></div><button className="jpf-menu-row" onClick={switchToCustomer} disabled={saving}><span className="jpf-icon"><UserRound/></span><span className="jpf-menu-text"><strong>Switch to Customer</strong><small>Request a service using your JiTap account</small></span><ChevronRight size={20}/></button><button className="jpf-menu-row jpf-logout" onClick={logout} disabled={saving}><LogOut size={22}/> Log Out</button></div>}
+
   </>}
  </div></main>;
 }
