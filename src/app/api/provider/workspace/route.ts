@@ -1,9 +1,11 @@
-import {NextRequest,NextResponse} from 'next/server';
+import {NextRequest,NextResponse,after} from 'next/server';
 import {z} from 'zod';
 import {getProviderSession} from '@/lib/provider-session-server';
 import {sameOrigin,setAuthCookies} from '@/lib/jitap-auth';
 import {SERVICE_OPTIONS,KENYAN_SERVICE_AREAS} from '@/lib/provider-options';
 import {getProviderMedia} from '@/lib/provider-media-server';
+import {supabasePrivate} from '@/lib/coordinator-server';
+import {saveServiceBrief} from '@/lib/service-brief-server';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -60,6 +62,28 @@ export async function GET(req:NextRequest){
    getProviderMedia(session.userId)
   ]);
   if(!profileResult.ok||!reviewResult.ok||!responses.ok||!opportunities.ok)throw Error('read failed');
+  // Lazily organize older, customer-reported requests into professional
+  // briefs in small batches. This runs after the response and never blocks BUZZ.
+  const oldBriefs=(Array.isArray(opportunities.data)?opportunities.data:[] as unknown[])
+   .filter((o):o is {request_id:string;brief_source:string}=>
+     !!o&&typeof o==='object'&&(o as {brief_source?:string}).brief_source==='reported')
+   .slice(0,2);
+  if(oldBriefs.length)after(async()=>{
+   try{
+    const ids=oldBriefs.map(o=>o.request_id);
+    const rows=await supabasePrivate<{id:string;payload:Record<string,unknown>}[]>(
+     'website_intake?select=id,payload&id=in.('+ids.join(',')+')');
+    for(const row of rows){
+     const p=row.payload;
+     if(typeof p.description!=='string'||typeof p.category!=='string')continue;
+     await saveServiceBrief({
+      id:row.id,category:p.category,description:p.description,
+      area:typeof p.area==='string'?p.area:'',
+      timing:typeof p.timing==='string'?p.timing:''
+     });
+    }
+   }catch{console.warn('JiTap historical service brief enrichment skipped')}
+  });
   return responseWithSession({
    profile:Array.isArray(profileResult.data)?profileResult.data[0]||null:null,
    reviewStatus:Array.isArray(reviewResult.data)?reviewResult.data[0]?.status||'not_submitted':'not_submitted',
