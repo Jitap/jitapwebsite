@@ -77,7 +77,7 @@ export function MarketplaceHome(){
            <label className="th-task-input"><Sparkles size={24} aria-hidden="true"/><textarea aria-label="Describe your project or problem" placeholder="How can I help you today - e.g. my sink is leaking" rows={2} maxLength={1500} value={description} onChange={e=>setDescription(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.nativeEvent.isComposing){e.preventDefault();e.currentTarget.form?.requestSubmit()}}} required/></label>
            <div className="th-search-controls"><label className="th-local-input"><MapPin size={19} aria-hidden="true"/><select aria-label="Where do you need a fundi?" value={area} onChange={e=>setArea(e.target.value)}>{areas.map(x=><option key={x}>{x}</option>)}</select></label><button type="submit" className="th-find-button">Ask JiTap <ArrowRight size={19}/></button></div>
          </form>
-         <p className="th-privacy-note"><ShieldCheck size={17}/> Your contact details are never displayed publicly. JiTap will review the service request before an introduction.</p>
+         
          <div className="th-hero-facts"><div><strong>300+</strong><span>Households</span></div><div><strong>{areas.length}</strong><span>request areas</span></div><div><strong>ASK • MATCH • BUZZ</strong><span>the JiTap way</span></div></div>
          <div className="th-hero-chips"><span>Popular:</span><button onClick={()=>go('My tap is leaking','plumbing')}>Leaking tap</button><button onClick={()=>go('I need a fundi wa stima','electrical')}>Fundi wa stima</button><button onClick={()=>go('I need a Mama Fua for house cleaning or laundry','cleaning')}>Mama Fua</button></div>
        </div>
