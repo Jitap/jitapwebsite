@@ -159,3 +159,6 @@
 .jt-buzz-card-actions .jt-buzz-clarify{grid-column:1/-1;background:#f3f7f9;border:1px solid #d7e3e8;color:#26495f}
 .jt-buzz-card-actions button.selected{outline:3px solid #152e68;outline-offset:2px}
 @media(max-width:540px){.jt-buzz-brief-card{padding:15px}.jt-buzz-urgency{font-size:10px!important}.jt-verified-profile dl{grid-template-columns:100px 1fr}.jt-buzz-brief-body{padding:12px}}
+
+.jt-provider-avatar{border:0;cursor:pointer}
+.jt-provider-avatar:focus-visible{outline:3px solid #0b8c4e;outline-offset:3px}

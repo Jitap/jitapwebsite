@@ -3,7 +3,7 @@ import {useEffect,useState} from 'react';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
 import {BriefcaseBusiness,ClipboardList,LogOut,MapPin,UserRound,Wrench} from 'lucide-react';
-type Account={authenticated:boolean;accountType:'customer'|'provider';phone:string;fullName?:string|null};
+type Account={authenticated:boolean;accountType:'customer'|'provider';primaryAccountType?:'customer'|'provider';phone:string;fullName?:string|null};
 type CustomerRequest={reference:string;category:string;description:string;area:string;status:string;createdAt:string};
 export default function AccountPage(){
  const [account,setAccount]=useState<Account|null>(null),[loading,setLoading]=useState(true),[error,setError]=useState('');
@@ -18,6 +18,11 @@ export default function AccountPage(){
   return()=>{active=false};
  },[account?.accountType]);
  useEffect(()=>{let active=true;fetch('/api/auth/session',{cache:'no-store'}).then(async r=>{if(!r.ok)throw Error('Sign in required');return r.json()}).then(data=>{if(active){setAccount(data);if(data.accountType==='provider')router.replace('/provider')}}).catch(()=>{if(active)router.replace('/login?mode=login')}).finally(()=>{if(active)setLoading(false)});return()=>{active=false}},[router]);
+ async function switchProvider(){
+  const r=await fetch('/api/auth/mode',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'provider'})});
+  if(!r.ok){setError('Could not switch back to provider mode.');return}
+  window.dispatchEvent(new Event('jitap:auth-changed'));router.push('/provider');router.refresh();
+ }
  async function signOut(){const r=await fetch('/api/auth/session',{method:'DELETE'});if(!r.ok){setError('Unable to sign out. Please try again.');return}window.dispatchEvent(new Event('jitap:auth-changed'));router.replace('/login?mode=login');router.refresh()}
  return <main className="jt-account-page"><div className="container jt-account-shell">
   {loading?<p role="status">Checking your JiTap account…</p>:account?<>
@@ -36,6 +41,7 @@ export default function AccountPage(){
      </article>)}</div>}
    </section>}
    <p className="jt-account-disclaimer">{account.accountType==='provider'?'A provider account does not automatically mean verification, active work allocation, or guaranteed jobs.':'Service requests are coordinated during the pilot; submission does not guarantee a provider match.'}</p>
+   {account.primaryAccountType==='provider'&&account.accountType==='customer'&&<button type="button" className="jt-account-signout" onClick={switchProvider}><BriefcaseBusiness size={18}/> Switch to Provider</button>}
    {error&&<p role="alert" className="jt-auth-error">{error}</p>}
    <button type="button" className="jt-account-signout" onClick={signOut}><LogOut size={18}/> Log out</button>
   </>:null}

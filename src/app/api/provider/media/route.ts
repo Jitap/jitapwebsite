@@ -34,8 +34,8 @@ export async function POST(req:NextRequest){
   if(!valid(kind)||!(file instanceof File))return NextResponse.json({error:'Select an image'},{status:422,headers});
   const isID=kind==='id_front'||kind==='id_back';
   if(isID&&data.get('kycConsent')!=='true')return NextResponse.json({error:'Agree to the identity verification notice before uploading your ID.'},{status:422,headers});
-  if(approved[0]?.status==='approved'){
-   return NextResponse.json({error:'Your verified profile is locked. Contact JiTap Service Operations for any changes.'},{status:403,headers});
+  if(approved[0]?.status==='approved'&&!(kind==='profile_photo'&&!previouslyUploaded.some(m=>m.kind==='profile_photo'))){
+   return NextResponse.json({error:'Verified media is locked. You may add one missing profile photo; contact JiTap Service Operations for other changes.'},{status:403,headers});
   }
   const saved=await uploadProviderMedia(session.userId,kind,file,isID);
   // Alert Service Operations once, when the second identity image arrives.

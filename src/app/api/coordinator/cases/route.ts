@@ -1,5 +1,6 @@
 import {NextRequest} from 'next/server';
 import {reply,requireCoordinator,supabasePrivate,validOrigin} from '@/lib/coordinator-server';
+import {fundiListings} from '@/lib/fundis-public';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
 type CaseRow={id:string;source_kind:'website_request'|'moving_lead';source_id:string;status:string;priority:string;assigned_to:string|null;next_followup_at:string|null;created_at:string;updated_at:string};
@@ -15,6 +16,8 @@ function normalizedRecord(c:CaseRow,source?:Intake|Move){
   ...c,reference:c.source_id.slice(0,8).toUpperCase(),
   notifyOptIn:isRequest?payload.notifyOptIn===true:false,
   category:isRequest?safeText(payload.category,70)||'other-services':'moving',
+  preferredProviderId:isRequest?safeText(payload.preferredProviderId,20):'',
+  preferredProviderName:isRequest?fundiListings.find(p=>p.id===payload.preferredProviderId)?.name||'':'',
   area:isRequest?safeText(payload.area,120):safeText(move?.pickup_address,120),
   description,name:isRequest?safeText(payload.name,120):'',
   phone:isRequest?safeText(payload.phone,35):safeText(move?.customer_phone,35),

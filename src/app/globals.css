@@ -517,3 +517,9 @@ body{color:#232c49}
 
 /* Footer uses a dedicated transparent white SVG, without a background panel. */
 .footer .brand img{filter:none;background:transparent}
+
+/* JiTap provider-to-customer mode switch at the customer request location step. */
+.jt-mode-switch-notice{padding:18px;border:1px solid #aedac4;border-radius:14px;background:#eaf9f1;color:#153c30;margin:16px 0;line-height:1.5}
+.jt-mode-switch-notice strong{font-size:16px;color:#075d3f}
+.jt-mode-switch-notice p{font-size:14px;margin:8px 0 14px}
+.jt-mode-switch-notice button{max-width:250px}

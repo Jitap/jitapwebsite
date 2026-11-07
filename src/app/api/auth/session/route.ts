@@ -21,7 +21,8 @@ export async function GET(req:NextRequest){
  const lookup=await accountQuery(access,'?user_id=eq.'+encodeURIComponent(data.id)+'&select=account_type,phone,full_name');
  if(!lookup.ok||!Array.isArray(lookup.data)||!lookup.data[0])return NextResponse.json({authenticated:false,error:'Account profile unavailable'},{status:503,headers:noStore});
  const profile=lookup.data[0];
- const response=NextResponse.json({authenticated:true,accountType:profile.account_type,phone:profile.phone,fullName:profile.full_name},{headers:noStore});
+ const activeMode=profile.account_type==='provider'&&req.cookies.get('jt_mode')?.value==='customer'?'customer':profile.account_type;
+ const response=NextResponse.json({authenticated:true,accountType:activeMode,primaryAccountType:profile.account_type,phone:profile.phone,fullName:profile.full_name},{headers:noStore});
  if(refreshed?.access_token&&refreshed.refresh_token)setAuthCookies(response,refreshed.access_token,refreshed.refresh_token,Number(refreshed.expires_in)||3600);
  return response;
 }
@@ -30,5 +31,5 @@ export async function DELETE(req:NextRequest){
  const access=req.cookies.get('jt_access')?.value;
  if(access)await goTrue('logout',undefined,access,'POST');
  const response=NextResponse.json({signedOut:true},{headers:noStore});
- clearAuthCookies(response);return response;
+ clearAuthCookies(response);response.cookies.delete('jt_mode');return response;
 }
