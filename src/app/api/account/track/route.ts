@@ -2,6 +2,7 @@ import {NextRequest,NextResponse} from 'next/server';
 import {getCustomerIdentity} from '@/lib/customer-session-server';
 import {supabasePrivate} from '@/lib/coordinator-server';
 import {normalizeKenyanPhone,setAuthCookies} from '@/lib/jitap-auth';
+import {formatCustomerTickets} from '@/lib/customer-ticket-view';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -33,16 +34,8 @@ export async function GET(req:NextRequest){
    if(verify[0]?.customer_user_id!==identity.identity.userId)
     return NextResponse.json({error:'Unable to link this request to your account.'},{status:409,headers});
   }
-  const [caseProgress]=await supabasePrivate<{status:string;updated_at:string}[]>(
-   'coordinator_cases?source_kind=eq.website_request&source_id=eq.'+encodeURIComponent(match.id)+'&select=status,updated_at&limit=1');
-  const payload=match.payload;
-  const response=NextResponse.json({ok:true,ticket:{
-   serviceId:ref,status:caseProgress?.status||match.status,updatedAt:caseProgress?.updated_at||match.created_at,
-   category:typeof payload.category==='string'?payload.category:'Service',
-   description:typeof payload.description==='string'?payload.description.slice(0,900):'Service request',
-   area:typeof payload.area==='string'?payload.area:'',
-   createdAt:match.created_at
-  }},{headers});
+  const [ticket]=await formatCustomerTickets([match]);
+  const response=NextResponse.json({ok:true,ticket},{headers});
   if(identity.identity.rotated)setAuthCookies(response,identity.identity.rotated.access,identity.identity.rotated.refresh,identity.identity.rotated.expires);
   return response;
  }catch{
