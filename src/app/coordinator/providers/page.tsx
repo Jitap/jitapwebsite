@@ -3,7 +3,7 @@ import {useEffect,useState} from 'react';
 import Link from 'next/link';
 import {CheckCircle2,ShieldCheck,UserRound,XCircle} from 'lucide-react';
 import './provider-reviews.css';
-type BuzzResponse={serviceId:string;provider:string;decision:string;note:string;createdAt:string};
+type BuzzResponse={serviceId:string;provider:string;decision:string;note:string;createdAt:string;caseId:string|null;caseStatus:string;priority:string;technicalSummary:string;briefSource:'ai'|'reported'};
 type Provider={user_id:string;full_name:string;business_name:string;categories:string[];service_areas:string[];experience_years:number;skills:string;submitted_at:string;review:string;is_online:boolean;mediaKinds:string[];readyForApproval:boolean};
 export default function CoordinatorProviderReviews(){
  const [providers,setProviders]=useState<Provider[]>([]);
@@ -15,6 +15,7 @@ export default function CoordinatorProviderReviews(){
  const [error,setError]=useState('');
  const [busy,setBusy]=useState('');
  const [notice,setNotice]=useState('');
+ const [followupNotes,setFollowupNotes]=useState<Record<string,string>>({});
  async function reload(){
   const r=await fetch('/api/coordinator/provider-reviews',{cache:'no-store'});
   const d=await r.json().catch(()=>({}));
@@ -26,6 +27,29 @@ export default function CoordinatorProviderReviews(){
   const interval=window.setInterval(()=>{if(document.visibilityState==='visible')void reload().catch(()=>{})},15000);
   return()=>window.clearInterval(interval);
  },[]);
+ async function handleBuzz(r:BuzzResponse,action:'note_added'|'status_changed'){
+  if(!r.caseId){setError('This response has no linked coordinator ticket. Open the main SOC queue to investigate.');return}
+  const note=followupNotes[r.serviceId]?.trim();
+  if(action==='note_added'&&(!note||note.length<2)){setError('Add a follow-up note before recording this action.');return}
+  setBusy(r.serviceId);setError('');setNotice('');
+  try{
+   const result=await fetch('/api/coordinator/cases',{
+    method:'PATCH',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+     id:r.caseId,
+     action,
+     ...(action==='note_added'?{note}:
+      {value:'provider_contacted',note:'BUZZ acceptance received from provider; appointment not confirmed'})
+    })
+   });
+   const data=await result.json().catch(()=>({}));
+   if(!result.ok)throw Error(data.error||'Could not update the service ticket');
+   setNotice(action==='note_added'?'Follow-up note saved to this service ticket.':'Ticket moved to Provider Contacted. Appointment is not confirmed.');
+   setFollowupNotes(p=>({...p,[r.serviceId]:''}));
+   await reload();
+  }catch(e){setError(e instanceof Error?e.message:'Could not update the ticket')}
+  finally{setBusy('')}
+ }
  async function review(p:Provider,decision:'approved'|'rejected'){
   if(role!=='admin')return;
    if(!window.confirm(decision==='approved'
@@ -73,7 +97,17 @@ export default function CoordinatorProviderReviews(){
      <div className="jt-staff-review-top"><strong>{r.serviceId}</strong><span className="jt-staff-review-status">{r.decision.replaceAll('_',' ')}</span></div>
      <p><strong>Provider:</strong> {r.provider}</p>
      {r.note&&<p><strong>Question:</strong> {r.note}</p>}
-     <small>{new Date(r.createdAt).toLocaleString('en-KE',{timeZone:'Africa/Nairobi'})}</small>
+     <small>{new Date(r.createdAt).toLocaleString('en-KE',{timeZone:'Africa/Nairobi'})} · Ticket: {r.caseStatus.replaceAll('_',' ')}</small>
+     <div className="jt-soc-response-summary"><strong>Service brief</strong><p>{r.technicalSummary}</p><small>{r.briefSource==='ai'?'AI-organized from the customer report':'See the complete customer-reported brief inside the ticket'}</small></div>
+     {r.caseId?<div className="jt-soc-response-actions">
+      <Link href={'/coordinator?case='+encodeURIComponent(r.caseId)} className="jt-soc-open-ticket">Open SOC ticket · {r.serviceId} →</Link>
+      <label htmlFor={'note-'+r.serviceId}>Coordinator follow-up note</label>
+      <textarea id={'note-'+r.serviceId} rows={2} maxLength={1500} placeholder={r.decision==='needs_clarification'?'Record what to ask the customer or provider':'Record who was contacted and the next step'}
+       value={followupNotes[r.serviceId]||''} onChange={e=>setFollowupNotes(v=>({...v,[r.serviceId]:e.target.value}))}/>
+      <div><button type="button" disabled={busy===r.serviceId} onClick={()=>handleBuzz(r,'note_added')}>Save note to ticket</button>
+       {r.decision==='accepted'&&r.caseStatus!=='provider_contacted'&&<button type="button" disabled={busy===r.serviceId} onClick={()=>handleBuzz(r,'status_changed')}>Mark Provider Contacted</button>}
+      </div>
+     </div>:<p className="jt-soc-verify-warning">No coordinator ticket is linked to this Service ID. Please investigate in the SOC queue.</p>}
     </article>)}
   </>}
  </div></main>
