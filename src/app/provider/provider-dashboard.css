@@ -162,3 +162,43 @@
 
 .jt-provider-avatar{border:0;cursor:pointer}
 .jt-provider-avatar:focus-visible{outline:3px solid #0b8c4e;outline-offset:3px}
+
+
+/* Mobile provider home: source of truth stays the BUZZ workspace API. */
+.jt-provider-layout .jt-provider-app{background:#fff;min-height:100dvh;padding:12px 15px 28px;color:#0b174d}
+.jt-provider-layout .jt-provider-shell{max-width:760px}
+.jt-provider-home-header{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:0 0 14px}
+.jt-provider-home-header>a{display:flex;align-items:center}
+.jt-provider-home-header>a img{display:block;width:103px!important;height:58px!important;max-width:103px!important;object-fit:contain}
+.jt-provider-home-header-right{display:flex;align-items:center;gap:19px}
+.jt-provider-home-header-right>a{display:grid;place-items:center;color:#162278;position:relative}
+.jt-provider-bell-dot{height:7px;width:7px;background:#00c765;border-radius:50%;position:absolute;right:1px;top:0}
+.jt-provider-home-avatar{border:0;background:#eaf5f1;display:grid;place-items:center;flex:none;width:38px;height:38px;border-radius:50%;overflow:hidden;color:#152375}
+.jt-provider-home-avatar img{width:100%!important;height:100%!important;object-fit:cover!important;border-radius:50%}
+.jt-provider-home-greeting{padding:2px 0 16px}
+.jt-provider-home-greeting h1{font-size:clamp(25px,5.6vw,35px)!important;line-height:1.18!important;color:#132569!important;letter-spacing:-.035em;margin:0 0 8px}
+.jt-provider-home-greeting h1 span{color:#00b95b}
+.jt-provider-home-greeting p{font-size:15px;line-height:1.4;color:#63759c;margin:0}
+.jt-provider-home-online{position:relative;isolation:isolate;overflow:hidden;min-height:190px;border:1px solid #bdeedb;box-shadow:0 7px 16px #12225710;border-radius:23px;background:linear-gradient(110deg,#fff 33%,#e7fcf2 100%);padding:17px 19px;margin:0 0 14px}
+.jt-provider-home-online-top{position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between}
+.jt-provider-online-pill{display:flex;align-items:center;gap:8px;font-size:13px;color:#00a755;background:#f1f5f7;border-radius:40px;padding:9px 13px;font-weight:700}
+.jt-provider-live-dot{height:9px;width:9px;background:#00c367;border-radius:100%}
+.jt-provider-online-copy{position:relative;z-index:2;margin-top:15px;width:56%;min-width:0}
+.jt-provider-online-copy h2{color:#15316f;font-size:22px;letter-spacing:-.025em;line-height:1.2;margin:0 0 9px}
+.jt-provider-online-copy p{color:#7b8490;font-size:12px;line-height:1.45;margin:0}
+.jt-provider-robot{position:absolute!important;z-index:1;right:-9px;bottom:-24px;width:48%!important;max-width:220px!important;height:auto!important;max-height:185px!important;object-fit:contain!important;pointer-events:none}
+.jt-provider-layout .jt-provider-main{display:flex;flex-direction:column;gap:0}
+.jt-provider-layout .jt-provider-requests{border:0;box-shadow:none;margin:0;padding:0;border-radius:0}
+.jt-provider-layout .jt-provider-requests-heading{background:#e5f9ef;color:#00a85a;border-radius:13px;padding:13px 16px;margin:0 0 13px;display:flex;justify-content:space-between;align-items:center}
+.jt-provider-layout .jt-provider-requests-heading>div{display:flex;align-items:center;gap:11px}
+.jt-provider-layout .jt-provider-requests-heading h2{margin:0;color:#00b15b;font-size:18px;letter-spacing:-.01em}
+.jt-provider-layout .jt-provider-requests-heading>span{display:grid;place-items:center;min-width:32px;height:32px;padding:0 8px;border-radius:50px;background:#00be60;color:#fff;font-weight:800}
+.jt-provider-layout .jt-buzz-brief-card{border:1px solid #e0e6ed;box-shadow:none;border-radius:20px;padding:18px;margin-bottom:13px}
+.jt-provider-layout .jt-buzz-brief-card h3{color:#14265f;font-size:19px;margin:16px 0 5px}
+.jt-provider-request-area{font-size:13px;font-weight:500;color:#647796}
+.jt-provider-layout .jt-buzz-brief-body{background:#f5faf8;border-left-color:#00bd61}
+.jt-provider-layout .jt-buzz-accept{background:#00be5d;color:#fff;border-color:#00be5d;border-radius:12px}
+.jt-provider-layout .jt-buzz-decline{background:#fff;color:#ff3150;border-color:#ff3857;border-radius:12px}
+.jt-provider-layout .jt-provider-empty{margin:12px 0;border:1px solid #dde6eb;border-radius:18px;padding:30px 17px}
+.jt-provider-layout .jt-provider-disclaimer{padding-bottom:5px}
+@media(max-width:370px){.jt-provider-online-copy{width:58%}.jt-provider-robot{max-width:48%!important}.jt-provider-home-online{min-height:195px}.jt-provider-layout .jt-buzz-brief-card{padding:13px}}
