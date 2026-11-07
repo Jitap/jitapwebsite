@@ -46,8 +46,8 @@ begin
   -- customer-reported description, never a fabricated technical diagnosis.
   left(coalesce(b.technical_summary,
     regexp_replace(regexp_replace(coalesce(w.payload->>'description',''),
-      '(\\+?254|0)[17][0-9[:space:]-]{8,15}','[phone removed]','g'),
-      '[[:alnum:]._%+-]+@[[:alnum:].-]+\\.[[:alpha:]]{2,}','[email removed]','g')
+      '([+]254|254|0)[17][0-9]{8}','[phone removed]','g'),
+      '[[:alnum:]._%+-]+@[[:alnum:].-]+\.[[:alpha:]]{2,}','[email removed]','g')
   ),700),
   left(coalesce(b.proposed_scope,''),500),
   coalesce(b.urgency,public.jitap_reported_urgency(w.payload->>'description',w.payload->>'timing')),
