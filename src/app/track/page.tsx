@@ -3,7 +3,8 @@ import {useEffect,useState} from 'react';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
 import {ArrowRight,ClipboardCheck,ShieldCheck,LogIn} from 'lucide-react';
-type Ticket={serviceId:string;status:string;category:string;description:string;area:string;createdAt:string;updatedAt:string};
+import {CustomerTicketCard,type CustomerTicket} from '@/components/CustomerTicketCard';
+type Ticket=CustomerTicket;
 const progressLabels:Record<string,string>={
  new:'Received — JiTap is reviewing your request',
  incomplete:'Information needed',
@@ -60,11 +61,7 @@ export default function TrackTicketPage(){
     <button className="button" disabled={switching} onClick={switchCustomer}>{switching?'Switching…':'Switch to Customer'} <ArrowRight size={17}/></button></div>:
    ticket?<div className="jt-account-summary">
     <span style={{display:'flex',alignItems:'center',gap:9,color:'#06844b',fontWeight:800}}><ShieldCheck size={20}/> Phone ownership verified</span>
-    <h2 style={{fontSize:28,margin:'15px 0'}}>Service ID: {ticket.serviceId}</h2>
-    <p><strong>Request:</strong> {title}</p><p><strong>Status:</strong> {progressLabels[ticket.status]||ticket.status.replaceAll('_',' ')}</p>
-    <p><strong>Service area:</strong> {ticket.area||'To be confirmed'}</p>
-    <p><strong>Submitted:</strong> {new Date(ticket.createdAt).toLocaleString('en-KE',{timeZone:'Africa/Nairobi'})}</p><p><strong>Last updated:</strong> {new Date(ticket.updatedAt||ticket.createdAt).toLocaleString('en-KE',{timeZone:'Africa/Nairobi'})}</p>
-    <div style={{borderTop:'1px solid #dce8ee',paddingTop:15,marginTop:15}}><strong>Your service brief</strong><p>{ticket.description}</p></div>
+    <CustomerTicketCard ticket={ticket} detail/>
     <p style={{fontSize:13,color:'#64748b'}}>JiTap Service Operations coordinates provider availability and confirms the next step. A request is not a confirmed appointment.</p>
     <Link href="/account#my-requests" className="button">View My Requests <ArrowRight size={17}/></Link>
    </div>:<div className="jt-account-summary" role="alert"><p>{error}</p><p>If this is your first visit, sign up using the same phone number that received your JiTap SMS.</p>
