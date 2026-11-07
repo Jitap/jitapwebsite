@@ -4,6 +4,7 @@ import Link from 'next/link';
 import {useRouter} from 'next/navigation';
 import {Bell,BriefcaseBusiness,CheckCircle2,ChevronRight,ClipboardList,Clock3,MapPin,Radio,ShieldCheck,UserRound,Wifi,WifiOff,Wrench,ArrowRight} from 'lucide-react';
 import {KENYAN_SERVICE_AREAS,SERVICE_OPTIONS} from '@/lib/provider-options';
+import {providerPreferredDate,providerPreferredTime} from '@/lib/provider-schedule';
 import {ProviderMediaFields,type MediaKind} from '@/components/ProviderMediaFields';
 import './provider-dashboard.css';
 
@@ -191,8 +192,8 @@ export default function ProviderDashboardPage(){
 
         <div className="jt-buzz-schedule">
          <div><MapPin size={17}/><span><strong>Job location</strong>{o.job_location||o.area}{(o.job_location||o.area).toLowerCase().includes('mombasa')?'':' · Mombasa'} · Exact directions shared after confirmation</span></div>
-         <div><Clock3 size={17}/><span><strong>Requested date</strong>{o.preferred_date|| (o.requested_timing==='today'?'Requested urgently (date to confirm)':o.requested_timing==='this-week'?'This week (date to confirm)':'To be agreed')}</span></div>
-         <div><Clock3 size={17}/><span><strong>Requested time</strong>{o.preferred_time||'To be agreed'}</span></div>
+         <div><Clock3 size={17}/><span><strong>Requested date</strong>{providerPreferredDate(o.preferred_date)}</span></div>
+         <div><Clock3 size={17}/><span><strong>Requested time</strong>{providerPreferredTime(o.preferred_time)}</span></div>
         </div>
         <div className="jt-buzz-card-actions">
          <button className={'jt-buzz-accept '+(decision[o.request_id]==='accepted'?'selected':'')} onClick={()=>setDecision(v=>({...v,[o.request_id]:'accepted'}))}>Accept</button>
