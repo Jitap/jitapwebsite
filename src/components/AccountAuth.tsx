@@ -15,7 +15,11 @@ export function AccountAuth(){
  const [code,setCode]=useState('');
  const [consent,setConsent]=useState(false);
  const [busy,setBusy]=useState(false);
- useEffect(()=>{if(new URLSearchParams(window.location.search).get('mode')==='login')setMode('login')},[]);
+ useEffect(()=>{
+  const query=new URLSearchParams(window.location.search);
+  if(query.get('mode')==='login')setMode('login');
+  if(/^\/track\?ref=JT-[0-9A-F]{8}$/.test(query.get('next')||''))setRole('customer');
+ },[]);
  const [error,setError]=useState('');
  const [notice,setNotice]=useState('');
  const isProvider=role==='provider';
@@ -31,7 +35,8 @@ export function AccountAuth(){
    else{
     if(json.accountType!==role)setNotice('This number already has a '+json.accountType+' account. Opening its dashboard.');
     window.dispatchEvent(new Event('jitap:auth-changed'));
-    router.replace(json.accountType==='provider'?'/provider':'/account');router.refresh();
+    const next=new URLSearchParams(window.location.search).get('next')||'';
+    router.replace(/^\/track\?ref=JT-[0-9A-F]{8}$/.test(next)?next:(json.accountType==='provider'?'/provider':'/account'));router.refresh();
    }
   }catch(err){setError(err instanceof Error?err.message:'Something went wrong. Please try again.')}
   finally{setBusy(false)}
