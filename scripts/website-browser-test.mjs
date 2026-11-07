@@ -234,8 +234,16 @@ await check('provider verification requires both ID images and protects media en
  await open('/provider');
  await page.getByRole('button',{name:/Verification/}).click();
  await page.getByRole('heading',{name:'Verify your ID'}).waitFor();
- assert.equal(await page.getByLabel('Front side of national ID *').count(),1);
- assert.equal(await page.getByLabel('Back side of national ID *').count(),1);
+ assert.equal(await page.getByRole('button',{name:'Take photo: Front side of national ID *'}).count(),1);
+ assert.equal(await page.getByRole('button',{name:'Take photo: Back side of national ID *'}).count(),1);
+ assert.equal(await page.getByRole('button',{name:'Choose from gallery: Front side of national ID *'}).count(),1);
+ assert.equal(await page.getByRole('button',{name:'Choose from gallery: Back side of national ID *'}).count(),1);
+ assert.equal(await page.locator('input[aria-label="Camera image: Front side of national ID *"]').getAttribute('capture'),'environment');
+ assert.equal(await page.locator('input[aria-label="Gallery image: Front side of national ID *"]').getAttribute('capture'),null);
+ await page.getByRole('button',{name:'Take photo: Front side of national ID *'}).click();
+ await page.getByRole('alert').getByText(/consent box below/i).waitFor();
+ await page.getByRole('checkbox',{name:/I agree to JiTap securely collecting/}).check();
+ assert.equal(await page.locator('input[aria-label="Camera image: Back side of national ID *"]').getAttribute('capture'),'environment');
  assert.equal(await page.getByRole('button',{name:/Continue/}).isDisabled(),true);
  assert.equal(await page.locator('.jt-provider-app-header img').count(),0,'Global header is only JiTap logo');
  await page.screenshot({path:'ui-test-results/jitap-provider-verification-mobile.png',fullPage:true});
