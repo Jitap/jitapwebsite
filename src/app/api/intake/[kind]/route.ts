@@ -4,6 +4,8 @@ import { schemas,requestSchema, type FormKind } from '@/lib/validators';
 import {getCustomerIdentity} from '@/lib/customer-session-server';
 import {setAuthCookies} from '@/lib/jitap-auth';
 import {sendRequestReceiptSms,serviceReference} from '@/lib/request-receipt-sms';
+import {after} from 'next/server';
+import {saveServiceBrief} from '@/lib/service-brief-server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -189,6 +191,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{kind
         token:cfg.token,url:cfg.url,key:cfg.key
        })
       :'skipped';
+    // Generate a bounded, privacy-redacted technical brief asynchronously
+    // after the successful response; do not delay the customer SMS or receipt.
+    if(requestDetails&&!isSyntheticQA){
+      after(()=>saveServiceBrief({
+        id:identifier,category:requestDetails.category,description:requestDetails.description,
+        area:requestDetails.area,timing:requestDetails.timing
+      }));
+    }
     const receipt=respond({
       ok: true,
       reference: identifier,
