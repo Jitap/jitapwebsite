@@ -322,6 +322,37 @@ await check('matched provider request resumes at location without a second intak
  assert.equal(await page.getByText('Edit job details').count(),1);
  assert.equal(await page.getByRole('heading',{name:/What kind of carpentry/i}).count(),0);
 });
+await check('special matched provider preserves brief and opens location step',async()=>{
+ await page.setViewportSize({width:390,height:844});
+ await open('/fundis/fund-036?fromMatch=1');
+ await page.evaluate(()=>sessionStorage.setItem('jitap:matched-brief',JSON.stringify({
+  savedAt:Date.now(),category:'other-services',area:'Bamburi',
+  description:'I need computer repair or IT support from Zenotech Computers. Which device needs support: Laptop or desktop.',
+  preferredDate:'2026-11-12',preferredTime:'09:30',timing:'this-week'
+ })));
+ await page.getByRole('link',{name:/Request/}).last().click();
+ await page.waitForURL(/\/request\?resume=1&providerId=fund-036/);
+ await page.getByRole('heading',{name:'Where is the service needed?'}).waitFor();
+ assert.equal(await page.getByText('Which device needs support?',{exact:true}).count(),0);
+});
+await check('customer ticket layout exposes structured fields',async()=>{
+ await page.setViewportSize({width:390,height:844});
+ await page.route('**/api/account/track?ref=JT-0FF6AEA3',async route=>route.fulfill({
+  status:200,contentType:'application/json',body:JSON.stringify({ok:true,ticket:{
+   reference:'0ff6aea3-0000-0000-0000-000000000001',serviceId:'JT-0FF6AEA3',category:'electrical',
+   date:'2026-11-12',time:'09:30',location:'Vescon II Estate',area:'Bamburi',
+   provider:'To be matched',providerStatus:'Awaiting matching',status:'matching',statusLabel:'Matching',
+   brief:'Repair of a faulty wall socket reported by the customer.',scope:'',
+   createdAt:'2026-11-07T07:00:00Z',updatedAt:'2026-11-07T10:00:00Z'
+  }})
+ }));
+ await open('/track?ref=JT-0FF6AEA3');
+ await page.getByText('Vescon II Estate').waitFor();
+ assert.equal(await page.getByText('JT-0FF6AEA3').count(),1);
+ assert.equal(await page.getByText('Which device needs support?').count(),0);
+ assert.equal(await page.getByText('09:30 EAT').count(),1);
+ await page.unroute('**/api/account/track?ref=JT-0FF6AEA3');
+});
 await check('provider application supports six areas and back/continue',async()=>{
  await open();
  await page.goto(base+'/providers/apply');
