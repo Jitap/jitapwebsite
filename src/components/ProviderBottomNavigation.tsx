@@ -6,20 +6,20 @@ export default function ProviderBottomNavigation(){
  const pathname=usePathname();
  const profile=pathname.startsWith('/provider/profile');
  const requestDetail=pathname.startsWith('/provider/request/');
+ const wallet=pathname==='/provider/wallet';
  const [section,setSection]=useState('');
  useEffect(()=>{setSection(new URLSearchParams(window.location.search).get('view')==='requests'?'requests':new URLSearchParams(window.location.search).get('section')==='availability'?'calendar':'')},[pathname]);
- // These labels describe real routes. Wallet isn't released, so it isn't a link.
+ // The wallet feature is not active yet; its tab opens the coming-soon preview.
  const items=[
-  {name:'Home',href:'/provider',icon:Home,active:!profile&&!requestDetail&&section!=='requests'},
+  {name:'Home',href:'/provider',icon:Home,active:!profile&&!requestDetail&&!wallet&&section!=='requests'},
   {name:'Requests',href:'/provider?view=requests',icon:ClipboardList,active:requestDetail||(!profile&&section==='requests')},
-  {name:'Wallet',href:'',icon:Wallet,active:false,disabled:true},
+  {name:'Wallet',href:'/provider/wallet',icon:Wallet,active:wallet},
   {name:'Calendar',href:'/provider/profile?section=availability',icon:CalendarDays,active:profile&&section==='calendar'},
   {name:'Profile',href:'/provider/profile',icon:UserRound,active:profile&&section!=='calendar'},
  ];
  return <nav className="jt-provider-bottom-nav" aria-label="Provider main navigation">
   <div className="jt-provider-nav-items">{items.map(item=>{
    const Icon=item.icon;
-   if(item.disabled)return <span key={item.name} className="jt-provider-nav-item jt-provider-nav-disabled" aria-disabled="true" title="Wallet coming later"><Icon size={23}/><small>{item.name}</small></span>;
    // Plain links make query-based views reliable when navigating from any profile subsection.
    return <a key={item.name} href={item.href} className={'jt-provider-nav-item'+(item.active?' jt-provider-nav-active':'')} aria-current={item.active?'page':undefined}><Icon size={23} strokeWidth={item.active?2.4:1.9}/><small>{item.name}</small></a>;
   })}</div>
