@@ -13,15 +13,17 @@ const labels:Record<MediaKind,string>={
 export function ProviderMediaFields({uploaded,kinds,onUploaded,lockedIDs=false}:Props){
  const [working,setWorking]=useState<MediaKind|null>(null);
  const [error,setError]=useState('');
+ const [kycConsent,setKycConsent]=useState(false);
  async function send(kind:MediaKind,file:File){
   setError('');
+  if((kind==='id_front'||kind==='id_back')&&!kycConsent){setError('Please agree to the private ID verification notice first.');return}
   if(file.size>5*1024*1024||!['image/jpeg','image/png'].includes(file.type)){
    setError('Choose a JPG or PNG photo, maximum 5 MB.');return;
   }
   setWorking(kind);
   try{
    const form=new FormData();
-   form.set('kind',kind);form.set('file',file);
+   form.set('kind',kind);form.set('file',file);if(kind==='id_front'||kind==='id_back')form.set('kycConsent','true');
    const response=await fetch('/api/provider/media',{method:'POST',body:form,cache:'no-store'});
    const body=await response.json().catch(()=>({}));
    if(!response.ok)throw Error(body.error||'Upload failed');
@@ -33,7 +35,7 @@ export function ProviderMediaFields({uploaded,kinds,onUploaded,lockedIDs=false}:
   {kinds.map(kind=>{
    const entry=uploaded.find(m=>m.kind===kind);
    const isID=kind==='id_front'||kind==='id_back';
-   const disabled=!!working||(isID&&lockedIDs);
+   const disabled=!!working||(isID&&(lockedIDs||!kycConsent));
    return <div className="jt-provider-media-item" key={kind}>
     <div className="jt-provider-media-label">{labels[kind]}</div>
     <label className={'jt-provider-upload-card '+(entry?'uploaded':'')}>
@@ -47,6 +49,7 @@ export function ProviderMediaFields({uploaded,kinds,onUploaded,lockedIDs=false}:
    </div>;
   })}
   {error&&<p role="alert" className="jt-provider-error">{error}</p>}
+  {kinds.some(k=>k==='id_front'||k==='id_back')&&<label className="jt-provider-id-consent"><input type="checkbox" checked={kycConsent} onChange={e=>setKycConsent(e.target.checked)}/> I agree to JiTap securely collecting and reviewing my national ID images solely for provider identity verification, accessible only to authorized staff.</label>}
   {kinds.some(k=>k==='id_front'||k==='id_back')&&<div className="jt-provider-id-guidance"><ShieldCheck size={21}/><div><strong>Make sure your ID photo is clear</strong><ul><li>All information must be visible</li><li>Avoid glare or blurry images</li><li>JPG or PNG only · up to 5 MB each</li><li>Visible only to authorized JiTap reviewers</li></ul></div></div>}
  </div>;
 }
