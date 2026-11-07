@@ -239,3 +239,23 @@
 .jt-provider-layout .jt-buzz-reference{margin-bottom:0!important;}
 .jt-provider-layout .jt-provider-requests-heading{margin-bottom:9px!important;padding:11px 14px!important;}
 @media(max-width:540px){.jt-provider-layout .jt-buzz-brief-card{padding:14px!important;}}
+
+
+/* A successfully declined BUZZ dissipates and collapses out of the feed. */
+.jt-provider-layout .jt-provider-request.jt-request-dissolving{
+ pointer-events:none;
+ transform-origin:center top;
+ overflow:hidden;
+ animation:jt-provider-request-dissolve .44s ease-in forwards!important;
+}
+@keyframes jt-provider-request-dissolve{
+ 0%{opacity:1;filter:blur(0);transform:translateY(0) scale(1);max-height:1100px}
+ 55%{opacity:.38;filter:blur(3px);transform:translateY(-8px) scale(.975);max-height:1100px}
+ 100%{opacity:0;filter:blur(12px);transform:translateY(-20px) scale(.91);max-height:0;padding-top:0;padding-bottom:0;margin-bottom:0;border-width:0}
+}
+@media(prefers-reduced-motion:reduce){
+ .jt-provider-layout .jt-provider-request.jt-request-dissolving{
+  animation:jt-provider-request-accessible-dismiss .12s linear forwards!important;
+ }
+ @keyframes jt-provider-request-accessible-dismiss{to{opacity:0;max-height:0;padding:0;margin:0;border-width:0}}
+}
