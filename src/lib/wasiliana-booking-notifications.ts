@@ -9,8 +9,9 @@ type Outbox={id:string};
 const safeName=(value:unknown)=>typeof value==='string'?value.replace(/[\r\n]/g,' ').trim().slice(0,65):'';
 const origin=()=>{const site=process.env.NEXT_PUBLIC_SITE_URL||'https://www.jitap.app';const url=new URL(site);return url.protocol==='https:'?url.origin:'https://www.jitap.app'};
 async function deliver(eventType:string,requestId:string,phone:string,message:string){
- const mobile=normalizeKenyanPhone(phone);
- if(!mobile)return;
+ const normalized=normalizeKenyanPhone(phone);
+ if(!normalized)return;
+ const mobile=normalized.replace(/^\+/,'');
  // Unique event key guarantees the provider is never messaged twice for the same event.
  let queued:Outbox[]=[];
  try{
@@ -51,12 +52,12 @@ export async function notifyProviderAccepted(requestId:string,providerId:string)
  const name=safeName(provider?.business_name)||safeName(provider?.full_name)||'Your service provider';
  const ref='JT-'+requestId.slice(0,8).toUpperCase();
  const link=origin()+'/track?ref='+encodeURIComponent(ref);
- await deliver('booking_accepted',requestId,String(request.payload.phone||''),
+ await deliver('provider_accepted',requestId,String(request.payload.phone||''),
   'JiTap: '+name+' has accepted your request '+ref+'. Your booking is confirmed. View provider details: '+link);
 }
 export async function notifyProviderCancelled(requestId:string,cancellationId:string){
  const request=await requestRecord(requestId);if(!request)return;
  const ref='JT-'+requestId.slice(0,8).toUpperCase();
- await deliver('provider_cancellation_'+cancellationId,requestId,String(request.payload.phone||''),
+ await deliver('job_update',cancellationId,String(request.payload.phone||''),
   'JiTap: Your provider has cancelled request '+ref+'. Please approve a rematch or decline it here: '+origin()+'/track?ref='+encodeURIComponent(ref));
 }
