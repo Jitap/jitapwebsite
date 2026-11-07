@@ -5,6 +5,9 @@ import {fundiListings} from '@/lib/fundis-public';
 export type RequestRecord={id:string;status:string;created_at:string;payload?:Record<string,unknown>};
 type Brief={request_id:string;technical_summary:string;proposed_scope:string;source:string};
 type Case={source_id:string;status:string;updated_at:string};
+type Appointment={request_id:string;provider_user_id:string;status:string;confirmed_at:string;starts_at:string|null;ends_at:string|null};
+type Provider={user_id:string;full_name:string;business_name:string};
+type ProviderAccount={user_id:string;phone:string};
 const asText=(value:unknown,max=700)=>typeof value==='string'?value.slice(0,max).trim():'';
 const labels:Record<string,string>={
  new:'Received',incomplete:'Information needed',needs_sourcing:'Finding a provider',
@@ -31,10 +34,19 @@ export async function formatCustomerTickets(rows:RequestRecord[]){
  const where='('+ids.join(',')+')';
  // All row IDs were obtained through the authenticated customer-owned request
  // query (or exact OTP-verified phone ownership in the tracking endpoint).
- const [briefs,cases]=await Promise.all([
+ const [briefs,cases,appointments]=await Promise.all([
   supabasePrivate<Brief[]>('jitap_request_service_briefs?select=request_id,technical_summary,proposed_scope,source&request_id=in.'+where),
-  supabasePrivate<Case[]>('coordinator_cases?select=source_id,status,updated_at&source_kind=eq.website_request&source_id=in.'+where)
+  supabasePrivate<Case[]>('coordinator_cases?select=source_id,status,updated_at&source_kind=eq.website_request&source_id=in.'+where),
+  supabasePrivate<Appointment[]>('jitap_provider_appointments?select=request_id,provider_user_id,status,confirmed_at,starts_at,ends_at&request_id=in.'+where)
  ]);
+ const assignedIds=[...new Set(appointments.map(a=>a.provider_user_id))];
+ const [providers,accounts]=assignedIds.length?await Promise.all([
+  supabasePrivate<Provider[]>('jitap_provider_workspaces?select=user_id,full_name,business_name&user_id=in.('+assignedIds.join(',')+')'),
+  supabasePrivate<ProviderAccount[]>('jitap_accounts?select=user_id,phone&user_id=in.('+assignedIds.join(',')+')')
+ ]):[[],[]];
+ const providerById=new Map(providers.map(p=>[p.user_id,p]));
+ const phoneById=new Map(accounts.map(a=>[a.user_id,a.phone]));
+ const appointmentById=new Map(appointments.map(a=>[a.request_id,a]));
  const briefById=new Map(briefs.map(b=>[b.request_id,b]));
  const caseById=new Map(cases.map(c=>[c.source_id,c]));
  return rows.map(r=>{
@@ -47,19 +59,23 @@ export async function formatCustomerTickets(rows:RequestRecord[]){
    // customer description, before the preference field was introduced.
    // Use exact known listing name only; never interpret this as assignment.
    fundiListings.find(f=>f.name.length>=6&&raw.toLocaleLowerCase('en-KE').includes(f.name.toLocaleLowerCase('en-KE')));
-  const status=caseRow?.status||r.status;
+  const appointment=appointmentById.get(r.id);
+  const assignedProvider=appointment?providerById.get(appointment.provider_user_id):null;
+  const assignedPhone=appointment?phoneById.get(appointment.provider_user_id)||'':'';
+  const status=appointment?(appointment.status==='on_my_way'?'in_progress':appointment.status==='confirmed'?'scheduled':appointment.status):caseRow?.status||r.status;
   return {
    reference:r.id,serviceId:'JT-'+r.id.slice(0,8).toUpperCase(),
    category:asText(p.category,70)||'Service',
    date:compactDate(p),time:compactTime(p),
    location:asText(p.locationLabel,180)||asText(p.area,100),
    area:asText(p.area,100),
-   provider:provider?.name||'To be matched',
-   providerStatus:provider?'Requested provider — awaiting confirmation':'Awaiting matching',
+   provider:appointment?(assignedProvider?.business_name||assignedProvider?.full_name||'Confirmed provider'):provider?.name||'To be matched',
+   providerPhone:assignedPhone,
+   providerStatus:appointment?(appointment.status==='on_my_way'?'On my way':'Booking confirmed'):provider?'Requested provider — awaiting confirmation':'Awaiting matching',
    status,statusLabel:labels[status]||status.replace(/_/g,' '),
    brief:b?.source==='ai'?asText(b.technical_summary,700):customerSummary(raw),
    scope:b?.source==='ai'?asText(b.proposed_scope,400):'',
-   createdAt:r.created_at,updatedAt:caseRow?.updated_at||r.created_at
+   createdAt:r.created_at,updatedAt:appointment?.confirmed_at||caseRow?.updated_at||r.created_at
   };
  });
 }
