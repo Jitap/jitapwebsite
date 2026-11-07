@@ -6,6 +6,7 @@ import {SERVICE_OPTIONS,KENYAN_SERVICE_AREAS} from '@/lib/provider-options';
 import {getProviderMedia} from '@/lib/provider-media-server';
 import {supabasePrivate} from '@/lib/coordinator-server';
 import {saveServiceBrief} from '@/lib/service-brief-server';
+import {inferService} from '@/lib/data';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -62,9 +63,29 @@ export async function GET(req:NextRequest){
    getProviderMedia(session.userId)
   ]);
   if(!profileResult.ok||!reviewResult.ok||!responses.ok||!opportunities.ok)throw Error('read failed');
+  // Defense in depth: BUZZ must never offer a trade outside the provider's
+  // approved categories and selected service areas, even if RPC behavior changes.
+  // A clear conflicting task classification is also excluded (for example a
+  // request filed under plumbing but explicitly describing laptop repair).
+  const workspace=Array.isArray(profileResult.data)?profileResult.data[0]||null:null;
+  const approvedCategories=new Set<string>(Array.isArray(workspace?.categories)?workspace.categories:[]);
+  const coverage=new Set<string>(Array.isArray(workspace?.service_areas)?workspace.service_areas:[]);
+  type Buzz={request_id:string;category:string;area:string;technical_summary?:string};
+  const matchingOpportunities=(Array.isArray(opportunities.data)?opportunities.data:[]).filter((candidate:unknown):candidate is Buzz=>{
+   if(!candidate||typeof candidate!=='object')return false;
+   const item=candidate as Partial<Buzz>;
+   if(typeof item.request_id!=='string'||typeof item.category!=='string'||typeof item.area!=='string')return false;
+   if(!approvedCategories.has(item.category)||!coverage.has(item.area))return false;
+   const inferred=typeof item.technical_summary==='string'?inferService(item.technical_summary):undefined;
+   // If there is no confident classification, preserve the actual category
+   // submitted by the customer rather than guessing a different trade.
+   const equivalent=(inferred==='it-repairs'&&item.category==='computer-phone-repair')||
+    (inferred==='computer-phone-repair'&&item.category==='it-repairs');
+   return !inferred||inferred===item.category||equivalent;
+  });
   // Lazily organize older, customer-reported requests into professional
   // briefs in small batches. This runs after the response and never blocks BUZZ.
-  const oldBriefs=(Array.isArray(opportunities.data)?opportunities.data:[] as unknown[])
+  const oldBriefs=(matchingOpportunities as unknown[])
    .filter((o):o is {request_id:string;brief_source:string}=>
      !!o&&typeof o==='object'&&(o as {brief_source?:string}).brief_source==='reported')
    .slice(0,2);
@@ -92,7 +113,7 @@ export async function GET(req:NextRequest){
    profile:Array.isArray(profileResult.data)?profileResult.data[0]||null:null,
    reviewStatus:Array.isArray(reviewResult.data)?reviewResult.data[0]?.status||'not_submitted':'not_submitted',
    recentResponses:Array.isArray(responses.data)?responses.data:[],
-   opportunities:Array.isArray(opportunities.data)?opportunities.data:[],
+   opportunities:matchingOpportunities,
    uploadedMedia:media.map(x=>({kind:x.kind,uploadedAt:x.uploaded_at}))
   },session);
  }catch{return error('Unable to load your provider dashboard.',503)}
