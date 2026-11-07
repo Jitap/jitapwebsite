@@ -4,7 +4,7 @@ import {CalendarDays,Clock3,MapPin,UserRoundCheck,ClipboardList,ArrowUpRight} fr
 
 export type CustomerTicket={
  reference:string;serviceId:string;category:string;date:string;time:string;location:string;area:string;
- provider:string;providerStatus:string;status:string;statusLabel:string;brief:string;scope:string;
+ provider:string;providerPhone?:string;providerStatus:string;status:string;statusLabel:string;brief:string;scope:string;
  createdAt:string;updatedAt:string;
 };
 function dateText(value:string){
@@ -22,7 +22,7 @@ export function CustomerTicketCard({ticket,detail=false}:{ticket:CustomerTicket;
    <div><dt><CalendarDays size={16}/> Date</dt><dd>{dateText(ticket.date)}</dd></div>
    <div><dt><Clock3 size={16}/> Time</dt><dd>{timeText(ticket.time)}</dd></div>
    <div><dt><MapPin size={16}/> Location</dt><dd>{ticket.location||'To be confirmed'}</dd></div>
-   <div className="jt-ticket-field-wide"><dt><UserRoundCheck size={16}/> Provider</dt><dd>{ticket.provider}<small>{ticket.providerStatus}</small></dd></div>
+   <div className="jt-ticket-field-wide"><dt><UserRoundCheck size={16}/> Provider</dt><dd>{ticket.provider}<small>{ticket.providerStatus}</small>{ticket.providerPhone&&<a href={'tel:'+ticket.providerPhone.replace(/[^+0-9]/g,'')} style={{display:'inline-block',marginTop:8,color:'#087eec',fontWeight:700}}>Call provider: {ticket.providerPhone}</a>}</dd></div>
   </dl>
   <div className="jt-ticket-brief"><strong>Service brief</strong><p>{ticket.brief}</p>{ticket.scope&&<p className="jt-ticket-scope"><b>Preliminary scope:</b> {ticket.scope}</p>}</div>
   <div className="jt-ticket-bottom"><small>Last updated {new Date(ticket.updatedAt).toLocaleString('en-KE',{dateStyle:'medium',timeStyle:'short',timeZone:'Africa/Nairobi'})}</small>
