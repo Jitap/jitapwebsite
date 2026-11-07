@@ -1,6 +1,7 @@
 import {NextRequest,NextResponse} from 'next/server';
 import {getCustomerIdentity} from '@/lib/customer-session-server';
 import {ownCustomerRequests,setAuthCookies} from '@/lib/jitap-auth';
+import {formatCustomerTickets,type RequestRecord} from '@/lib/customer-ticket-view';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -13,18 +14,7 @@ export async function GET(req:NextRequest){
  if(!result.ok||!Array.isArray(result.data)){
   return NextResponse.json({error:'We could not load your requests right now.'},{status:503,headers});
  }
- // Only return job summary fields, never phone, exact location, or contact metadata.
- const requests=result.data.map((item:unknown)=>{
-  const r=item as {id:string;status:string;created_at:string;payload?:Record<string,unknown>};
-  return {
-   reference:r.id,
-   status:r.status,
-   createdAt:r.created_at,
-   category:typeof r.payload?.category==='string'?r.payload.category:'service',
-   description:typeof r.payload?.description==='string'?r.payload.description.slice(0,180):'Service request',
-   area:typeof r.payload?.area==='string'?r.payload.area:''
-  };
- });
+ const requests=await formatCustomerTickets(result.data as RequestRecord[]);
  const response=NextResponse.json({ok:true,requests},{headers});
  if(identity.rotated)setAuthCookies(response,identity.rotated.access,identity.rotated.refresh,identity.rotated.expires);
  return response;
