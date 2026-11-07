@@ -89,3 +89,13 @@
 @keyframes coordinator-notice-in{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
 @media(max-width:600px){.coordinator-notice-stack{top:72px;right:10px;width:calc(100vw - 20px)}.coordinator-notice{padding:12px 10px}.coordinator-header-actions .coordinator-live-indicator{white-space:normal}}
 @media(prefers-reduced-motion:reduce){.coordinator-notice{animation:none}}
+
+
+.coordinator-provider-approval-alert{display:flex;align-items:flex-start;gap:13px;background:#ecfbf2;border:1px solid #9ad9b4;border-radius:14px;padding:18px;margin:16px 0 23px;color:#086f43}
+.coordinator-provider-approval-alert>svg{flex:none;margin-top:3px}
+.coordinator-provider-approval-alert>div{flex:1}
+.coordinator-provider-approval-alert strong{font-size:17px}
+.coordinator-provider-approval-alert p{font-size:13px;line-height:1.5;margin:6px 0}
+.coordinator-provider-approval-alert a{color:#083f8b;font-size:13px;font-weight:750}
+.coordinator-provider-approval-alert button{background:none;border:0;cursor:pointer;color:#326a54}
+.coordinator-provider-link{display:inline-block;margin:9px 0;font-weight:780;color:#04784b}
