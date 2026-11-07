@@ -4,6 +4,10 @@ import Link from 'next/link';
 import {BriefcaseBusiness,Layers,MapPin,Star,Truck,ArrowRight,Clock3,Monitor,Check} from 'lucide-react';
 export type Profile={id:string;display_name:string;business_name:string;service_categories:string[];service_areas:string[];base_area:string|null;description:string|null;logo_url:string|null;rating:number|null;review_count:number|null;years_experience:number|null;similar_jobs_completed:number|null;verified_at:string|null;is_online:boolean};
 const fallback:Profile={id:'fund-022',display_name:'URBAN MOVERS AND RELOCATIONS',business_name:'URBAN MOVERS AND RELOCATIONS',service_categories:['Moving / Delivery','Relocation'],service_areas:['Bamburi','Nyali','Mtwapa','Tudor'],base_area:'Bamburi',description:'House moving, relocation and interior decor services.',logo_url:null,rating:null,review_count:null,years_experience:null,similar_jobs_completed:null,verified_at:null,is_online:false};
+const fallbackTech:Profile={id:'fund-036',display_name:'ZenoTech Computers',business_name:'ZenoTech Computers',
+ service_categories:['IT / Phone / Computer Services'],service_areas:['Bamburi','Nyali','Mtwapa','Tudor'],
+ base_area:'Bamburi',description:'Computer repair and IT support services.',logo_url:null,rating:null,review_count:null,
+ years_experience:null,similar_jobs_completed:null,verified_at:null,is_online:false};
 export function ProviderShowcase({detail=false,profile,profileId='fund-022',fromMatch=false}:{detail?:boolean;profile?:Profile;profileId?:string;fromMatch?:boolean}){
  const [loaded,setLoaded]=useState<Profile|null>(null);
  useEffect(()=>{
@@ -15,7 +19,7 @@ export function ProviderShowcase({detail=false,profile,profileId='fund-022',from
   }).catch(()=>{});
   return()=>controller.abort();
  },[profile,profileId]);
- const p=profile||loaded||(profileId==='fund-022'?fallback:null);
+ const p=profile||loaded||(profileId==='fund-022'?fallback:profileId==='fund-036'?fallbackTech:null);
  if(!p)return <p>Provider profile unavailable.</p>;
  const isTech=p.id==='fund-036';
  const request='/request?category='+(isTech?'other-services':'moving')+'&area='+encodeURIComponent(p.base_area||'Bamburi')+'&description='+encodeURIComponent(isTech?'I need computer repair or IT support from '+p.business_name:'I need moving or relocation services from '+p.business_name);
