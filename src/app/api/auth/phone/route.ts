@@ -54,5 +54,6 @@ export async function POST(req:NextRequest){
  if(!account||!isAccountType(account.account_type))return error('Account type is unavailable.',503);
  const result=NextResponse.json({authenticated:true,accountType:account.account_type,requestedRole:input.role,redirect:'/account'},{headers:{'Cache-Control':'no-store'}});
  setAuthCookies(result,access,String(payload.refresh_token),Number(payload.expires_in)||3600);
+ result.cookies.delete('jt_mode');
  return result;
 }
