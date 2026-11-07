@@ -166,8 +166,8 @@ export async function POST(req:NextRequest){
    const r=await dbRequest(session.accessToken,'rpc/jitap_provider_answer_buzz','POST',{
     p_request_id:parsed.data.requestId,p_decision:parsed.data.decision,p_note:parsed.data.note
    });
-   if(!r.ok)return error('This request is no longer available, or your profile is not approved.',403);
-   return responseWithSession({recorded:r.data===true,confirmedBooking:false},session);
+   if(!r.ok)return error('This request has already been accepted or is no longer available.',409);
+   return responseWithSession({recorded:r.data===true,confirmedBooking:parsed.data.decision==='accepted'},session);
   }
   return error('Unsupported provider action',400);
  }catch{return error('Provider service is temporarily unavailable.',503)}
