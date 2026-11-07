@@ -72,7 +72,7 @@ export function MatchedFundis({category,area,onQuotes,specialty}:{category:strin
  return <section className="jt-matches" aria-label="Matching local service providers">
   <div className="jt-matches-title"><span className="th-overline">LOCAL SERVICE MATCHES</span><h2>{matched.length} {matched.length===1?'matching profile':'matching profiles'} in {area}</h2><p>Based on listed services and service areas. Availability and quotations are confirmed after a request is submitted.</p></div>
   {matched.length>0?<><div className="jt-matches-quote"><div><strong>Connect with local fundis</strong><p>Share your service brief with JiTap to coordinate the next steps and check provider availability.</p></div><button type="button" className="td-outline-button" onClick={onQuotes}>Request</button></div>
-  <div className="td-pro-list">{visible.map((p,i)=>(p.id==='fund-022'||p.id==='fund-036')?<ProviderShowcase key={p.id} profileId={p.id}/>:<article className="td-pro-card" key={p.id}>
+  <div className="td-pro-list">{visible.map((p,i)=>(p.id==='fund-022'||p.id==='fund-036')?<ProviderShowcase key={p.id} profileId={p.id} fromMatch/>:<article className="td-pro-card" key={p.id}>
    <div className={'td-pro-avatar td-avatar-'+(i%5)} aria-hidden="true">{p.name.split(/\s+/).map(w=>w[0]||'').slice(0,2).join('').toUpperCase()}</div>
    <div className="td-pro-detail"><h3>{p.name}</h3><p className="td-pro-cats">{p.categories.join(' · ')}</p><div className="td-pro-areas"><MapPin size={15}/>{p.areas.join(' · ')}</div></div>
    <div className="td-pro-action"><Link className="td-outline-button" href={'/fundis/'+encodeURIComponent(p.id)+'?fromMatch=1'}>View profile</Link></div>
