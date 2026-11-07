@@ -78,6 +78,10 @@ export async function POST(req:NextRequest){
  if(typeof input!=='object'||input===null)return error('Invalid request',400);
  try{
   if((input as {action?:string}).action==='save'){
+   const state=await dbRequest(session.accessToken,'jitap_provider_reviews?user_id=eq.'+encodeURIComponent(session.userId)+'&select=status');
+   if(!state.ok)throw Error('review status unavailable');
+   if(Array.isArray(state.data)&&state.data[0]?.status==='approved')
+    return error('Your verified profile is locked. Contact JiTap Service Operations to request changes.',403);
    const parsed=profile.safeParse(input);if(!parsed.success)return error('Please complete your name, services and Kenyan service areas.',422);
    const d=parsed.data;
    const existing=await dbRequest(session.accessToken,'jitap_provider_workspaces?user_id=eq.'+encodeURIComponent(session.userId)+'&select=submitted_at');
