@@ -127,3 +127,35 @@
 .jt-provider-upload-card{cursor:default}
 .jt-provider-id-consent{scroll-margin-top:115px}
 @media(max-width:400px){.jt-provider-photo-actions{gap:7px}.jt-provider-photo-actions button{font-size:12px;padding:11px 7px;gap:5px}}
+
+
+/* Structured, privacy-aware service briefs inspired by JiTap provider Figma flow */
+.jt-verified-stamp,.jt-provider-verified-banner{display:flex;align-items:center;gap:12px;background:#e9faf0;border:1px solid #bce9cf;border-radius:14px;color:#057947;padding:15px}
+.jt-verified-stamp h2{margin:0 0 4px;color:#096842}.jt-verified-stamp p{margin:0;color:#376956;font-size:14px;line-height:1.5}
+.jt-verified-profile dl{display:grid;grid-template-columns:minmax(100px,1fr) 2fr;gap:14px 12px;margin:25px 0;color:#203d55;font-size:14px;line-height:1.55}
+.jt-verified-profile dt{color:#627c87}.jt-verified-profile dd{margin:0;overflow-wrap:anywhere}
+.jt-verified-tag{display:inline-flex;align-items:center;gap:6px;background:#ddf8e8;color:#00804a;border-radius:100px;padding:5px 12px;font-size:12px;font-weight:800}
+.jt-provider-verified-banner{font-size:13px;font-weight:800;margin-bottom:0;grid-column:1/-1;padding:12px 15px}
+.jt-buzz-brief-card{border:1px solid #d7e5df;padding:20px;box-shadow:0 3px 12px rgba(1,42,25,.035)}
+.jt-buzz-brief-card h3{margin:17px 0 6px;color:#112c53}
+.jt-buzz-reference{color:#6a8192;font-size:12px;margin-bottom:14px}
+.jt-buzz-urgency{font-size:11px!important;font-weight:800!important;padding:6px 9px;border-radius:99px;white-space:nowrap}
+.jt-buzz-urgency.high{color:#c62835!important;background:#ffedf0}
+.jt-buzz-urgency.normal{color:#865b00!important;background:#fff5db}
+.jt-buzz-urgency.low{color:#157b49!important;background:#e6f8ed}
+.jt-buzz-urgency.unspecified{color:#65778b!important;background:#f1f4f6}
+.jt-buzz-brief-body{border-left:4px solid #04b859;padding:15px;background:#f0fbf5;border-radius:0 12px 12px 0;margin:15px 0}
+.jt-buzz-brief-body>strong{color:#087847;font-size:13px;letter-spacing:.025em}
+.jt-buzz-brief-body p{display:block;white-space:pre-wrap;overflow-wrap:anywhere;color:#26445a;font-size:14px;line-height:1.65;margin:9px 0}
+.jt-buzz-brief-body b{color:#143e52}.jt-buzz-brief-body small{color:#637d6b;font-size:11px}
+.jt-buzz-schedule{display:grid;gap:10px;padding:13px 0;border-top:1px solid #e2ece8;border-bottom:1px solid #e2ece8}
+.jt-buzz-schedule>div{display:flex;align-items:flex-start;gap:11px;font-size:13px;color:#52687e;line-height:1.6}
+.jt-buzz-schedule svg{color:#098a58;flex:none;margin-top:2px}
+.jt-buzz-schedule strong{display:block;color:#19394f;font-size:12px}
+.jt-buzz-card-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:18px}
+.jt-buzz-card-actions button{border-radius:12px;padding:12px 9px;min-height:47px;font-weight:800;cursor:pointer;font-size:14px}
+.jt-buzz-card-actions .jt-buzz-accept{background:#00bb57;border:2px solid #00bb57;color:#fff}
+.jt-buzz-card-actions .jt-buzz-decline{background:#fff;color:#dc3240;border:2px solid #f05765}
+.jt-buzz-card-actions .jt-buzz-clarify{grid-column:1/-1;background:#f3f7f9;border:1px solid #d7e3e8;color:#26495f}
+.jt-buzz-card-actions button.selected{outline:3px solid #152e68;outline-offset:2px}
+@media(max-width:540px){.jt-buzz-brief-card{padding:15px}.jt-buzz-urgency{font-size:10px!important}.jt-verified-profile dl{grid-template-columns:100px 1fr}.jt-buzz-brief-body{padding:12px}}
