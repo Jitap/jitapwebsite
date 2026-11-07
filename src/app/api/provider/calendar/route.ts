@@ -1,8 +1,9 @@
-import {NextRequest,NextResponse} from 'next/server';
+import {NextRequest,NextResponse,after} from 'next/server';
 import {z} from 'zod';
 import {getProviderSession} from '@/lib/provider-session-server';
 import {sameOrigin} from '@/lib/jitap-auth';
 import {supabasePrivate} from '@/lib/coordinator-server';
+import {notifyProviderCancelled} from '@/lib/wasiliana-booking-notifications';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -43,6 +44,7 @@ export async function GET(req:NextRequest){
 }
 const action=z.discriminatedUnion('action',[
  z.object({action:z.literal('on_my_way'),appointmentId:z.string().uuid()}).strict(),
+ z.object({action:z.literal('cancel'),appointmentId:z.string().uuid(),reason:z.enum(['schedule_conflict','unavailable','too_far','tools_or_skills','scope_changed','personal_emergency','other']),details:z.string().trim().max(500).default('')}).strict(),
  z.object({action:z.literal('reschedule'),appointmentId:z.string().uuid(),start:z.string().datetime({offset:true}),end:z.string().datetime({offset:true}),reason:z.string().trim().max(500).default('')}).strict()
 ]);
 export async function POST(req:NextRequest){
@@ -55,6 +57,21 @@ export async function POST(req:NextRequest){
  try{
   const appointment=await myAppointment(session.userId,data.data.appointmentId);
   if(!appointment)return reply({error:'Appointment not found'},404);
+  if(data.data.action==='cancel'){
+   if(appointment.status!=='confirmed'&&appointment.status!=='on_my_way')return reply({error:'Only an active job can be cancelled'},409);
+   const url=process.env.SUPABASE_URL?.replace(/\\/$/,'');
+   const key=process.env.SUPABASE_ANON_KEY;
+   if(!url||!key)return reply({error:'Cancellation temporarily unavailable'},503);
+   const gateway=await fetch(url+'/rest/v1/rpc/jitap_provider_cancel_job',{
+    method:'POST',headers:{apikey:key,Authorization:'Bearer '+session.accessToken,'Content-Type':'application/json'},
+    body:JSON.stringify({p_appointment_id:appointment.id,p_reason:data.data.reason,p_details:data.data.details}),
+    cache:'no-store',signal:AbortSignal.timeout(10000)
+   });
+   if(!gateway.ok)return reply({error:'Cancellation is no longer available. Refresh your booking.'},409);
+   const cancellationId=await gateway.json() as string;
+   after(async()=>{try{await notifyProviderCancelled(appointment.request_id,cancellationId)}catch{console.warn('Wasiliana cancellation SMS could not be queued')}});
+   return reply({cancelled:true,cancellationId,status:'awaiting_customer',message:'Cancellation recorded. Customer approval is required before rematching.'});
+  }
   if(data.data.action==='on_my_way'){
    if(appointment.status==='on_my_way')return reply({status:'on_my_way',alreadyUpdated:true});
    if(appointment.status!=='confirmed')return reply({error:'Only confirmed upcoming appointments can be marked on my way'},409);
