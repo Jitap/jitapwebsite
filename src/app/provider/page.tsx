@@ -113,7 +113,7 @@ export default function ProviderDashboardPage(){
       {online&&!!dashboard?.opportunities.length?<p><strong>{dashboard.opportunities.length} live service {dashboard.opportunities.length===1?'request':'requests'} available</strong><small>Matching opportunities are ready for your review.</small></p>:<p><strong>No new live request notifications</strong><small>{online?'New matching service requests will appear here.':'Go online to receive matching requests.'}</small></p>}
       {!!dashboard?.recentResponses.length&&<p><strong>Latest response recorded</strong><small>JT-{dashboard.recentResponses[0].request_id.slice(0,8).toUpperCase()} · {dashboard.recentResponses[0].decision.replaceAll('_',' ')}</small></p>}
      </aside>}
-    {approved?<div className="jt-provider-home-greeting"
+    {approved?<div className="jt-provider-home-greeting">
        <h1>Hello, <span>{firstName}</span></h1><p>{online?'You’re online and available':'You’re currently offline'}</p>
       </div>:<div className="jt-provider-greeting"><div><p>JITAP FOR PROVIDERS</p><h1>Habari, <span>{firstName}!</span></h1><div className="jt-provider-subtext">{!submitted?'Complete onboarding to get started.':'Your provider profile is awaiting JiTap review.'}</div></div>
      <button type="button" className="jt-provider-avatar" onClick={()=>setTab('profile')} aria-label="Add profile photo">{dashboard?.uploadedMedia?.some(m=>m.kind==='profile_photo')?<img src={'/api/provider/media?kind=profile_photo&v='+encodeURIComponent(dashboard.uploadedMedia.find(m=>m.kind==='profile_photo')?.uploadedAt||'')} alt="Your profile photo"/>:<UserRound size={32}/>}</button>
