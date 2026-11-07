@@ -109,7 +109,22 @@ export async function GET(req:NextRequest){
     }
    }catch{console.warn('JiTap historical service brief enrichment skipped')}
   });
+  // Confirmed appointments belong to this authenticated provider only.
+  // Contact information is never included in public BUZZ opportunities.
+  const confirmed=await supabasePrivate<{id:string;request_id:string;provider_user_id:string;status:string}[]>(
+   'jitap_provider_appointments?provider_user_id=eq.'+encodeURIComponent(session.userId)+'&status=in.(confirmed,on_my_way)&select=id,request_id,provider_user_id,status&order=created_at.desc&limit=25');
+  const confirmedRequests=confirmed.length?await supabasePrivate<{id:string;payload:Record<string,unknown>}[]>(
+   'website_intake?id=in.('+confirmed.map(x=>x.request_id).join(',')+')&select=id,payload'):[];
+  const confirmedById=new Map(confirmedRequests.map(x=>[x.id,x.payload]));
+  const confirmedJobs=confirmed.map(a=>{
+   const p=confirmedById.get(a.request_id)||{};
+   const clean=(x:unknown,max=160)=>typeof x==='string'?x.slice(0,max):'';
+   return {id:a.id,requestId:a.request_id,status:a.status,
+    customerName:clean(p.name)||'Customer',customerPhone:clean(p.phone,30),
+    location:clean(p.locationLabel)||clean(p.area),service:clean(p.category)||'Service'};
+  });
   return responseWithSession({
+   confirmedJobs,
    profile:Array.isArray(profileResult.data)?profileResult.data[0]||null:null,
    reviewStatus:Array.isArray(reviewResult.data)?reviewResult.data[0]?.status||'not_submitted':'not_submitted',
    recentResponses:Array.isArray(responses.data)?responses.data:[],
