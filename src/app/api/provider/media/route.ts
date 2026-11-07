@@ -32,10 +32,12 @@ export async function POST(req:NextRequest){
   const data=await req.formData();
   const kind=data.get('kind'),file=data.get('file');
   if(!valid(kind)||!(file instanceof File))return NextResponse.json({error:'Select an image'},{status:422,headers});
+  const isID=kind==='id_front'||kind==='id_back';
+  if(isID&&data.get('kycConsent')!=='true')return NextResponse.json({error:'Agree to the identity verification notice before uploading your ID.'},{status:422,headers});
   if(approved[0]?.status==='approved'&&(kind==='id_front'||kind==='id_back')){
    return NextResponse.json({error:'Contact JiTap Service Operations to update verified identity documents.'},{status:403,headers});
   }
-  const saved=await uploadProviderMedia(session.userId,kind,file);
+  const saved=await uploadProviderMedia(session.userId,kind,file,isID);
   // Alert Service Operations once, when the second identity image arrives.
   // Never attach document images, credentials or ID numbers to the email.
   if((kind==='id_front'||kind==='id_back')&&
