@@ -188,15 +188,16 @@ export default function ProviderDashboardPage(){
         <div className="jt-provider-request-top"><span className="jt-provider-request-tag"><Wrench size={15}/> {SERVICE_OPTIONS.find(x=>x.value===o.category)?.label||o.category}</span><span className={'jt-buzz-urgency '+o.urgency}>Urgency: {o.urgency==='unspecified'?'Not specified':o.urgency==='normal'?'Normal':o.urgency==='high'?'High':'Low'}</span></div>
         <h3>{SERVICE_OPTIONS.find(x=>x.value===o.category)?.label||'Service'} <span className="jt-provider-request-area">· {o.area}</span></h3>
         <div className="jt-buzz-reference">Service ID: JT-{o.request_id.slice(0,8).toUpperCase()}</div>
-        <div className="jt-buzz-card-actions">
-         <button className={'jt-buzz-accept '+(decision[o.request_id]==='accepted'?'selected':'')} onClick={()=>setDecision(v=>({...v,[o.request_id]:'accepted'}))}>Accept</button>
-         <button className={'jt-buzz-decline '+(decision[o.request_id]==='declined'?'selected':'')} onClick={()=>setDecision(v=>({...v,[o.request_id]:'declined'}))}>Decline</button>
-         <Link className="jt-buzz-view" href={'/provider/request/'+o.request_id}>View <ChevronRight size={17}/></Link>
-        </div>
+
         <div className="jt-buzz-schedule">
          <div><MapPin size={17}/><span><strong>Job location</strong>{o.job_location||o.area}{(o.job_location||o.area).toLowerCase().includes('mombasa')?'':' · Mombasa'} · Exact directions shared after confirmation</span></div>
          <div><Clock3 size={17}/><span><strong>Requested date</strong>{o.preferred_date|| (o.requested_timing==='today'?'Requested urgently (date to confirm)':o.requested_timing==='this-week'?'This week (date to confirm)':'To be agreed')}</span></div>
          <div><Clock3 size={17}/><span><strong>Requested time</strong>{o.preferred_time||'To be agreed'}</span></div>
+        </div>
+        <div className="jt-buzz-card-actions">
+         <button className={'jt-buzz-accept '+(decision[o.request_id]==='accepted'?'selected':'')} onClick={()=>setDecision(v=>({...v,[o.request_id]:'accepted'}))}>Accept</button>
+         <button className={'jt-buzz-decline '+(decision[o.request_id]==='declined'?'selected':'')} onClick={()=>setDecision(v=>({...v,[o.request_id]:'declined'}))}>Decline</button>
+         <Link className="jt-buzz-view" href={'/provider/request/'+o.request_id}>View <ChevronRight size={17}/></Link>
         </div>
 
         
