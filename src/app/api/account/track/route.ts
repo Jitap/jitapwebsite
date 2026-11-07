@@ -33,9 +33,11 @@ export async function GET(req:NextRequest){
    if(verify[0]?.customer_user_id!==identity.identity.userId)
     return NextResponse.json({error:'Unable to link this request to your account.'},{status:409,headers});
   }
+  const [caseProgress]=await supabasePrivate<{status:string;updated_at:string}[]>(
+   'coordinator_cases?source_kind=eq.website_request&source_id=eq.'+encodeURIComponent(match.id)+'&select=status,updated_at&limit=1');
   const payload=match.payload;
   const response=NextResponse.json({ok:true,ticket:{
-   serviceId:ref,status:match.status,
+   serviceId:ref,status:caseProgress?.status||match.status,updatedAt:caseProgress?.updated_at||match.created_at,
    category:typeof payload.category==='string'?payload.category:'Service',
    description:typeof payload.description==='string'?payload.description.slice(0,900):'Service request',
    area:typeof payload.area==='string'?payload.area:'',
