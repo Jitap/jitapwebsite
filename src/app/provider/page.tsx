@@ -14,7 +14,8 @@ type ProviderProfile={
 };
 type Opportunity={request_id:string;category:string;area:string;preferred_date:string;preferred_time:string;created_at:string;technical_summary:string;proposed_scope:string;urgency:'high'|'normal'|'low'|'unspecified';brief_source:'ai'|'reported';requested_timing:string;job_location:string};
 type PastResponse={request_id:string;decision:string;created_at:string};
-type Dashboard={profile:ProviderProfile|null;reviewStatus:string;opportunities:Opportunity[];recentResponses:PastResponse[];uploadedMedia:{kind:MediaKind;uploadedAt:string}[]};
+type ConfirmedJob={id:string;requestId:string;status:string;customerName:string;customerPhone:string;location:string;service:string};
+type Dashboard={profile:ProviderProfile|null;reviewStatus:string;confirmedJobs:ConfirmedJob[];opportunities:Opportunity[];recentResponses:PastResponse[];uploadedMedia:{kind:MediaKind;uploadedAt:string}[]};
 type Tab='home'|'profile'|'requests'|'verification';
 const empty={full_name:'',business_name:'',categories:[] as string[],service_areas:[] as string[],
  base_area:'Bamburi',experience_years:0,skills:'',is_online:false,submitted_at:null};
@@ -92,6 +93,17 @@ export default function ProviderDashboardPage(){
    categories:form.categories,areas:form.service_areas,baseArea:form.service_areas.includes(form.base_area)?form.base_area:form.service_areas[0],
    experienceYears:form.experience_years,skills:form.skills,submit});
   if(result){setSuccess(submit?'Profile saved. Upload both sides of your national ID for verification.':'Profile saved.');if(submit)setTab('verification')}
+ }
+ async function onMyWay(job:ConfirmedJob){
+  setBusy(true);setError('');setSuccess('');
+  try{
+   const r=await fetch('/api/provider/calendar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'on_my_way',appointmentId:job.id})});
+   const result=await r.json().catch(()=>({}));
+   if(!r.ok)throw Error(result.error||'Could not update your journey status');
+   await refresh();
+   router.push('/provider/calendar?job='+encodeURIComponent(job.requestId));
+  }catch(e){setError(e instanceof Error?e.message:'Could not update journey status')}
+  finally{setBusy(false)}
  }
  async function answer(o:Opportunity,choice?:'accepted'|'declined'|'needs_clarification'){
   const d=choice||decision[o.request_id];if(!d)return;
@@ -210,6 +222,19 @@ export default function ProviderDashboardPage(){
         <button className={'jt-provider-toggle '+(online?'active':'')} type="button" role="switch" aria-label="Available for requests" aria-checked={online} disabled={busy} onClick={()=>act({action:'availability',online:!online})}><span/></button></div>
 
       </section>:<section className="jt-provider-availability"><div className="jt-provider-status-row"><div><strong>You’re offline</strong><p>Complete verification to start receiving requests.</p></div></div><div className="jt-provider-pending"><Clock3 size={17}/>Finish your provider verification to get started.</div></section>)}
+     {approved&&(tab==='home'||tab==='requests')&&!!dashboard?.confirmedJobs?.length&&<section className="jt-confirmed-jobs">
+      <h2><CheckCircle2 size={21}/> Confirmed Jobs <span>{dashboard.confirmedJobs.length}</span></h2>
+      {dashboard.confirmedJobs.map(job=><article key={job.id} className="jt-confirmed-job">
+       <div className="jt-confirmed-job-meta"><strong>{SERVICE_OPTIONS.find(c=>c.value===job.service)?.label||job.service}</strong><small>JT-{job.requestId.slice(0,8).toUpperCase()}</small></div>
+       <p><UserRound size={17}/> {job.customerName}</p>
+       {job.customerPhone&&<p><a href={'tel:'+job.customerPhone.replace(/[^+0-9]/g,'')}>{job.customerPhone} · Call customer</a></p>}
+       <p><MapPin size={17}/> {job.location||'Location not provided'}</p>
+       <div className="jt-confirmed-job-actions">
+        <button type="button" className="jt-confirmed-action" disabled={busy||job.status==='on_my_way'} onClick={()=>void onMyWay(job)}>{job.status==='on_my_way'?'✓ On my way':busy?'Updating…':'On my way'}</button>
+        <button type="button" className="jt-confirmed-view" onClick={()=>router.push('/provider/calendar?job='+encodeURIComponent(job.requestId))}>View job & directions <ChevronRight size={16}/></button>
+       </div>
+      </article>)}
+     </section>}
      {(tab==='home'||tab==='requests')&&<section className="jt-provider-requests">
       <div className="jt-provider-requests-heading"><div><ClipboardList size={20}/><h2>{tab==='home'?'Live Requests':'Requests'}</h2></div><span>{liveOpportunities.length>=100?'100+':liveOpportunities.length}</span></div>
       {!approved?<div className="jt-provider-empty"><ShieldCheck size={25}/><strong>Verification required</strong><p>Once your profile is approved, you can switch online and review requests that match your services and areas.</p></div>:
