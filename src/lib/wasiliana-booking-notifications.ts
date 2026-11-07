@@ -14,8 +14,8 @@ async function deliver(eventType:string,requestId:string,phone:string,message:st
  // Unique event key guarantees the provider is never messaged twice for the same event.
  let queued:Outbox[]=[];
  try{
-  queued=await supabasePrivate<Outbox[]>('notification_outbox?on_conflict=reference_id,event_type,recipient_role,channel,recipient_phone',{
-   method:'POST',headers:{Prefer:'resolution=ignore-duplicates,return=representation'},
+  queued=await supabasePrivate<Outbox[]>('notification_outbox',{
+   method:'POST',headers:{Prefer:'return=representation'},
    body:JSON.stringify({reference_id:requestId,event_type:eventType,recipient_role:'customer',
     recipient_phone:mobile,channel:'sms',message_body:message,consent_confirmed:true,status:'processing'})
   });
