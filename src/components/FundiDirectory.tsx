@@ -1,5 +1,5 @@
 'use client';
-import {useMemo,useState} from 'react';
+import {useEffect,useMemo,useState} from 'react';
 import Link from 'next/link';
 import {ArrowRight,MapPin,Search,SlidersHorizontal} from 'lucide-react';
 import {areas,categories} from '@/lib/data';
@@ -81,9 +81,11 @@ export function MatchedFundis({category,area,onQuotes,specialty}:{category:strin
  </section>;
 }
 export function FundiProfile({id}:{id:string}){
+ const [fromMatch,setFromMatch]=useState(false);
+ useEffect(()=>{setFromMatch(new URLSearchParams(window.location.search).get('fromMatch')==='1')},[]);
  const p=fundiListings.find(x=>x.id===id);
  if(!p)return null;
- if(id==='fund-022'||id==='fund-036')return <section className="container jt-profile"><Link href="/fundis" className="jt-profile-back">← Back to local professionals</Link><ProviderShowcase detail profileId={id}/></section>;
+ if(id==='fund-022'||id==='fund-036')return <section className="container jt-profile"><Link href="/fundis" className="jt-profile-back">← Back to local professionals</Link><ProviderShowcase detail profileId={id} fromMatch={fromMatch}/></section>;
  const category=slugFor(p.categories),area=p.areas[0]||'Bamburi';
  const job='I need help with '+p.categories.join(', ')+' from '+p.name+'.';
  const href='/request?category='+encodeURIComponent(category)+'&area='+encodeURIComponent(area)+'&description='+encodeURIComponent(job);
@@ -91,5 +93,5 @@ export function FundiProfile({id}:{id:string}){
  <div className="td-pro-avatar" aria-hidden="true">{p.name.split(/\s+/).map(w=>w[0]||'').slice(0,2).join('').toUpperCase()}</div>
  <div><span className="th-overline">LOCAL SERVICE PROFESSIONAL</span><h1>{p.name}</h1><h2>Services</h2><p>{p.categories.join(' · ')}</p><h2>Service areas</h2><p>{p.areas.join(' · ')}</p>
  <p className="jt-profile-disclaimer">Service details are provided for discovery. Availability, ratings and credentials have not been independently confirmed.</p>
- <Link className="td-outline-button" href={'/request?resume=1&providerId='+encodeURIComponent(p.id)}>Request this provider · Continue to contact</Link></div></article></section>;
+ <Link className="td-outline-button" href={fromMatch?'/request?resume=1&providerId='+encodeURIComponent(p.id):href}>Request</Link></div></article></section>;
 }
