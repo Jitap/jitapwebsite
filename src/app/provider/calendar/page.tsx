@@ -40,6 +40,9 @@ export default function ProviderCalendar(){
  const [detailId,setDetailId]=useState<string|null>(null);
  const [filterOpen,setFilterOpen]=useState(false);
  const [showReschedule,setShowReschedule]=useState(false);
+ const [showCancel,setShowCancel]=useState(false);
+ const [cancelReason,setCancelReason]=useState('');
+ const [cancelDetails,setCancelDetails]=useState('');
  const [newDate,setNewDate]=useState('');
  const [newStart,setNewStart]=useState('09:00');
  const [newEnd,setNewEnd]=useState('10:00');
@@ -80,6 +83,20 @@ export default function ProviderCalendar(){
  function openReschedule(a:Appointment){
   setNewDate(a.startsAt?dayKey(a.startsAt):today);setNewStart(a.startsAt?fmt(new Date(a.startsAt),{hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).replace(/\s/g,''):'09:00');setNewEnd(a.endsAt?fmt(new Date(a.endsAt),{hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).replace(/\s/g,''):'10:00');setReason('');setShowReschedule(true);
  }
+ async function cancelJob(e:FormEvent<HTMLFormElement>){
+  e.preventDefault();if(!detail||!cancelReason)return;
+  const result=await send({action:'cancel',appointmentId:detail.id,reason:cancelReason,details:cancelDetails});
+  if(result){setShowCancel(false);setDetailId(null);setMessage('Your cancellation was recorded. The customer must approve a rematch.')}
+ }
+ const cancellationOptions=[
+  {value:'schedule_conflict',label:'Scheduling conflict'},
+  {value:'unavailable',label:'I am no longer available'},
+  {value:'too_far',label:'Location is too far'},
+  {value:'tools_or_skills',label:'Required tools or skills unavailable'},
+  {value:'scope_changed',label:'Scope of work has changed'},
+  {value:'personal_emergency',label:'Personal emergency'},
+  {value:'other',label:'Other reason'}
+ ];
  async function reschedule(e:FormEvent<HTMLFormElement>){
   e.preventDefault();if(!detail)return;
   const start=new Date(newDate+'T'+newStart+':00+03:00'),end=new Date(newDate+'T'+newEnd+':00+03:00');
@@ -101,7 +118,7 @@ export default function ProviderCalendar(){
    <section className="jcal-info"><h2>Schedule</h2><p><CalendarDays size={20}/>{detail.startsAt&&detail.endsAt?dateTime(detail.startsAt)+' · '+time(detail.startsAt)+' – '+time(detail.endsAt):'Confirmed · Date and time to arrange'}</p>{detail.pendingReschedule&&<p className="jcal-pending"><Clock3 size={18}/> Reschedule awaiting JiTap confirmation</p>}</section>
    <section className="jcal-info"><h2>Service details</h2><p>{detail.description||'The confirmed service request is scheduled for this time.'}</p><p className="jcal-ref">Ref: JT-{detail.requestId.slice(0,8).toUpperCase()}</p></section>
    {error&&<p role="alert" className="jcal-error">{error}</p>}{message&&<p role="status" className="jcal-success">{message}</p>}
-   <div className="jcal-detail-actions"><button className="jcal-primary" disabled={busy||detail.status!=='confirmed'} onClick={async()=>{const r=await send({action:'on_my_way',appointmentId:detail.id});if(r)setMessage('Your status is now On my way.')}}>{detail.status==='on_my_way'?'✓ On my way':busy?'Updating…':'On my way'}</button><button className="jcal-secondary" disabled={busy||!!detail.pendingReschedule} onClick={()=>openReschedule(detail)}>Reschedule</button></div>
+   <div className="jcal-detail-actions"><button className="jcal-primary" disabled={busy||detail.status!=='confirmed'} onClick={async()=>{const r=await send({action:'on_my_way',appointmentId:detail.id});if(r)setMessage('Your status is now On my way.')}}>{detail.status==='on_my_way'?'✓ On my way':busy?'Updating…':'On my way'}</button><button className="jcal-secondary" disabled={busy||!!detail.pendingReschedule} onClick={()=>openReschedule(detail)}>Reschedule</button><button className="jcal-cancel-action" disabled={busy||!(detail.status==='confirmed'||detail.status==='on_my_way')} onClick={()=>{setCancelReason('');setCancelDetails('');setError('');setShowCancel(true)}}>Cancel this job</button></div>
   </div>:<>
    <header className="jcal-header"><div><h1>Calendar</h1><p>{monthLabel}</p></div><button aria-label="Calendar view settings" onClick={()=>setFilterOpen(v=>!v)}><SlidersHorizontal size={22}/></button></header>
    {filterOpen&&<div className="jcal-filter"><button onClick={()=>{setMonthView(false);setFilterOpen(false)}}>Week view</button><button onClick={()=>{setMonthView(true);setFilterOpen(false)}}>Month view</button></div>}
@@ -124,6 +141,11 @@ export default function ProviderCalendar(){
     </section>}
    {!loading&&unscheduled.length>0&&<section className="jcal-unscheduled"><h2>Confirmed jobs · Time to arrange</h2>{unscheduled.map(a=><button key={a.id} onClick={()=>setDetailId(a.id)}><strong>{a.title}</strong><span>{a.location||a.area} · Booking confirmed</span><small>View job and tap On my way</small></button>)}</section>}
   </>}
+  {showCancel&&detail&&<div className="jcal-overlay" role="presentation" onClick={()=>setShowCancel(false)}><section className="jcal-sheet" role="dialog" aria-modal="true" aria-labelledby="jcal-cancel-title" onClick={e=>e.stopPropagation()}>
+   <header><h2 id="jcal-cancel-title">Cancel Scheduled Work</h2><button onClick={()=>setShowCancel(false)} aria-label="Close"><X size={22}/></button></header>
+   <p className="jcal-cancel-explanation">Select why you cannot complete this job. The customer will be notified and asked to approve a rematch. The job will not be offered to others until they approve.</p>
+   <form onSubmit={cancelJob}><label>Reason for cancellation<select required value={cancelReason} onChange={e=>setCancelReason(e.target.value)}><option value="">Select a reason</option>{cancellationOptions.map(x=><option key={x.value} value={x.value}>{x.label}</option>)}</select></label><label>Additional details {cancelReason==='other'?'(required)':'(optional)'}<textarea maxLength={500} rows={3} value={cancelDetails} onChange={e=>setCancelDetails(e.target.value)} placeholder="Briefly explain the cancellation" required={cancelReason==='other'}/></label>{error&&<p role="alert" className="jcal-error">{error}</p>}<button className="jcal-primary" type="submit" disabled={busy||!cancelReason}>{busy?'Submitting…':'Confirm cancellation'}</button><button type="button" className="jcal-secondary" onClick={()=>setShowCancel(false)}>Keep this job</button></form>
+  </section></div>}
   {showReschedule&&detail&&<div className="jcal-overlay" role="presentation" onClick={()=>setShowReschedule(false)}><section className="jcal-sheet" role="dialog" aria-modal="true" aria-labelledby="jcal-reschedule-title" onClick={e=>e.stopPropagation()}>
    <header><h2 id="jcal-reschedule-title">Reschedule Appointment</h2><button onClick={()=>setShowReschedule(false)} aria-label="Close"><X size={22}/></button></header>
    <form onSubmit={reschedule}><label>Date<input type="date" min={today} required value={newDate} onChange={e=>setNewDate(e.target.value)}/></label><div className="jcal-time-fields"><label>Start time<input type="time" required value={newStart} onChange={e=>setNewStart(e.target.value)}/></label><label>End time<input type="time" required value={newEnd} onChange={e=>setNewEnd(e.target.value)}/></label></div><label>Reason (optional)<input maxLength={500} value={reason} onChange={e=>setReason(e.target.value)} placeholder="e.g. I have another job at this time."/></label><p className="jcal-sheet-note">JiTap will coordinate this request. The existing time remains confirmed until approved.</p><button disabled={busy} className="jcal-primary">{busy?'Submitting…':'Confirm'}</button></form>
