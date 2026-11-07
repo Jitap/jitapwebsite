@@ -3,9 +3,11 @@ import {useCallback,useEffect,useMemo,useState,type FormEvent} from 'react';
 import {useRouter} from 'next/navigation';
 import {ArrowLeft,CalendarDays,ChevronLeft,ChevronRight,Clock3,MapPin,Navigation,Phone,SlidersHorizontal,UserRound,X,CheckCircle2} from 'lucide-react';
 import './calendar.css';
+import {ProviderJobAction} from '@/components/ProviderJobAction';
+import {ProviderTravelEstimate,googleJobDirections} from '@/components/ProviderTravelEstimate';
 
 type Appointment={
- id:string;requestId:string;startsAt:string|null;endsAt:string|null;status:string;
+ id:string;requestId:string;startsAt:string|null;endsAt:string|null;status:string;rated:boolean;
  title:string;category:string;area:string;location:string;latitude:number|null;longitude:number|null;
  placeId:string;customerName:string;customerPhone:string;description:string;
  pendingReschedule:{id:string;proposed_start_at:string;proposed_end_at:string}|null
@@ -23,11 +25,6 @@ const startWeek=(key:string)=>addDays(key,-dayDate(key).getUTCDay());
 const time=(iso:string)=>fmt(new Date(iso),{hour:'numeric',minute:'2-digit',hour12:true});
 const dateTime=(iso:string)=>fmt(new Date(iso),{weekday:'short',day:'numeric',month:'short',year:'numeric'});
 const hour=(iso:string)=>Number(fmt(new Date(iso),{hour:'numeric',hourCycle:'h23'}))+Number(fmt(new Date(iso),{minute:'2-digit'}))/60;
-const directions=(a:Appointment)=>{
- const destination=a.latitude!==null&&a.longitude!==null?a.latitude+','+a.longitude:a.location;
- const parameter=a.placeId?'&destination_place_id='+encodeURIComponent(a.placeId):'';
- return 'https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(destination)+parameter+'&travelmode=driving';
-};
 export default function ProviderCalendar(){
  const router=useRouter();
  const [today]=useState(()=>dayKey(new Date()));
@@ -113,12 +110,12 @@ export default function ProviderCalendar(){
     {detail.location&&(detail.latitude!==null&&detail.longitude!==null?
       <iframe title={'Google Maps: '+detail.location} loading="lazy" referrerPolicy="no-referrer-when-downgrade" src={'https://maps.google.com/maps?q='+encodeURIComponent(detail.latitude+','+detail.longitude)+'&z=15&output=embed'}/>:
       <div className="jcal-map-placeholder"><MapPin size={24}/><span>{detail.location}</span></div>)}
-    <a href={directions(detail)} target="_blank" rel="noopener noreferrer"><Navigation size={17}/> Directions in Google Maps</a>
+    <ProviderTravelEstimate job={detail}/>
    </section>
    <section className="jcal-info"><h2>Schedule</h2><p><CalendarDays size={20}/>{detail.startsAt&&detail.endsAt?dateTime(detail.startsAt)+' · '+time(detail.startsAt)+' – '+time(detail.endsAt):'Confirmed · Date and time to arrange'}</p>{detail.pendingReschedule&&<p className="jcal-pending"><Clock3 size={18}/> Reschedule awaiting JiTap confirmation</p>}</section>
    <section className="jcal-info"><h2>Service details</h2><p>{detail.description||'The confirmed service request is scheduled for this time.'}</p><p className="jcal-ref">Ref: JT-{detail.requestId.slice(0,8).toUpperCase()}</p></section>
    {error&&<p role="alert" className="jcal-error">{error}</p>}{message&&<p role="status" className="jcal-success">{message}</p>}
-   <div className="jcal-detail-actions"><button className="jcal-primary" disabled={busy||detail.status!=='confirmed'} onClick={async()=>{const r=await send({action:'on_my_way',appointmentId:detail.id});if(r)setMessage('Your status is now On my way.')}}>{detail.status==='on_my_way'?'✓ On my way':busy?'Updating…':'On my way'}</button><button className="jcal-secondary" disabled={busy||!!detail.pendingReschedule} onClick={()=>openReschedule(detail)}>Reschedule</button><button className="jcal-cancel-action" disabled={busy||!(detail.status==='confirmed'||detail.status==='on_my_way')} onClick={()=>{setCancelReason('');setCancelDetails('');setError('');setShowCancel(true)}}>Cancel this job</button></div>
+   <div className="jcal-detail-actions"><ProviderJobAction appointmentId={detail.id} status={detail.status} rated={detail.rated} onUpdated={load}/><button className="jcal-secondary" disabled={busy||!!detail.pendingReschedule} onClick={()=>openReschedule(detail)}>Reschedule</button><button className="jcal-cancel-action" disabled={busy||!(detail.status==='confirmed'||detail.status==='on_my_way')} onClick={()=>{setCancelReason('');setCancelDetails('');setError('');setShowCancel(true)}}>Cancel this job</button></div>
   </div>:<>
    <header className="jcal-header"><div><h1>Calendar</h1><p>{monthLabel}</p></div><button aria-label="Calendar view settings" onClick={()=>setFilterOpen(v=>!v)}><SlidersHorizontal size={22}/></button></header>
    {filterOpen&&<div className="jcal-filter"><button onClick={()=>{setMonthView(false);setFilterOpen(false)}}>Week view</button><button onClick={()=>{setMonthView(true);setFilterOpen(false)}}>Month view</button></div>}
