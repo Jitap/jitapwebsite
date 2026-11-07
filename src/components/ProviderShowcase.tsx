@@ -4,7 +4,7 @@ import Link from 'next/link';
 import {BriefcaseBusiness,Layers,MapPin,Star,Truck,ArrowRight,Clock3,Monitor,Check} from 'lucide-react';
 export type Profile={id:string;display_name:string;business_name:string;service_categories:string[];service_areas:string[];base_area:string|null;description:string|null;logo_url:string|null;rating:number|null;review_count:number|null;years_experience:number|null;similar_jobs_completed:number|null;verified_at:string|null;is_online:boolean};
 const fallback:Profile={id:'fund-022',display_name:'URBAN MOVERS AND RELOCATIONS',business_name:'URBAN MOVERS AND RELOCATIONS',service_categories:['Moving / Delivery','Relocation'],service_areas:['Bamburi','Nyali','Mtwapa','Tudor'],base_area:'Bamburi',description:'House moving, relocation and interior decor services.',logo_url:null,rating:null,review_count:null,years_experience:null,similar_jobs_completed:null,verified_at:null,is_online:false};
-export function ProviderShowcase({detail=false,profile,profileId='fund-022'}:{detail?:boolean;profile?:Profile;profileId?:string}){
+export function ProviderShowcase({detail=false,profile,profileId='fund-022',fromMatch=false}:{detail?:boolean;profile?:Profile;profileId?:string;fromMatch?:boolean}){
  const [loaded,setLoaded]=useState<Profile|null>(null);
  useEffect(()=>{
   if(profile)return;
@@ -31,6 +31,6 @@ export function ProviderShowcase({detail=false,profile,profileId='fund-022'}:{de
    </div>
    {detail&&<div className="jt-provider-feature-extra"><p>{p.description||(isTech?'Computer services and IT support.':'House moving and relocation services.')}</p><h3>Service coverage</h3><p>{p.service_areas.join(' · ')}</p>{isTech&&<p><a href="https://share.google/sw7NGTin3byTlEmrD" target="_blank" rel="noopener noreferrer">View Google listing and reviews</a></p>}</div>}
   </div>
-  <div className="jt-provider-feature-actions">{detail?<Link href={request} className="jt-provider-profile-button">{isTech?'Request':'Request'} <ArrowRight size={18}/></Link>:<Link href={'/fundis/'+encodeURIComponent(p.id)} className="jt-provider-profile-button">View profile</Link>}</div>
+  <div className="jt-provider-feature-actions">{detail?<Link href={'/request?resume=1&providerId='+encodeURIComponent(p.id)} className="jt-provider-profile-button">{isTech?'Request':'Request'} <ArrowRight size={18}/></Link>:<Link href={'/fundis/'+encodeURIComponent(p.id)+(fromMatch?'?fromMatch=1':'')} className="jt-provider-profile-button">View profile</Link>}</div>
  </article>;
 }
