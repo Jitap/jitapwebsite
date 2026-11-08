@@ -6,7 +6,7 @@ import Link from 'next/link';
 type Staff={email:string;role:'admin'|'coordinator'};
 type Case={
  id:string;reference:string;source_kind:string;source_id:string;status:string;priority:string;assigned_to:string|null;next_followup_at:string|null;created_at:string;
- intervention_status:string;intervention_reason:string|null;intervention_owner:string|null;intervention_opened_at:string|null;jobStatus:string|null;providerName:string|null;appointmentId:string|null;jobUpdatedAt:string|null;
+ intervention_status:string;intervention_reason:string|null;intervention_owner:string|null;intervention_opened_at:string|null;jobStatus:string|null;providerName:string|null;providerPhone:string|null;appointmentId:string|null;jobUpdatedAt:string|null;
  category:string;area:string;description:string;name:string;phone:string;preferredProviderId?:string;preferredProviderName?:string;preferredDate:string;preferredTime:string;locationLabel:string;destination:string;needsLocation:boolean;needsPhone:boolean;needsSchedule:boolean;canContact:boolean;notifyOptIn:boolean;
 };
 type Activity={action:string;actor_email:string;note:string|null;old_value:string|null;new_value:string|null;created_at:string};
@@ -291,7 +291,8 @@ export function CoordinatorDashboard(){
    </div>
    <div className="coordinator-detail" id="coordinator-detail-panel">
    {active?<><div className="coordinator-detail-top"><span>Service ID: <strong>JT-{active.reference}</strong></span><strong>{nameStatus(active.status)}</strong></div>
-    {active.jobStatus&&<div className="coordinator-live-job"><div><span>Provider status</span><strong>{jobStage(active.jobStatus)}</strong><small>{active.providerName||'Assigned provider'}{active.jobUpdatedAt?' · Updated '+formatDate(active.jobUpdatedAt):''}</small></div><span className="coordinator-live-badge">Auto-synced</span></div>}
+    {active.jobStatus&&<div className="coordinator-live-job"><div><span>Provider status</span><strong>{jobStage(active.jobStatus)}</strong><small>{active.providerName||'Assigned provider'}{active.jobUpdatedAt?' · Updated '+formatDate(active.jobUpdatedAt):''}</small>
+    {active.providerPhone&&<a className="coordinator-provider-call" href={'tel:'+active.providerPhone.replace(/[^+0-9]/g,'')}><Phone size={13}/> Contact provider: {active.providerPhone}</a>}</div><span className="coordinator-live-badge">Auto-synced</span></div>}
     {['open','acknowledged'].includes(active.intervention_status)&&<section className="coordinator-intervention-card" aria-label="SOC intervention needed">
       <div className="coordinator-intervention-heading"><AlertTriangle size={19}/><strong>{active.intervention_status==='open'?'Human intervention required':'SOC follow-up underway'}</strong></div>
       <p>{active.intervention_reason||'This request needs a coordinator to review and follow up.'}</p>
