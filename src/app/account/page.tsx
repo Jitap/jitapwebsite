@@ -23,7 +23,7 @@ export default function AccountPage(){
  useEffect(()=>{let active=true;fetch('/api/auth/session',{cache:'no-store'}).then(async r=>{if(!r.ok)throw Error('Sign in required');return r.json()}).then(data=>{if(active){setAccount(data);if(data.accountType==='provider')router.replace('/provider')}}).catch(()=>{if(active)router.replace('/login?mode=login')}).finally(()=>{if(active)setLoading(false)});return()=>{active=false}},[router]);
  async function switchProvider(){
   const r=await fetch('/api/auth/mode',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'provider'})});
-  if(!r.ok){setError('Could not switch back to provider mode.');return}
+  if(!r.ok){setError('Could not open provider onboarding.');return}
   window.dispatchEvent(new Event('jitap:auth-changed'));router.push('/provider');router.refresh();
  }
  async function signOut(){const r=await fetch('/api/auth/session',{method:'DELETE'});if(!r.ok){setError('Unable to sign out. Please try again.');return}window.dispatchEvent(new Event('jitap:auth-changed'));router.replace('/login?mode=login');router.refresh()}
@@ -40,7 +40,7 @@ export default function AccountPage(){
      <div className="jt-requests-list">{requests.map(r=><CustomerTicketCard key={r.reference} ticket={r}/>)}</div>}
    </section>}
    <p className="jt-account-disclaimer">{account.accountType==='provider'?'A provider account does not automatically mean verification, active work allocation, or guaranteed jobs.':'Your request is confirmed as soon as an available verified provider accepts it. Their contact details will then appear in My Requests.'}</p>
-   {account.primaryAccountType==='provider'&&account.accountType==='customer'&&<button type="button" className="jt-account-signout" onClick={switchProvider}><BriefcaseBusiness size={18}/> Switch to Provider</button>}
+   {account.accountType==='customer'&&<button type="button" className="jt-account-signout" onClick={switchProvider}><BriefcaseBusiness size={18}/> Switch to Provider</button>}
    {error&&<p role="alert" className="jt-auth-error">{error}</p>}
    <button type="button" className="jt-account-signout" onClick={signOut}><LogOut size={18}/> Log out</button>
   </>:null}
