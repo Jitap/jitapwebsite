@@ -4,6 +4,7 @@ import {getProviderSession} from '@/lib/provider-session-server';
 import {sameOrigin} from '@/lib/jitap-auth';
 import {supabasePrivate} from '@/lib/coordinator-server';
 import {notifyProviderCancelled} from '@/lib/wasiliana-booking-notifications';
+import {SERVICE_OPTIONS} from '@/lib/provider-options';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -30,7 +31,7 @@ export async function GET(req:NextRequest){
    const record=byId.get(a.request_id);
    const p=record?.payload||{};
    return {id:a.id,requestId:a.request_id,startsAt:a.starts_at,endsAt:a.ends_at,status:a.status,
-    title:safeText(p.description)||safeText(p.category)||'Scheduled service',
+    title:(SERVICE_OPTIONS.find(item=>item.value===p.category)?.label||safeText(p.category).replace(/[-_]/g,' ')||'Service')+' Service',
     category:safeText(p.category),area:safeText(p.area),
     location:safeText(p.locationLabel)||safeText(p.area),
     latitude:typeof p.locationLat==='number'?p.locationLat:null,
@@ -60,7 +61,7 @@ export async function POST(req:NextRequest){
   const appointment=await myAppointment(session.userId,data.data.appointmentId);
   if(!appointment)return reply({error:'Appointment not found'},404);
   if(data.data.action==='cancel'){
-   if(appointment.status!=='confirmed'&&appointment.status!=='on_my_way')return reply({error:'Only an active job can be cancelled'},409);
+   if(!['confirmed','on_my_way','arrived','in_progress'].includes(appointment.status))return reply({error:'Only an active job can be cancelled'},409);
    const url=process.env.SUPABASE_URL?.replace(/[/]$/,'');
    const key=process.env.SUPABASE_ANON_KEY;
    if(!url||!key)return reply({error:'Cancellation temporarily unavailable'},503);
