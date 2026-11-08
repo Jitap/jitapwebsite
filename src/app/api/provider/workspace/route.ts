@@ -56,14 +56,15 @@ export async function GET(req:NextRequest){
  if(!session)return error('Sign in with your provider account.',401);
  try{
   const id='eq.'+encodeURIComponent(session.userId);
-  const [profileResult,reviewResult,responses,opportunities,media]=await Promise.all([
+  const [profileResult,reviewResult,responses,opportunities,media,notificationReads]=await Promise.all([
    dbRequest(session.accessToken,'jitap_provider_workspaces?user_id='+id+'&select=*'),
    dbRequest(session.accessToken,'jitap_provider_reviews?user_id='+id+'&select=status,reviewed_at'),
    dbRequest(session.accessToken,'jitap_provider_buzz_responses?provider_user_id='+id+'&select=request_id,decision,created_at&order=created_at.desc&limit=15'),
    dbRequest(session.accessToken,'rpc/jitap_provider_available_buzz','POST',{}),
-   getProviderMedia(session.userId)
+   getProviderMedia(session.userId),
+   dbRequest(session.accessToken,'jitap_provider_notification_reads?provider_user_id='+id+'&select=request_id&order=read_at.desc&limit=1000')
   ]);
-  if(!profileResult.ok||!reviewResult.ok||!responses.ok||!opportunities.ok)throw Error('read failed');
+  if(!profileResult.ok||!reviewResult.ok||!responses.ok||!opportunities.ok||!notificationReads.ok)throw Error('read failed');
   // Defense in depth: BUZZ must never offer a trade outside the provider's
   // approved categories and selected service areas, even if RPC behavior changes.
   // A clear conflicting task classification is also excluded (for example a
@@ -130,6 +131,7 @@ export async function GET(req:NextRequest){
   });
   return responseWithSession({
    confirmedJobs,
+   readNotificationIds:Array.isArray(notificationReads.data)?notificationReads.data.map((r:{request_id:string})=>r.request_id):[],
    profile:Array.isArray(profileResult.data)?profileResult.data[0]||null:null,
    reviewStatus:Array.isArray(reviewResult.data)?reviewResult.data[0]?.status||'not_submitted':'not_submitted',
    recentResponses:Array.isArray(responses.data)?responses.data:[],
@@ -175,6 +177,21 @@ export async function POST(req:NextRequest){
    if(!r.ok)return error(parsed.data.online?'Your profile must be verified by JiTap before you can go online.':'Unable to change availability.',403);
    if(!Array.isArray(r.data)||!r.data.length)return error('Complete provider onboarding first.',409);
    return responseWithSession({online:r.data[0].is_online===true},session);
+  }
+  if((input as {action?:string}).action==='read_notification'){
+   const parsed=z.object({action:z.literal('read_notification'),requestId:z.string().uuid()}).strict().safeParse(input);
+   if(!parsed.success)return error('Invalid notification',422);
+   // Only acknowledge an opportunity currently available to this provider.
+   // Even if it was claimed after display, the read receipt is harmless.
+   const available=await dbRequest(session.accessToken,'rpc/jitap_provider_available_buzz','POST',{});
+   if(!available.ok)return error('Notifications temporarily unavailable',503);
+   const hasRequest=Array.isArray(available.data)&&available.data.some((entry:{request_id?:string})=>entry.request_id===parsed.data.requestId);
+   if(!hasRequest)return error('This notification is no longer available',409);
+   const result=await dbRequest(session.accessToken,'jitap_provider_notification_reads?on_conflict=provider_user_id,request_id','POST',{
+    provider_user_id:session.userId,request_id:parsed.data.requestId
+   },{Prefer:'resolution=ignore-duplicates,return=representation'});
+   if(!result.ok)return error('Could not mark notification as read',503);
+   return responseWithSession({read:true},session);
   }
   if((input as {action?:string}).action==='respond'){
    const parsed=z.object({
