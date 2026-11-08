@@ -151,3 +151,108 @@
 @media(max-width:380px){
  .jt-auth-page .jt-auth-panel{padding:22px 14px}
 }
+
+
+/* JiTap approved mobile auth — functional hybrid UI, shared Sign In / OTP */
+body:has(.jt-auth-redesign)>.skip{z-index:100}
+body:has(.jt-auth-redesign) .header,
+body:has(.jt-auth-redesign) .footer{display:none}
+body:has(.jt-auth-redesign) #main{min-height:100dvh}
+.jt-auth-page.jt-auth-redesign{
+ position:relative;isolation:isolate;display:flex!important;flex-direction:column;
+ justify-content:flex-start;align-items:center;width:100%;
+ min-height:100dvh;padding:clamp(22px,5vh,68px) 16px 45px;
+ color:#0b185d;background:
+ radial-gradient(ellipse 48% 37% at 0% 0%,rgba(197,255,208,.75),transparent 86%),
+ radial-gradient(ellipse 40% 36% at 100% 100%,rgba(192,255,207,.85),transparent 85%),
+ radial-gradient(ellipse 70% 55% at 50% 55%,#fff 30%,#f4f8ff 100%);
+ overflow:hidden;
+}
+.jt-auth-redesign:before,.jt-auth-redesign:after{content:'';position:absolute;pointer-events:none;z-index:-1;width:min(57vw,380px);height:min(30vw,190px);background:linear-gradient(135deg,rgba(158,238,177,.43),rgba(226,252,231,.12));filter:blur(.4px)}
+.jt-auth-redesign:before{left:-110px;top:-58px;border-radius:30% 40% 75% 20%;transform:rotate(-25deg)}
+.jt-auth-redesign:after{right:-120px;bottom:-80px;border-radius:85% 20% 55% 24%;transform:rotate(-18deg)}
+.jt-auth-redesign .jt-auth-brand{width:100%;max-width:255px;display:grid;place-items:center;margin:0 auto clamp(20px,4vh,39px)}
+.jt-auth-redesign .jt-auth-brand a{display:block;width:100%;text-align:center}
+.jt-auth-redesign .jt-auth-brand img{display:block;width:100%;height:auto;max-height:120px;object-fit:contain}
+.jt-auth-redesign .jt-auth-panel{flex:none;display:block!important;width:min(100%,560px);padding:clamp(22px,4vw,37px)!important;
+ background:linear-gradient(145deg,#fffffffa,#fdfdffff 83%)!important;
+ border-radius:clamp(25px,5vw,40px)!important;border:1px solid #d5e6f6!important;
+ box-shadow:inset 0 1px 0 #fff,0 15px 38px rgba(39,75,135,.13),0 2px 9px rgba(39,75,135,.04);
+ backdrop-filter:blur(4px)
+}
+.jt-auth-redesign .jt-auth-panel-inner{width:100%;max-width:none}
+.jt-auth-redesign .jt-auth-eyebrow{font-size:clamp(12px,1.9vw,15px);font-weight:850;letter-spacing:.13em;gap:9px;line-height:1.4;color:#0b1e63}
+.jt-auth-redesign .jt-auth-eyebrow svg{color:#064bbf;flex:none}
+.jt-auth-redesign .jt-auth-panel h1{font-size:clamp(30px,5.4vw,42px);color:#081a61;line-height:1.15;letter-spacing:-.05em;font-weight:850;margin:19px 0 10px}
+.jt-auth-redesign .jt-auth-subtitle{font-size:clamp(13px,2.9vw,16px);line-height:1.6;color:#6d7e9e;margin:0 0 23px}
+.jt-auth-redesign .jt-auth-roles{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:0;padding:5px;height:65px;isolation:isolate;
+ background:linear-gradient(125deg,#103b76,#56739c 62%,#3d5c87);border:1px solid #bed5eb;border-radius:999px;
+ margin:0 0 28px;box-shadow:inset 0 2px 7px #03194123,0 9px 20px #0d376a22}
+.jt-auth-redesign .jt-auth-role-slider{position:absolute;z-index:-1;top:5px;bottom:5px;left:5px;width:calc(50% - 5px);
+ background:linear-gradient(180deg,#fff,#f0f5ff);border-radius:999px;box-shadow:0 4px 12px #062b5170,0 0 0 2px #21c774;
+ transition:transform 280ms ease-in-out}
+.jt-auth-redesign .jt-auth-role-slider.to-provider{transform:translateX(100%)}
+.jt-auth-redesign .jt-auth-roles button{border:0;border-radius:999px;background:transparent;box-shadow:none!important;
+ min-width:0;min-height:54px;display:grid;place-items:center;color:#f3f6fe;padding:8px 2px;
+ font-size:clamp(15px,3vw,20px);line-height:1.2;font-weight:780;text-align:center;transition:color 280ms ease-in-out}
+.jt-auth-redesign .jt-auth-roles button.selected{color:#0d2063}
+.jt-auth-redesign .jt-auth-roles button:focus-visible{outline:3px solid #15b76a;outline-offset:-3px}
+.jt-auth-redesign .jt-auth-label{font-size:clamp(14px,3vw,17px);font-weight:800;color:#102665;margin:0 0 4px}
+.jt-auth-redesign .jt-auth-form{gap:12px}
+.jt-auth-redesign .jt-auth-phone-row{min-height:61px;border-radius:12px;border:1px solid #c9d3e9;background:#fff}
+.jt-auth-redesign .jt-auth-country{background:#fafcff;color:#09235e;font-size:16px;padding:0 13px;font-weight:800;gap:8px;border-color:#cad7e8}
+.jt-auth-redesign .jt-auth-phone-row input{font-size:clamp(16px,3vw,18px);padding:11px 14px;outline:none}
+.jt-auth-redesign .jt-auth-phone-row:focus-within{border-color:#105add;box-shadow:0 0 0 3px #125ce51b}
+.jt-auth-redesign .jt-auth-phone-row input::placeholder{color:#8c95a4;opacity:1}
+.jt-auth-redesign .jt-auth-consent{font-size:clamp(12px,2.6vw,14px);line-height:1.6;margin:10px 0 13px;align-items:flex-start;gap:10px;color:#667798}
+.jt-auth-redesign .jt-auth-consent input{width:20px;height:20px;margin-top:2px;accent-color:#00b95c}
+.jt-auth-redesign .jt-auth-consent a{color:#005cda;text-underline-offset:3px;text-decoration:underline}
+.jt-auth-redesign .jt-auth-submit{min-height:61px;width:100%;border-radius:12px;background:linear-gradient(170deg,#164bc0 0%,#063099 60%,#071d7b 100%);
+ color:white;border:1px solid #0643c6;box-shadow:inset 0 1px 1px #ffffff55;font-size:clamp(16px,3vw,19px);
+ font-weight:800;margin-top:4px;transition:filter .18s}
+.jt-auth-redesign .jt-auth-submit:hover{filter:brightness(1.09)}
+.jt-auth-redesign .jt-auth-submit:disabled{opacity:.6}
+.jt-auth-redesign .jt-auth-session-notice{font-size:14px;line-height:1.55;color:#526e87;margin:0;padding:12px;border-radius:9px;background:#edf9f3}
+.jt-auth-redesign .jt-auth-verify-panel{text-align:center;padding-top:clamp(30px,5vw,48px)!important;padding-bottom:clamp(25px,5vw,43px)!important}
+.jt-auth-redesign .jt-auth-phone-symbol{width:155px;height:155px;margin:0 auto 10px;display:grid;place-items:center;border-radius:50%;
+ background:radial-gradient(circle,#fff 0 27%,#dff5ed 28% 48%,#effcf6 49% 70%,transparent 71%);color:#091b65}
+.jt-auth-redesign .jt-auth-phone-symbol span{display:grid;place-items:center;background:#fff;border-radius:50%;width:62px;height:62px}
+.jt-auth-redesign .jt-auth-verify-panel h1{font-size:clamp(25px,4.6vw,35px);margin:14px 0 9px}
+.jt-auth-redesign .jt-auth-verify-subtitle{font-size:clamp(14px,3vw,17px);line-height:1.5;color:#687a9c;margin:0}
+.jt-auth-redesign .jt-auth-code-destination{font-size:13px;color:#577293;font-weight:680;margin:8px 0 19px;letter-spacing:.04em}
+.jt-auth-redesign .jt-auth-code-form{gap:13px}
+.jt-auth-redesign .jt-auth-code-holder{position:relative;width:100%;height:68px;margin:7px auto 19px;cursor:text}
+.jt-auth-redesign .jt-auth-code-cells{position:absolute;inset:0;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:clamp(4px,1.5vw,11px);pointer-events:none}
+.jt-auth-redesign .jt-auth-code-cell{display:grid;place-items:center;border:1.5px solid #d1dcf0;border-radius:clamp(8px,2vw,15px);background:#fff;
+ color:#0b1e65;font-size:clamp(19px,4vw,27px);font-weight:800;line-height:1}
+.jt-auth-redesign .jt-auth-code-holder:focus-within .jt-auth-code-cell.active{border-color:#075ced;border-width:3px;box-shadow:0 0 0 3px #1469ed18}
+.jt-auth-redesign .jt-auth-code-native{position:absolute;z-index:1;inset:0;width:100%;height:100%;color:transparent;background:transparent;
+ border:0;opacity:.02;caret-color:transparent;font-size:25px;cursor:text}
+.jt-auth-redesign .jt-auth-code-native:focus{outline:0}
+.jt-auth-redesign .jt-auth-verify-panel .jt-auth-submit{margin:10px 0 4px}
+.jt-auth-redesign .jt-auth-change-number{border:0;background:none;color:#005add;font-weight:790;font-size:clamp(16px,3vw,19px);padding:12px;cursor:pointer;margin:10px auto 0}
+.jt-auth-redesign .jt-auth-change-number:hover{text-decoration:underline}
+.jt-auth-redesign .jt-auth-resend{font-size:12px;margin:0 auto;padding:5px 12px;color:#577495;text-decoration:underline}
+.jt-auth-redesign .jt-auth-error,.jt-auth-redesign .jt-auth-notice{text-align:left;margin:0;font-size:13px;line-height:1.45}
+@media(max-width:600px){
+ .jt-auth-page.jt-auth-redesign{min-height:100dvh;padding:clamp(20px,5dvh,40px) 13px 30px;align-items:center}
+ .jt-auth-redesign .jt-auth-brand{max-width:190px;margin-bottom:clamp(16px,4dvh,32px)}
+ .jt-auth-redesign .jt-auth-panel{padding:clamp(20px,5vw,26px)!important}
+ .jt-auth-redesign .jt-auth-panel h1{margin-top:16px}
+ .jt-auth-redesign .jt-auth-roles{height:57px;margin-bottom:23px}
+ .jt-auth-redesign .jt-auth-roles button{min-height:46px}
+ .jt-auth-redesign .jt-auth-phone-row{min-height:56px}
+ .jt-auth-redesign .jt-auth-submit{min-height:54px}
+ .jt-auth-redesign .jt-auth-phone-symbol{width:120px;height:120px;margin-bottom:0}
+ .jt-auth-redesign .jt-auth-code-holder{height:57px}
+}
+@media(max-width:360px){
+ .jt-auth-redesign .jt-auth-panel{padding:19px 15px!important}
+ .jt-auth-redesign .jt-auth-brand{max-width:165px}
+ .jt-auth-redesign .jt-auth-country{padding:0 9px;font-size:13px}
+ .jt-auth-redesign .jt-auth-phone-row input{padding:10px 8px}
+ .jt-auth-redesign .jt-auth-code-holder{height:50px}
+ .jt-auth-redesign .jt-auth-code-cell{font-size:21px}
+ .jt-auth-redesign .jt-auth-phone-symbol{width:105px;height:105px}
+}
+@media(prefers-reduced-motion:reduce){.jt-auth-redesign .jt-auth-role-slider,.jt-auth-redesign .jt-auth-roles button{transition:none}}
