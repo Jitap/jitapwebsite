@@ -4,6 +4,7 @@ import {getProviderSession} from '@/lib/provider-session-server';
 import {sameOrigin} from '@/lib/jitap-auth';
 import {supabasePrivate} from '@/lib/coordinator-server';
 import {notifyProviderCancelled} from '@/lib/wasiliana-booking-notifications';
+import {dispatchKapsoQueue} from '@/lib/kapso-dispatcher';
 import {SERVICE_OPTIONS} from '@/lib/provider-options';
 
 export const runtime='nodejs';
@@ -72,7 +73,7 @@ export async function POST(req:NextRequest){
    });
    if(!gateway.ok)return reply({error:'Cancellation is no longer available. Refresh your booking.'},409);
    const cancellationId=await gateway.json() as string;
-   after(async()=>{try{await notifyProviderCancelled(appointment.request_id,cancellationId)}catch{console.warn('Wasiliana cancellation SMS could not be queued')}});
+   after(async()=>{await Promise.allSettled([notifyProviderCancelled(appointment.request_id,cancellationId),dispatchKapsoQueue(3)])});
    return reply({cancelled:true,cancellationId,status:'awaiting_customer',message:'Cancellation recorded. Customer approval is required before rematching.'});
   }
   if(data.data.action==='on_my_way'||data.data.action==='arrived'||data.data.action==='start_work'||data.data.action==='complete'||data.data.action==='rate_customer'){
@@ -87,7 +88,9 @@ export async function POST(req:NextRequest){
     cache:'no-store',signal:AbortSignal.timeout(10000)
    });
    if(!gateway.ok)return reply({error:'Job status has changed. Refresh and try again.'},409);
-   return reply({status:await gateway.json(),recorded:true});
+   const stage=await gateway.json();
+   if(data.data.action==='complete')after(async()=>{await dispatchKapsoQueue(3).catch(()=>{})});
+   return reply({status:stage,recorded:true});
   }
   if(data.data.action!=='reschedule')return reply({error:'Unsupported job action'},422);
   if(appointment.status!=='confirmed'&&appointment.status!=='on_my_way')return reply({error:'This appointment cannot be rescheduled'},409);
@@ -99,6 +102,7 @@ export async function POST(req:NextRequest){
    method:'POST',headers:{Prefer:'return=representation'},
    body:JSON.stringify({appointment_id:appointment.id,provider_user_id:session.userId,proposed_start_at:start.toISOString(),proposed_end_at:end.toISOString(),reason:data.data.reason,status:'pending'})
   });
+  after(async()=>{await dispatchKapsoQueue(3).catch(()=>{})});
   return reply({requested:true,confirmed:false,message:'Reschedule submitted to JiTap Service Operations for confirmation.'});
  }catch{return reply({error:'Unable to update appointment. Please try again.'},503)}
 }
