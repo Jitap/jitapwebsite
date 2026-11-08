@@ -143,7 +143,10 @@ export default function ProviderDashboardPage(){
     {approved?<header className="jt-provider-home-header">
       <a href="/provider" aria-label="JiTap provider home"><img src="/images/jitap-logo.svg" alt="JiTap" width={104} height={60}/></a>
       <div className="jt-provider-home-header-right"><button type="button" className="jt-provider-notification-trigger" onClick={()=>setNotificationsOpen(v=>!v)} aria-expanded={notificationsOpen} aria-controls="jt-provider-notification-panel" aria-label="Open notifications"><Bell size={25}/>{!!liveOpportunities.length&&<span className="jt-provider-bell-dot"/>}</button>
-      <button type="button" className="jt-provider-home-avatar" onClick={()=>router.push('/provider/profile')} aria-label="Open your provider profile">{dashboard?.uploadedMedia?.some(m=>m.kind==='profile_photo')?<img src={'/api/provider/media?kind=profile_photo&v='+encodeURIComponent(dashboard.uploadedMedia.find(m=>m.kind==='profile_photo')?.uploadedAt||'')} alt="Provider profile"/>:<UserRound size={24}/>}</button></div>
+      <button type="button" className="jt-provider-home-avatar" onClick={()=>router.push('/provider/profile')} aria-label="Open your provider profile">{dashboard?.uploadedMedia?.some(m=>m.kind==='profile_photo')?<img src={'/api/provider/media?kind=profile_photo&v='+encodeURIComponent(dashboard.uploadedMedia.find(m=>m.kind==='profile_photo')?.uploadedAt||'')} alt="Provider profile"/>:<UserRound size={24}/>}</button><div className="jt-provider-header-online" aria-label="Provider availability">
+        <span className={online?'is-online':'is-offline'}><span className="jt-provider-live-dot"/>{online?'Online':'Offline'}</span>
+        <button className={'jt-provider-toggle '+(online?'active':'')} type="button" role="switch" aria-label="Available for requests" aria-checked={online} disabled={busy} onClick={()=>void act({action:'availability',online:!online})}><span/></button>
+      </div></div>
      </header>:<header className="jt-provider-app-header"><span className="jt-provider-workspace-heading">Provider dashboard</span><div className="jt-provider-header-actions"><div className="jt-provider-badge"><ShieldCheck size={17}/> Provider workspace</div><button type="button" onClick={switchCustomer} disabled={busy} className="jt-provider-logout">Switch to Customer</button><button type="button" onClick={logout} className="jt-provider-logout">Log out</button></div></header>}
     {approved&&notificationsOpen&&<aside className="jt-provider-notification-panel" id="jt-provider-notification-panel" aria-label="Provider notifications"><div className="jt-provider-notification-title"><strong>Notifications</strong><button onClick={()=>setNotificationsOpen(false)} aria-label="Close notifications">×</button></div>
       {online&&!!liveOpportunities.length?<p><strong>{liveOpportunities.length} live service {liveOpportunities.length===1?'request':'requests'} available</strong><small>Matching opportunities are ready for your review.</small></p>:<p><strong>No new live request notifications</strong><small>{online?'New matching service requests will appear here.':'Go online to receive matching requests.'}</small></p>}
@@ -210,11 +213,6 @@ export default function ProviderDashboardPage(){
     </section>:
     <div className="jt-provider-main">
      
-     {tab==='home'&&(approved?<section className="jt-provider-home-online">
-       <div className="jt-provider-home-online-top"><span className="jt-provider-online-pill"><span className="jt-provider-live-dot"/>{online?'Online':'Offline'}</span>
-        <button className={'jt-provider-toggle '+(online?'active':'')} type="button" role="switch" aria-label="Available for requests" aria-checked={online} disabled={busy} onClick={()=>act({action:'availability',online:!online})}><span/></button></div>
-
-      </section>:<section className="jt-provider-availability"><div className="jt-provider-status-row"><div><strong>You’re offline</strong><p>Complete verification to start receiving requests.</p></div></div><div className="jt-provider-pending"><Clock3 size={17}/>Finish your provider verification to get started.</div></section>)}
      {approved&&tab==='home'&&<section className="jt-provider-job-metrics" aria-label="My jobs overview">
       <button type="button" className="jt-provider-metric jt-provider-metric-progress" onClick={()=>router.push('/provider/calendar?bucket=in_progress')}>
        <span className="jt-provider-metric-top"><Clock3 size={19}/> In Progress <ChevronRight size={17}/></span>
