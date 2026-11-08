@@ -398,3 +398,21 @@
 .jt-provider-layout .jt-provider-notification-panel .jt-provider-notification-empty{border:0;margin:0;padding:18px 6px;font-size:13px;line-height:1.5;color:#60768f}
 .jt-provider-layout .jt-provider-notification-panel .jt-provider-notification-error{margin:7px 0;padding:9px;background:#fff0f2;border-radius:8px;color:#aa3141;font-size:12px}
 @media(max-width:450px){.jt-provider-layout .jt-provider-notification-panel{top:83px;right:10px;width:calc(100% - 20px)}}
+
+
+/* Didit-hosted ID verification — keep biometric documents outside JiTap */
+.jt-didit-box{display:grid;gap:15px;padding:17px;border:1px solid #c5e9d5;background:#f7fff9;border-radius:15px;margin:17px 0;color:#183d55}
+.jt-didit-heading{display:flex;align-items:flex-start;gap:12px}
+.jt-didit-heading>svg{color:#0c9860;flex:none;margin-top:3px}
+.jt-didit-heading strong{font-size:17px;color:#143a68}
+.jt-didit-heading p,.jt-didit-box>p{font-size:13px;line-height:1.55;color:#55726d;margin:5px 0}
+.jt-didit-status{display:flex;align-items:center;gap:9px;padding:11px 13px;background:#eff3ff;border-radius:10px;color:#244c85;font-weight:750;font-size:13px}
+.jt-didit-status.is-verified{background:#e1f9ec;color:#067e4e}
+.jt-didit-consent{display:flex;align-items:flex-start;gap:10px;color:#496778;font-size:12px;line-height:1.6}
+.jt-didit-consent input{accent-color:#0ba75a;width:18px;height:18px;flex:none;margin-top:2px}
+.jt-didit-consent a{color:#0a5cac;text-decoration:underline}
+.jt-didit-start{width:100%;font-size:14px}
+.jt-didit-refresh{border:0;background:transparent;color:#145b86;font-weight:730;display:flex;align-items:center;gap:7px;justify-content:center;padding:8px;cursor:pointer}
+.jt-didit-refresh:disabled{opacity:.55}
+.jt-didit-unavailable{display:flex;gap:8px;align-items:flex-start;border:1px solid #f0dcac;border-radius:10px;background:#fff9ed;padding:11px}
+.jt-didit-unavailable svg{flex:none}
