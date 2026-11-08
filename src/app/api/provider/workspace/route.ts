@@ -113,7 +113,7 @@ export async function GET(req:NextRequest){
   // Confirmed appointments belong to this authenticated provider only.
   // Contact information is never included in public BUZZ opportunities.
   const confirmed=await supabasePrivate<{id:string;request_id:string;provider_user_id:string;status:string}[]>(
-   'jitap_provider_appointments?provider_user_id=eq.'+encodeURIComponent(session.userId)+'&status=in.(confirmed,on_my_way,arrived,in_progress,completed)&select=id,request_id,provider_user_id,status&order=created_at.desc&limit=25');
+   'jitap_provider_appointments?provider_user_id=eq.'+encodeURIComponent(session.userId)+'&status=in.(confirmed,on_my_way,arrived,in_progress,completed)&select=id,request_id,provider_user_id,status&order=created_at.desc&limit=250');
   const confirmedRequests=confirmed.length?await supabasePrivate<{id:string;payload:Record<string,unknown>}[]>(
    'website_intake?id=in.('+confirmed.map(x=>x.request_id).join(',')+')&select=id,payload'):[];
   const confirmedById=new Map(confirmedRequests.map(x=>[x.id,x.payload]));
