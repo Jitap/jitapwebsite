@@ -117,3 +117,7 @@
 .jcal-new-success p{color:#70829b;font-size:14px;line-height:1.6}
 .jcal-new-success button{width:100%}
 @media(max-width:370px){.jcal-new-sheet{padding-left:13px;padding-right:13px}.jcal-new-pair{gap:7px}}
+
+.jcal-new-sharing{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%}
+.jcal-new-sharing a,.jcal-new-sharing button{display:grid;place-items:center;min-height:45px;padding:9px 8px;border:1px solid #a8d5c2;border-radius:10px;background:#f3fff8;text-decoration:none;color:#067747;font-size:12px;font-weight:760;text-align:center;cursor:pointer}
+.jcal-new-sharing a{border-color:#b7ddc7}
