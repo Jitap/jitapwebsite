@@ -17,7 +17,7 @@ type ProviderProfile={
 type Opportunity={request_id:string;category:string;area:string;preferred_date:string;preferred_time:string;created_at:string;technical_summary:string;proposed_scope:string;urgency:'high'|'normal'|'low'|'unspecified';brief_source:'ai'|'reported';requested_timing:string;job_location:string};
 type PastResponse={request_id:string;decision:string;created_at:string};
 type ConfirmedJob={id:string;requestId:string;status:string;customerName:string;customerPhone:string;location:string;service:string;latitude:number|null;longitude:number|null;placeId:string;rated:boolean};
-type Dashboard={profile:ProviderProfile|null;reviewStatus:string;confirmedJobs:ConfirmedJob[];opportunities:Opportunity[];recentResponses:PastResponse[];uploadedMedia:{kind:MediaKind;uploadedAt:string}[]};
+type Dashboard={profile:ProviderProfile|null;reviewStatus:string;confirmedJobs:ConfirmedJob[];readNotificationIds:string[];opportunities:Opportunity[];recentResponses:PastResponse[];uploadedMedia:{kind:MediaKind;uploadedAt:string}[]};
 type Tab='home'|'profile'|'requests'|'verification';
 const empty={full_name:'',business_name:'',categories:[] as string[],service_areas:[] as string[],
  base_area:'Bamburi',experience_years:0,skills:'',is_online:false,submitted_at:null};
@@ -33,6 +33,9 @@ export default function ProviderDashboardPage(){
  const [error,setError]=useState('');
  const [success,setSuccess]=useState('');
  const [notificationsOpen,setNotificationsOpen]=useState(false);
+ const [locallyReadNotifications,setLocallyReadNotifications]=useState<string[]>([]);
+ const [notificationBusyId,setNotificationBusyId]=useState<string|null>(null);
+ const [notificationError,setNotificationError]=useState('');
  const [decision,setDecision]=useState<Record<string,'accepted'|'declined'|'needs_clarification'>>({});
  const [notes,setNotes]=useState<Record<string,string>>({});
  const [dissolvingIds,setDissolvingIds]=useState<string[]>([]);
@@ -98,6 +101,30 @@ export default function ProviderDashboardPage(){
    experienceYears:form.experience_years,skills:form.skills,submit});
   if(result){setSuccess(submit?'Profile saved. Upload both sides of your national ID for verification.':'Profile saved.');if(submit)setTab('verification')}
  }
+ async function openNotification(o:Opportunity){
+  if(notificationBusyId)return;
+  setNotificationBusyId(o.request_id);setNotificationError('');
+  try{
+   const response=await fetch('/api/provider/workspace',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({action:'read_notification',requestId:o.request_id})
+   });
+   const data=await response.json().catch(()=>({}));
+   if(!response.ok){
+    if(response.status===409){
+     setLocallyReadNotifications(ids=>ids.includes(o.request_id)?ids:[...ids,o.request_id]);
+     setNotificationsOpen(false);
+     await refresh();
+     return;
+    }
+    throw Error(data.error||'Unable to mark notification as read');
+   }
+   setLocallyReadNotifications(ids=>ids.includes(o.request_id)?ids:[...ids,o.request_id]);
+   setNotificationsOpen(false);
+   router.push('/provider/request/'+encodeURIComponent(o.request_id));
+  }catch(e){setNotificationError(e instanceof Error?e.message:'Unable to open notification')}
+  finally{setNotificationBusyId(null)}
+ }
  async function answer(o:Opportunity,choice?:'accepted'|'declined'|'needs_clarification'){
   const d=choice||decision[o.request_id];if(!d)return;
   if(d==='needs_clarification'&&(!notes[o.request_id]||notes[o.request_id].trim().length<3)){setError('Please write your question before submitting.');return}
@@ -135,6 +162,9 @@ export default function ProviderDashboardPage(){
   !!dashboard?.profile?.service_areas.includes(o.area)&&
   !dismissedIds.includes(o.request_id)
  );
+ const readNotificationIds=new Set([...(dashboard?.readNotificationIds||[]),...locallyReadNotifications]);
+ const unreadNotifications=online?liveOpportunities.filter(o=>!readNotificationIds.has(o.request_id)):[];
+ const unreadCount=unreadNotifications.length;
  const firstName=(dashboard?.profile?.full_name||form.full_name||'Provider').split(' ')[0];
  const visible=!approved&&(tab==='profile'||!submitted);
  return <main className="jt-provider-app">
@@ -142,15 +172,20 @@ export default function ProviderDashboardPage(){
    {loading?<div className="jt-provider-loading" role="status" aria-label="Loading your JiTap provider account"><span/><span/><span/><span className="jt-provider-loading-label">Loading your account…</span></div>:<>
     {approved?<header className="jt-provider-home-header">
       <a href="/provider" aria-label="JiTap provider home"><img src="/images/jitap-logo.svg" alt="JiTap" width={104} height={60}/></a>
-      <div className="jt-provider-home-header-right"><button type="button" className="jt-provider-notification-trigger" onClick={()=>setNotificationsOpen(v=>!v)} aria-expanded={notificationsOpen} aria-controls="jt-provider-notification-panel" aria-label="Open notifications"><Bell size={25}/>{!!liveOpportunities.length&&<span className="jt-provider-bell-dot"/>}</button>
+      <div className="jt-provider-home-header-right"><button type="button" className="jt-provider-notification-trigger" onClick={()=>setNotificationsOpen(v=>!v)} aria-expanded={notificationsOpen} aria-controls="jt-provider-notification-panel" aria-label={unreadCount+' unread notifications'}><Bell size={25}/>{unreadCount>0&&<span className="jt-provider-unread-count">{unreadCount>99?'99+':unreadCount}</span>}</button>
       <button type="button" className="jt-provider-home-avatar" onClick={()=>router.push('/provider/profile')} aria-label="Open your provider profile">{dashboard?.uploadedMedia?.some(m=>m.kind==='profile_photo')?<img src={'/api/provider/media?kind=profile_photo&v='+encodeURIComponent(dashboard.uploadedMedia.find(m=>m.kind==='profile_photo')?.uploadedAt||'')} alt="Provider profile"/>:<UserRound size={24}/>}</button><div className="jt-provider-header-online" aria-label="Provider availability">
         <span className={online?'is-online':'is-offline'}><span className="jt-provider-live-dot"/>{online?'Online':'Offline'}</span>
         <button className={'jt-provider-toggle '+(online?'active':'')} type="button" role="switch" aria-label="Available for requests" aria-checked={online} disabled={busy} onClick={()=>void act({action:'availability',online:!online})}><span/></button>
       </div></div>
      </header>:<header className="jt-provider-app-header"><span className="jt-provider-workspace-heading">Provider dashboard</span><div className="jt-provider-header-actions"><div className="jt-provider-badge"><ShieldCheck size={17}/> Provider workspace</div><button type="button" onClick={switchCustomer} disabled={busy} className="jt-provider-logout">Switch to Customer</button><button type="button" onClick={logout} className="jt-provider-logout">Log out</button></div></header>}
-    {approved&&notificationsOpen&&<aside className="jt-provider-notification-panel" id="jt-provider-notification-panel" aria-label="Provider notifications"><div className="jt-provider-notification-title"><strong>Notifications</strong><button onClick={()=>setNotificationsOpen(false)} aria-label="Close notifications">×</button></div>
-      {online&&!!liveOpportunities.length?<p><strong>{liveOpportunities.length} live service {liveOpportunities.length===1?'request':'requests'} available</strong><small>Matching opportunities are ready for your review.</small></p>:<p><strong>No new live request notifications</strong><small>{online?'New matching service requests will appear here.':'Go online to receive matching requests.'}</small></p>}
-      {!!dashboard?.recentResponses.length&&<p><strong>Latest response recorded</strong><small>JT-{dashboard.recentResponses[0].request_id.slice(0,8).toUpperCase()} · {dashboard.recentResponses[0].decision.replaceAll('_',' ')}</small></p>}
+    {approved&&notificationsOpen&&<aside className="jt-provider-notification-panel" id="jt-provider-notification-panel" aria-label="Unread provider notifications">
+      <div className="jt-provider-notification-title"><strong>Notifications <span className="jt-provider-notification-total">{unreadCount} unread</span></strong><button type="button" onClick={()=>setNotificationsOpen(false)} aria-label="Close notifications">×</button></div>
+      {notificationError&&<p className="jt-provider-notification-error" role="alert">{notificationError}</p>}
+      {unreadNotifications.length===0?<p className="jt-provider-notification-empty">You're all caught up. New service requests will appear here.</p>:
+       <div className="jt-provider-notification-list">{unreadNotifications.map(o=><button type="button" key={o.request_id} disabled={!!notificationBusyId} className="jt-provider-notification-item" onClick={()=>void openNotification(o)}>
+        <span className="jt-provider-notification-item-main"><strong>{SERVICE_OPTIONS.find(c=>c.value===o.category)?.label||o.category} request</strong><small>{o.job_location||o.area} · JT-{o.request_id.slice(0,8).toUpperCase()}</small></span>
+        <ChevronRight size={18}/>
+       </button>)}</div>}
      </aside>}
     {approved?<div className="jt-provider-home-greeting">
        <h1>Hello, <span>{firstName}</span></h1><p>{online?'You’re online and available':'You’re currently offline'}</p>
