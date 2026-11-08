@@ -45,7 +45,19 @@ export default function ProviderDashboardPage(){
   if(res.status===401){router.replace('/login?mode=login');return}
   if(!res.ok)throw Error('Unable to load provider account');
   const data:Dashboard=await res.json();
-  setDashboard(data);
+  setDashboard(previous=>{
+   if(!previous)return data;
+   const byId=new Map(previous.confirmedJobs.map(job=>[job.id,job]));
+   const order=['confirmed','on_my_way','arrived','in_progress','completed'];
+   return {...data,confirmedJobs:data.confirmedJobs.map(job=>{
+    const earlier=byId.get(job.id);
+    if(!earlier)return job;
+    if(job.status==='cancelled')return job;
+    return {...job,
+     status:order.indexOf(earlier.status)>order.indexOf(job.status)?earlier.status:job.status,
+     rated:job.rated||earlier.rated};
+   })};
+  });
   setForm(data.profile||{...empty,full_name:data.onboardingName||''});
   if(data.reviewStatus==='approved')setTab(t=>t==='verification'?'home':t);
   else if(!data.profile?.submitted_at)setTab('profile');
