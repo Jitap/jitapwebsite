@@ -131,6 +131,7 @@ export async function GET(req:NextRequest){
   });
   return responseWithSession({
    confirmedJobs,
+   onboardingName:session.fullName||'',
    readNotificationIds:Array.isArray(notificationReads.data)?notificationReads.data.map((r:{request_id:string})=>r.request_id):[],
    profile:Array.isArray(profileResult.data)?profileResult.data[0]||null:null,
    reviewStatus:Array.isArray(reviewResult.data)?reviewResult.data[0]?.status||'not_submitted':'not_submitted',
