@@ -1,4 +1,5 @@
-import {NextRequest,NextResponse} from 'next/server';
+import {NextRequest,NextResponse,after} from 'next/server';
+import {dispatchKapsoQueue} from '@/lib/kapso-dispatcher';
 import {z} from 'zod';
 import {getCustomerIdentity} from '@/lib/customer-session-server';
 import {sameOrigin,setAuthCookies} from '@/lib/jitap-auth';
@@ -27,6 +28,7 @@ export async function POST(req:NextRequest){
   const out=reply({ok:true,rematchApproved:input.data.approve,
    message:input.data.approve?'Your request is open again to eligible providers.':'Your request has been closed and will not be rematched.'});
   if(session.identity.rotated)setAuthCookies(out,session.identity.rotated.access,session.identity.rotated.refresh,session.identity.rotated.expires);
+  after(async()=>{await dispatchKapsoQueue(3).catch(()=>{})});
   return out;
  }catch{return reply({error:'Unable to save rematch decision'},503)}
 }
