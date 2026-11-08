@@ -11,13 +11,14 @@ export async function POST(req:NextRequest){
  if(!phone)return error('Enter a valid Kenyan mobile number.',422);
  if(!isAccountType(input.role))return error('Choose how you want to use JiTap.',422);
  if(input.action==='send'){
-  const intent=input.intent==='login'?'login':'signup';
-  if(intent==='signup'&&input.consent!==true)return error('Please accept the terms and privacy notice.',422);
-  const result=await goTrue('otp',{phone,create_user:intent==='signup',channel:'sms'});
+  if(input.consent!==true)return error('Please accept the JiTap Terms of Service and Privacy Policy.',422);
+  // One verified phone sign-in for existing and new accounts. Supabase only
+  // creates a new identity if the phone has not been registered before.
+  const result=await goTrue('otp',{phone,create_user:true,channel:'sms'});
   if(!result.ok){
    if(result.status===429)return error('Too many code requests. Try again later.',429);
    if(result.status===503)return error('SMS login is currently unavailable. Please try again later.',503);
-   if(result.status===400||result.status===422)return error(intent==='login'?'No account found, or SMS sign-in is not enabled.':'SMS sign-in is not yet enabled for JiTap. Please contact support.',result.status);
+   if(result.status===400||result.status===422)return error('SMS sign-in is currently unavailable. Please try again or contact JiTap support.',result.status);
    return error('Unable to send a code right now. Please try again later.',502);
   }
   return NextResponse.json({sent:true,phone},{headers:{'Cache-Control':'no-store'}});
@@ -40,7 +41,7 @@ export async function POST(req:NextRequest){
  if(!lookup.ok||!Array.isArray(lookup.data))return error('Unable to load your account. Please try again.',503);
  let account=lookup.data[0] as {account_type:string;phone:string;full_name:string|null}|undefined;
  if(!account){
-  if(input.intent==='login')return error('No JiTap profile found. Please choose Sign up.',404);
+  if(input.consent!==true)return error('Please accept the JiTap Terms of Service and Privacy Policy.',422);
   const fullName=typeof input.fullName==='string'?input.fullName.trim().slice(0,120):'';
   const create=await accountQuery(access,'','POST',{user_id:user.id,account_type:input.role,phone,full_name:fullName||null});
   if(create.ok&&Array.isArray(create.data)&&create.data.length)account=create.data[0];
@@ -52,8 +53,35 @@ export async function POST(req:NextRequest){
   }
  }
  if(!account||!isAccountType(account.account_type))return error('Account type is unavailable.',503);
- const result=NextResponse.json({authenticated:true,accountType:account.account_type,requestedRole:input.role,redirect:'/account'},{headers:{'Cache-Control':'no-store'}});
+ const requestedRole=input.role;
+ // A verified customer may become a provider on the same account. Provider
+ // onboarding remains separate from authentication and starts at /provider.
+ if(requestedRole==='provider'&&account.account_type==='customer'){
+  const url=process.env.SUPABASE_URL?.replace(/[/]$/,'');
+  const key=process.env.SUPABASE_ANON_KEY;
+  if(!url||!key)return error('Unable to activate provider onboarding right now.',503);
+  try{
+   const activated=await fetch(url+'/rest/v1/rpc/jitap_activate_provider_mode',{
+    method:'POST',
+    headers:{apikey:key,Authorization:'Bearer '+access,'Content-Type':'application/json'},
+    body:'{}',cache:'no-store',signal:AbortSignal.timeout(9000)
+   });
+   if(!activated.ok)return error('Unable to activate provider onboarding. Please try again.',503);
+  }catch{return error('Unable to activate provider onboarding. Please try again.',503)}
+  account={...account,account_type:'provider'};
+ }
+ const result=NextResponse.json({
+  authenticated:true,
+  accountType:requestedRole,
+  primaryAccountType:account.account_type,
+  requestedRole,
+  redirect:requestedRole==='provider'?'/provider':'/account'
+ },{headers:{'Cache-Control':'no-store'}});
  setAuthCookies(result,access,String(payload.refresh_token),Number(payload.expires_in)||3600);
- result.cookies.delete('jt_mode');
+ if(requestedRole==='customer'&&account.account_type==='provider')
+  result.cookies.set('jt_mode','customer',{
+   httpOnly:true,sameSite:'lax',secure:process.env.NODE_ENV==='production',path:'/',maxAge:60*60*24*30
+  });
+ else result.cookies.delete('jt_mode');
  return result;
 }
