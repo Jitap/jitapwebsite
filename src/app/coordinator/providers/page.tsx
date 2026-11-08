@@ -4,7 +4,7 @@ import Link from 'next/link';
 import {CheckCircle2,ShieldCheck,UserRound,XCircle} from 'lucide-react';
 import './provider-reviews.css';
 type BuzzResponse={serviceId:string;provider:string;decision:string;note:string;createdAt:string;caseId:string|null;caseStatus:string;priority:string;technicalSummary:string;briefSource:'ai'|'reported'};
-type Provider={user_id:string;full_name:string;business_name:string;categories:string[];service_areas:string[];experience_years:number;skills:string;submitted_at:string;review:string;is_online:boolean;mediaKinds:string[];readyForApproval:boolean};
+type Provider={user_id:string;full_name:string;business_name:string;categories:string[];service_areas:string[];experience_years:number;skills:string;submitted_at:string;review:string;is_online:boolean;mediaKinds:string[];readyForApproval:boolean;identityStatus:string;identityUpdatedAt:string|null};
 export default function CoordinatorProviderReviews(){
  const [providers,setProviders]=useState<Provider[]>([]);
  const [buzzResponses,setBuzzResponses]=useState<BuzzResponse[]>([]);
@@ -68,11 +68,11 @@ export default function CoordinatorProviderReviews(){
  return <main className="jt-staff-providers"><div className="jt-staff-providers-inner">
   <Link href="/coordinator">← Service Operations</Link>
   <h1><ShieldCheck size={31}/> Provider verification</h1>
-  <p>Review incoming provider applications, inspect the front and back of each Kenyan national ID, confirm qualifications and approve verified providers. ID images are private and only visible to authorized JiTap staff.</p>
+  <p>Review provider applications and Didit identity verification results. Didit handles ID OCR, liveness and face matching; JiTap separately checks professional suitability. Existing uploaded documents remain private.</p>
   {loading?<p role="status">Loading profiles…</p>:<>
    {error&&<div role="alert" className="jt-staff-review-error">{error}</div>}
    {notice&&<div role="status" className="jt-staff-review-success">{notice}</div>}
-   <div className="jt-soc-approval-metrics"><div><strong>{pendingCount}</strong><span>Pending applications</span></div><div><strong>{readyCount}</strong><span>Ready for ID review</span></div><div><strong>{providers.length}</strong><span>Total submitted providers</span></div></div>
+   <div className="jt-soc-approval-metrics"><div><strong>{pendingCount}</strong><span>Pending applications</span></div><div><strong>{readyCount}</strong><span>Didit identity approved</span></div><div><strong>{providers.length}</strong><span>Total submitted providers</span></div></div>
    <h2>Provider management</h2>
    <div className="jt-soc-review-filters">{(['pending','approved','rejected','all'] as const).map(value=><button key={value} className={filter===value?'selected':''} onClick={()=>setFilter(value)}>{value==='all'?'All providers':value==='pending'?'Pending review':value==='approved'?'Approved':'Rejected'}</button>)}</div>
    {!providers.filter(p=>filter==='all'||p.review===filter).length?<div className="jt-staff-review-card">No providers in this status.</div>:providers.filter(p=>filter==='all'||p.review===filter).map(p=><article className="jt-staff-review-card" key={p.user_id}>
@@ -87,7 +87,10 @@ export default function CoordinatorProviderReviews(){
       </a>:<div className="jt-soc-no-photo">Not uploaded</div>}
      </div>)}
     </div>
-    {!p.readyForApproval&&<p className="jt-soc-verify-warning">Awaiting both national ID images before approval can be granted.</p>}
+    <div className="jt-soc-kyc"><strong>Didit identity check</strong><span className={p.readyForApproval?'jt-soc-kyc-approved':'jt-soc-kyc-pending'}>{p.identityStatus==='not_started'?'Not started':p.identityStatus}</span>
+    {p.identityUpdatedAt&&<small>Updated {new Date(p.identityUpdatedAt).toLocaleString('en-KE',{dateStyle:'medium',timeStyle:'short',timeZone:'Africa/Nairobi'})}</small>}
+    </div>
+    {!p.readyForApproval&&p.review!=='approved'&&<p className="jt-soc-verify-warning">A live Didit identity approval is required before new provider approval. Existing uploaded ID photos alone are insufficient.</p>}
     {role==='admin'&&<div className="jt-staff-review-actions"><button disabled={busy===p.user_id||p.review==='approved'||!p.readyForApproval} onClick={()=>review(p,'approved')}><CheckCircle2 size={17}/> Approve</button><button disabled={busy===p.user_id||p.review==='rejected'} onClick={()=>review(p,'rejected')}><XCircle size={17}/> Reject</button></div>}
    </article>)}
    <h2 style={{marginTop:36}}>BUZZ responses to customer requests</h2>
