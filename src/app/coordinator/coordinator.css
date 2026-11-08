@@ -146,3 +146,14 @@
 
 .coordinator-live-job .coordinator-provider-call{display:inline-flex;align-items:center;gap:6px;color:#075fa7;font-size:12px;font-weight:750;text-decoration:none;padding-top:3px}
 .coordinator-provider-call:hover{text-decoration:underline}
+
+
+.coordinator-manual-escalation{padding:9px 0 13px}
+.coordinator-flag-button{display:inline-flex;align-items:center;gap:6px;border:1px solid #edd19e;background:#fffaf0;color:#81561a;border-radius:9px;padding:9px 12px;font-size:12px;font-weight:750;cursor:pointer}
+.coordinator-manual-escalation>div{border:1px solid #f0d9b3;background:#fffcf4;padding:12px;border-radius:10px}
+.coordinator-manual-escalation label{display:grid;gap:7px;font-size:12px;font-weight:700;color:#714f1c}
+.coordinator-manual-escalation textarea{width:100%;border:1px solid #dbcbaa;padding:10px;border-radius:8px;resize:vertical;background:#fff;color:#19364f;font:inherit}
+.coordinator-manual-escalation>div>div{display:flex;gap:8px;margin-top:9px}
+.coordinator-manual-escalation>div button{font-size:12px;padding:9px 11px;border:1px solid #ccac7a;border-radius:8px;background:#fff;color:#795322;font-weight:700;cursor:pointer}
+.coordinator-manual-escalation>div button:first-child{background:#098656;border-color:#098656;color:#fff}
+.coordinator-manual-escalation>div button:disabled{opacity:.5;cursor:wait}
