@@ -6,6 +6,7 @@ export const dynamic='force-dynamic';
 type CaseRow={id:string;source_kind:'website_request'|'moving_lead';source_id:string;status:string;priority:string;assigned_to:string|null;next_followup_at:string|null;created_at:string;updated_at:string;intervention_status:string;intervention_reason:string|null;intervention_owner:string|null;intervention_opened_at:string|null};
 type Appointment={id:string;request_id:string;status:string;provider_user_id:string;starts_at:string|null;ends_at:string|null;updated_at:string};
 type Provider={user_id:string;full_name:string;business_name:string};
+type ProviderAccount={user_id:string;phone:string};
 type Intake={id:string;created_at:string;status:string;payload:Record<string,unknown>};
 type Move={id:string;created_at:string;current_stage:number;pickup_address:string|null;dropoff_address:string|null;moving_date:string|null;moving_time:string|null;home_size:string|null;customer_phone:string|null;customer_email:string|null};
 function safeText(v:unknown,max=500){return typeof v==='string'?v.slice(0,max):''}
@@ -60,13 +61,18 @@ export async function GET(req:NextRequest){
   const latestByRequest=new Map<string,Appointment>();
   for(const job of appointments){if(!latestByRequest.has(job.request_id))latestByRequest.set(job.request_id,job)}
   const providerIds=[...new Set(appointments.map(a=>a.provider_user_id))];
-  const providers=providerIds.length?await supabasePrivate<Provider[]>('jitap_provider_workspaces?select=user_id,full_name,business_name&user_id='+inFilter(providerIds)):[];
+  const [providers,accounts]=providerIds.length?await Promise.all([
+   supabasePrivate<Provider[]>('jitap_provider_workspaces?select=user_id,full_name,business_name&user_id='+inFilter(providerIds)),
+   supabasePrivate<ProviderAccount[]>('jitap_accounts?select=user_id,phone&user_id='+inFilter(providerIds))
+  ]):[[],[]];
   const providerNames=new Map(providers.map(p=>[p.user_id,p.business_name||p.full_name]));
+  const providerPhones=new Map(accounts.map(p=>[p.user_id,p.phone]));
   const rows=cases.map(c=>{
    const job=latestByRequest.get(c.source_id);
    return {...normalizedRecord(c,sources.get(c.source_id)),
     jobStatus:job?.status||null,appointmentId:job?.id||null,
     providerName:job?providerNames.get(job.provider_user_id)||'Assigned provider':null,
+    providerPhone:job?providerPhones.get(job.provider_user_id)||null:null,
     jobUpdatedAt:job?.updated_at||null};
   });
   if(detailId){
