@@ -27,9 +27,22 @@ export function AccountAuth(){
   return()=>{active=false};
  },[]);
  const isProvider=role==='provider';
- function switchRole(next:Role){
+ async function switchRole(next:Role){
   if(busy)return;
   setRole(next);setStage('phone');setCode('');setError('');setNotice('');
+  if(!existing)return;
+  // A previously verified user changes modes immediately on tab selection;
+  // there is no repeated OTP or second registration.
+  setBusy(true);
+  try{
+   const res=await fetch('/api/auth/mode',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({mode:next})});
+   const data=await res.json().catch(()=>({}));
+   if(!res.ok)throw Error(data.error||'Unable to switch JiTap mode');
+   const linked=new URLSearchParams(window.location.search).get('next')||'';
+   complete(next==='customer'&&trackLink(linked)?linked:data.redirect||(next==='provider'?'/provider':'/account'));
+  }catch(e){setError(e instanceof Error?e.message:'Unable to switch JiTap mode')}
+  finally{setBusy(false)}
  }
  function complete(destination:string){
   window.dispatchEvent(new Event('jitap:auth-changed'));
