@@ -11,7 +11,7 @@ export async function GET(req:NextRequest){
  if(config.configured){
   try{
    const url='https://api.kapso.ai/meta/whatsapp/v24.0/'+encodeURIComponent(process.env.KAPSO_PHONE_NUMBER_ID!)+
-    '?fields=display_phone_number,verified_name';
+    '?fields=id';
    const response=await fetch(url,{headers:{'X-API-Key':process.env.KAPSO_API_KEY!,
     Accept:'application/json'},cache:'no-store',redirect:'error',signal:AbortSignal.timeout(8000)});
    apiReachable=response.ok;
