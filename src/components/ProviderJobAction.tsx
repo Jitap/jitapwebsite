@@ -27,7 +27,7 @@ export function ProviderJobAction({appointmentId,status,rated=false,onUpdated}:{
  const submitting=useRef(false);
  const [stars,setStars]=useState(0);
  const [comment,setComment]=useState('');
- const [ratingOpen,setRatingOpen]=useState(false);
+ const [ratingOpen,setRatingOpen]=useState(status==='completed'&&!rated);
  const [error,setError]=useState('');
  useEffect(()=>{
   if(status==='cancelled'){setCurrentStatus('cancelled');return}
