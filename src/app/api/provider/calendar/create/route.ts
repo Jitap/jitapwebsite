@@ -1,4 +1,5 @@
-import {NextRequest,NextResponse} from 'next/server';
+import {NextRequest,NextResponse,after} from 'next/server';
+import {dispatchKapsoQueue} from '@/lib/kapso-dispatcher';
 import {z} from 'zod';
 import {getProviderSession} from '@/lib/provider-session-server';
 import {sameOrigin} from '@/lib/jitap-auth';
@@ -52,6 +53,8 @@ export async function POST(req:NextRequest){
    cache:'no-store',signal:AbortSignal.timeout(20000)
   });
   if(!response.ok)return send({error:'Could not save this booking. Check your schedule, location and contact details.'},422);
-  return send({ok:true,...await response.json()});
+  const created=await response.json();
+  after(async()=>{await dispatchKapsoQueue(5).catch(()=>{})});
+  return send({ok:true,...created});
  }catch{return send({error:'Booking could not be saved. Please retry.'},503)}
 }
