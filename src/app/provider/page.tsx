@@ -24,6 +24,8 @@ const empty={full_name:'',business_name:'',categories:[] as string[],service_are
 export default function ProviderDashboardPage(){
  const router=useRouter();
  const [dashboard,setDashboard]=useState<Dashboard|null>(null);
+ const inProgressJobs=(dashboard?.confirmedJobs||[]).filter(job=>['confirmed','on_my_way','arrived','in_progress'].includes(job.status));
+ const completedJobs=(dashboard?.confirmedJobs||[]).filter(job=>job.status==='completed');
  const [form,setForm]=useState<ProviderProfile>(empty);
  const [tab,setTab]=useState<Tab>('home');
  const [loading,setLoading]=useState(true);
@@ -213,9 +215,19 @@ export default function ProviderDashboardPage(){
         <button className={'jt-provider-toggle '+(online?'active':'')} type="button" role="switch" aria-label="Available for requests" aria-checked={online} disabled={busy} onClick={()=>act({action:'availability',online:!online})}><span/></button></div>
 
       </section>:<section className="jt-provider-availability"><div className="jt-provider-status-row"><div><strong>You’re offline</strong><p>Complete verification to start receiving requests.</p></div></div><div className="jt-provider-pending"><Clock3 size={17}/>Finish your provider verification to get started.</div></section>)}
-     {approved&&(tab==='home'||tab==='requests')&&!!dashboard?.confirmedJobs?.length&&<section className="jt-confirmed-jobs">
-      <h2><CheckCircle2 size={21}/> My Jobs <span>{dashboard.confirmedJobs.length}</span></h2>
-      {dashboard.confirmedJobs.map(job=><article key={job.id} className="jt-confirmed-job">
+     {approved&&tab==='home'&&<section className="jt-provider-job-metrics" aria-label="My jobs overview">
+      <button type="button" className="jt-provider-metric jt-provider-metric-progress" onClick={()=>router.push('/provider/calendar?bucket=in_progress')}>
+       <span className="jt-provider-metric-top"><Clock3 size={19}/> In Progress <ChevronRight size={17}/></span>
+       <strong>{inProgressJobs.length}</strong><small>View active bookings</small>
+      </button>
+      <button type="button" className="jt-provider-metric jt-provider-metric-complete" onClick={()=>router.push('/provider/calendar?bucket=completed')}>
+       <span className="jt-provider-metric-top"><CheckCircle2 size={19}/> Completed <ChevronRight size={17}/></span>
+       <strong>{completedJobs.length}</strong><small>View work history</small>
+      </button>
+     </section>}
+     {approved&&(tab==='home'||tab==='requests')&&inProgressJobs.length>0&&<section className="jt-confirmed-jobs">
+      <h2><CheckCircle2 size={21}/> Active Jobs <span>{inProgressJobs.length}</span></h2>
+      {inProgressJobs.map(job=><article key={job.id} className="jt-confirmed-job">
        <div className="jt-confirmed-job-meta"><strong>{SERVICE_OPTIONS.find(c=>c.value===job.service)?.label||job.service}</strong><small>JT-{job.requestId.slice(0,8).toUpperCase()}</small></div>
        <p><UserRound size={17}/> {job.customerName}</p>
        {job.customerPhone&&<p><a href={'tel:'+job.customerPhone.replace(/[^+0-9]/g,'')}>{job.customerPhone} · Call customer</a></p>}
