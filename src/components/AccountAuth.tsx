@@ -2,7 +2,7 @@
 import {useCallback,useEffect,useRef,useState,type FormEvent,type KeyboardEvent} from 'react';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
-import {ArrowRight,Smartphone,UserRound} from 'lucide-react';
+import {Smartphone,UserRound} from 'lucide-react';
 
 type Role='customer'|'provider';
 type ExistingSession={authenticated:boolean;accountType:Role;primaryAccountType?:Role};
@@ -126,7 +126,7 @@ export function AccountAuth(){
  const otpDigits=Array.from({length:6},(_,i)=>code[i]||'');
  return <main className={'jt-auth-page jt-auth-redesign jt-auth-'+role}>
   <div className="jt-auth-brand">
-   <Link href="/" aria-label="JiTap home"><img src="/images/jitap-logo.svg" alt="JiTap — Ask Match Buzz" width="224" height="110"/></Link>
+   <Link href="/" aria-label="JiTap home"><img src="/images/jitap-logo-transparent.svg" alt="JiTap — Ask Match Buzz" width="224" height="110"/></Link>
   </div>
   <section className={'jt-auth-panel '+(isOtp?'jt-auth-verify-panel':'jt-auth-signin-panel')} aria-labelledby="jt-auth-heading">
    <div className="jt-auth-panel-inner">
@@ -157,7 +157,6 @@ export function AccountAuth(){
       {notice&&<p className="jt-auth-notice" role="status">{notice}</p>}
       <button className="jt-auth-submit" type="submit" disabled={busy||sessionChecking}>
        {busy?'Please wait…':sessionChecking?'Checking session…':existing?'Continue as '+selectedLabel:'Continue'}
-       {!busy&&<ArrowRight size={19} aria-hidden="true"/>}
       </button>
      </form>
     </>:<>
