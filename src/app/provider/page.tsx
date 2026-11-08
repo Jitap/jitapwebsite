@@ -270,6 +270,10 @@ export default function ProviderDashboardPage(){
          onUpdated={async(nextStatus)=>{
           if(nextStatus)setDashboard(current=>current?{...current,confirmedJobs:current.confirmedJobs.map(item=>
            item.id===job.id?{...item,...(nextStatus==='rated'?{rated:true}:{status:nextStatus})}:item)}:current);
+          if(nextStatus==='completed'){
+           router.push('/provider/calendar?job='+encodeURIComponent(job.requestId));
+           return;
+          }
           await refresh();
          }}/>
         <button type="button" className="jt-confirmed-view" onClick={()=>router.push('/provider/calendar?job='+encodeURIComponent(job.requestId))}>View job & directions <ChevronRight size={16}/></button>
