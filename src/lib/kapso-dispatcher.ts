@@ -36,9 +36,9 @@ export async function dispatchKapsoQueue(limit=10){
    });
   }else{
    failed++;
-   const terminal=job.attempt_count>=5||result.reason==='missing_approved_template'||result.reason==='invalid_recipient';
+   const terminal=job.attempt_count>=5||result.reason==='missing_approved_template'||result.reason==='invalid_recipient'||result.reason==='kapso_transport_error'||/^kapso_http_5\\d\\d$/.test(result.reason||'');
    await supabasePrivate('jitap_kapso_messages?id=eq.'+job.id,{
-    method:'PATCH',body:JSON.stringify({status:terminal?'failed':'pending',last_error:result.reason||'send_failed',
+    method:'PATCH',body:JSON.stringify({status:terminal?'failed':'pending',last_error:result.reason==='kapso_transport_error'?'submission_unknown_reconcile_before_resend':result.reason||'send_failed',
      due_at:new Date(Date.now()+Math.min(60,Math.pow(2,job.attempt_count))*60000).toISOString(),
      updated_at:new Date().toISOString()})
    });
