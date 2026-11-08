@@ -81,7 +81,7 @@ export async function formatCustomerTickets(rows:RequestRecord[]){
    providerStatus:awaitingRematch?'Provider cancelled — your decision is needed':approvedRematch?'Your request is available to eligible providers':appointment?(appointment.status==='on_my_way'?'On my way':appointment.status==='arrived'?'Arrived at your location':appointment.status==='in_progress'?'Working on your job':appointment.status==='completed'?'Work marked completed':'Booking confirmed'):provider?'Requested provider — awaiting confirmation':'Awaiting matching',
    rematch:awaitingRematch?{reason:cancellation?.reason||'other',details:cancellation?.details||''}:null,
    status,statusLabel:labels[status]||status.replace(/_/g,' '),
-   brief:b?.source==='ai'?asText(b.technical_summary,700):customerSummary(raw),
+   brief:asText(p.title,120)?asText(p.title,120)+(raw?' — '+customerSummary(raw):''):b?.source==='ai'?asText(b.technical_summary,700):customerSummary(raw),
    scope:b?.source==='ai'?asText(b.proposed_scope,400):'',
    createdAt:r.created_at,updatedAt:appointment?.confirmed_at||caseRow?.updated_at||r.created_at
   };
