@@ -1,6 +1,7 @@
 import {NextRequest,NextResponse} from 'next/server';
 import {timingSafeEqual} from 'node:crypto';
-import {sendJiTapSms,sendJiTapWhatsApp,normalizeKenyanMobile,smsLeopardConfiguration} from '@/lib/smsleopard';
+import {sendWasilianaSms,wasilianaSettings} from '@/lib/wasiliana';
+import {normalizeKenyanPhone} from '@/lib/jitap-auth';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
 const responseHeaders={'Cache-Control':'no-store'};
@@ -35,8 +36,8 @@ async function rest(path:string,method:string,body?:unknown){
 export async function POST(req:NextRequest){
  if(!authorized(req))return respond({error:'Unauthorized'},401);
  if(process.env.JITAP_NOTIFICATIONS_ENABLED!=='true')return respond({ok:false,error:'Dispatch is disabled'},409);
- const cfg=smsLeopardConfiguration();
- if(!cfg.smsReady&&!cfg.whatsappReady)return respond({error:'SMSLeopard credentials incomplete'},503);
+ const cfg=wasilianaSettings();
+ if(!cfg.configured||!cfg.senderConfigured)return respond({error:'Wasiliana SMS unavailable'},503);
  if(!process.env.SUPABASE_SERVICE_ROLE_KEY)return respond({error:'Private queue access not configured'},503);
  let rows:QueueItem[];
  try{
@@ -56,23 +57,24 @@ export async function POST(req:NextRequest){
    if(!job.consent_confirmed)throw new Error('consent_missing');
    if(job.expires_at&&new Date(job.expires_at).getTime()<=Date.now()){
     status='cancelled';errorCode='expired';counts.expired++;
+   }else if(job.channel==='whatsapp'){
+    // The legacy SMSLeopard WhatsApp queue is retired. New consent-verified
+    // WhatsApp events are dispatched solely through jitap_kapso_messages.
+    status='cancelled';errorCode='migrated_to_kapso';counts.expired++;
    }else{
-    const destination=normalizeKenyanMobile(job.recipient_phone);
-    const result=job.channel==='sms'
-     ?await sendJiTapSms(destination,job.message_body||'')
-     :await sendJiTapWhatsApp({
-        destination,phoneNumberId:process.env.SMSLEOPARD_WA_PHONE_NUMBER_ID||'',
-        templateId:job.template_id||'',
-        variables:Array.isArray(job.template_variables)&&job.template_variables.every(v=>typeof v==='string')?job.template_variables:[]
-      });
+    const destination=normalizeKenyanPhone(job.recipient_phone);
+    if(!destination)throw Error('invalid_kenyan_mobile');
+    if(!job.message_body)throw Error('invalid_sms_message');
+    const result=await sendWasilianaSms(destination.replace(/^\+/,'') ,job.message_body);
     status=result.accepted?'submitted':'failed';
     providerMessageId=result.providerMessageId;
     httpStatus=result.httpStatus;
     errorCode=result.errorCode||'';
     if(status==='submitted')counts.submitted++;else counts.failed++;
+
    }
   }catch(e){
-   errorCode=e instanceof Error&&/^(notifications_disabled|invalid_kenyan_mobile|sms_sender_id_missing|invalid_sms_message|invalid_whatsapp_template)$/.test(e.message)?e.message:'transport_error';
+   errorCode=e instanceof Error&&/^(notifications_disabled|invalid_kenyan_mobile|wasiliana_sender_missing|invalid_sms_message|invalid_whatsapp_template)$/.test(e.message)?e.message:'transport_error';
    counts.failed++;
   }
   // No automatic requeue after a transport timeout: the provider may have accepted a message
