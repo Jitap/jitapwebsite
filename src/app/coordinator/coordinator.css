@@ -143,3 +143,6 @@
 .coordinator-auto-assignment strong{display:block;font-size:13px}
 .coordinator-auto-assignment p{margin:5px 0;font-size:13px;font-weight:650}
 .coordinator-auto-assignment small{font-size:11px;line-height:1.5;color:#4f796b}
+
+.coordinator-live-job .coordinator-provider-call{display:inline-flex;align-items:center;gap:6px;color:#075fa7;font-size:12px;font-weight:750;text-decoration:none;padding-top:3px}
+.coordinator-provider-call:hover{text-decoration:underline}
