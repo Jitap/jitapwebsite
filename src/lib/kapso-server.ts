@@ -26,9 +26,18 @@ export async function sendKapsoTemplate(message:KapsoMessage):Promise<{accepted:
  if(!name||!/^[a-z][a-z0-9_]{1,255}$/.test(name))return {accepted:false,reason:'missing_approved_template'};
  if(!/^254[17]\d{8}$/.test(message.recipient_phone))return {accepted:false,reason:'invalid_recipient'};
  const url=allowedBase+'/v24.0/'+encodeURIComponent(process.env.KAPSO_PHONE_NUMBER_ID! )+'/messages';
+ // Approved templates use THREE text placeholders in the body and a
+ // personalized View Booking URL button, not an untrusted full-URL body field.
+ const parameters=message.template_parameters;
+ const ticket=String(parameters[1]||'');
+ if(!/^JT-[0-9A-F]{8}$/.test(ticket)||parameters.length<3)
+  return {accepted:false,reason:'invalid_template_parameters'};
  const body={messaging_product:'whatsapp',recipient_type:'individual',to:message.recipient_phone,
   type:'template',template:{name,language:{code:process.env.KAPSO_TEMPLATE_LANGUAGE||'en_US'},
-   components:[{type:'body',parameters:message.template_parameters.map(p=>({type:'text',text:String(p).slice(0,300)}))}]}
+   components:[
+    {type:'body',parameters:parameters.slice(0,3).map(p=>({type:'text',text:String(p).slice(0,300)}))},
+    {type:'button',sub_type:'url',index:'0',parameters:[{type:'text',text:ticket}]}
+   ]}
  };
  try{
   const result=await fetch(url,{method:'POST',headers:{'X-API-Key':process.env.KAPSO_API_KEY!,
