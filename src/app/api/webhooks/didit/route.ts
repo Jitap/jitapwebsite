@@ -25,9 +25,9 @@ export async function POST(req:NextRequest){
  ||!/^[a-f\d-]{36}$/i.test(p.vendor_data))return reply({received:true,ignored:true});
  try{
   // Match signed session AND bound provider, not caller-controlled vendor data.
-  const rows=await supabasePrivate<{provider_user_id:string}[]>('jitap_provider_kyc_sessions?didit_session_id=eq.'+
-   encodeURIComponent(p.session_id)+'&select=provider_user_id&limit=1');
-  if(rows[0]?.provider_user_id!==p.vendor_data)return reply({received:true,ignored:true});
+  const rows=await supabasePrivate<{id:string}[]>('jitap_provider_kyc_sessions?didit_session_id=eq.'+
+   encodeURIComponent(p.session_id)+'&select=id&limit=1');
+  if(rows[0]?.id!==p.vendor_data)return reply({received:true,ignored:true});
   await supabasePrivate('rpc/jitap_didit_apply_event',{method:'POST',
    body:JSON.stringify({p_event_id:p.event_id,p_session_id:p.session_id,
     p_status:p.status,p_workflow_id:p.workflow_id,p_environment:p.environment})});
