@@ -9,6 +9,7 @@ import {ProviderMediaFields,type MediaKind} from '@/components/ProviderMediaFiel
 import './provider-dashboard.css';
 import {ProviderJobAction} from '@/components/ProviderJobAction';
 import {ProviderTravelEstimate} from '@/components/ProviderTravelEstimate';
+import {ProviderIdentityVerification} from '@/components/ProviderIdentityVerification';
 
 type ProviderProfile={
  full_name:string;business_name:string;categories:string[];service_areas:string[];
@@ -68,7 +69,7 @@ export default function ProviderDashboardPage(){
   const data:Dashboard=await res.json();
   setDashboard(current=>current?{...current,uploadedMedia:data.uploadedMedia,reviewStatus:data.reviewStatus}:data);
  },[]);
- useEffect(()=>{if(new URLSearchParams(window.location.search).get('view')==='requests')setTab('requests')},[]);
+ useEffect(()=>{const q=new URLSearchParams(window.location.search);if(q.get('view')==='requests')setTab('requests');if(q.get('identity_return')==='1')setTab('verification')},[]);
  useEffect(()=>{let active=true;refresh().catch(()=>{if(active)setError('Could not load your provider dashboard. Please refresh.')}).finally(()=>{if(active)setLoading(false)});return()=>{active=false}},[refresh]);
  useEffect(()=>{
   if(!dashboard?.profile?.is_online||tab==='profile')return;
@@ -111,7 +112,7 @@ export default function ProviderDashboardPage(){
   const result=await act({action:'save',fullName:form.full_name,businessName:form.business_name,
    categories:form.categories,areas:form.service_areas,baseArea:form.service_areas.includes(form.base_area)?form.base_area:form.service_areas[0],
    experienceYears:form.experience_years,skills:form.skills,submit});
-  if(result){setSuccess(submit?'Profile saved. Upload both sides of your national ID for verification.':'Profile saved.');if(submit)setTab('verification')}
+  if(result){setSuccess(submit?'Profile saved. Continue to secure identity verification.':'Profile saved.');if(submit)setTab('verification')}
  }
  async function openNotification(o:Opportunity){
   if(notificationBusyId)return;
@@ -249,14 +250,10 @@ export default function ProviderDashboardPage(){
      </form>
     </section>:tab==='verification'?
     <section className="jt-provider-card jt-provider-identity-stage" aria-labelledby="jt-verify-title">
-     <div className="jt-provider-id-progress"><span className="done">✓ Phone</span><span className="done">✓ OTP</span><span className="done">✓ Profile</span><span className={(dashboard?.uploadedMedia?.some(m=>m.kind==='id_front')&&dashboard?.uploadedMedia?.some(m=>m.kind==='id_back'))?'done':'current'}>4 Verification</span></div>
-     <h2 id="jt-verify-title">Verify your ID</h2>
-     <p className="jt-provider-muted">Upload both sides of your Kenyan national ID. JiTap Service Operations will review your documents before approving the account.</p>
-     <ProviderMediaFields uploaded={dashboard?.uploadedMedia||[]} kinds={['id_front','id_back']} lockedIDs={approved} onUploaded={refreshMedia}/>
-     {dashboard?.uploadedMedia?.some(m=>m.kind==='id_front')&&dashboard?.uploadedMedia?.some(m=>m.kind==='id_back')
-      ?<div className="jt-provider-success" role="status">Both ID images received. {approved?'Your identity has been approved.':'Your application is ready for JiTap Service Operations review.'}</div>
-      :<div className="jt-provider-verification-note"><ShieldCheck size={20}/><div><strong>Identity review incomplete</strong><p>Both photos must be uploaded before staff can approve your profile.</p></div></div>}
-     <button className="jt-provider-primary jt-provider-verify-done" type="button" disabled={!dashboard?.uploadedMedia?.some(m=>m.kind==='id_front')||!dashboard?.uploadedMedia?.some(m=>m.kind==='id_back')} onClick={()=>setTab('home')}>Continue <ArrowRight size={17}/></button>
+     <div className="jt-provider-id-progress"><span className="done">✓ Phone</span><span className="done">✓ OTP</span><span className="done">✓ Profile</span><span className="current">4 Verification</span></div>
+     <h2 id="jt-verify-title">Identity verification</h2>
+     <p className="jt-provider-muted">Confirm your identity securely with Didit before JiTap Service Operations completes your provider review. You no longer need to upload ID photos to JiTap.</p>
+     <ProviderIdentityVerification onStatusChanged={refresh}/>
     </section>:
     <div className="jt-provider-main">
      
