@@ -47,15 +47,25 @@ export function diditVerifyWebhook(raw:string,headers:Headers):boolean{
  }
  return sameDigest(headers.get('x-signature'),safeDigest(raw,secret));
 }
-export async function diditRequestSession(providerId:string):Promise<{
+export async function diditRequestSession(sessionReference:string):Promise<{
  sessionId:string;url:string;status:string
 }>{
  const cfg=diditConfig();
  if(!cfg.enabled||!cfg.configured)throw Error('Didit is not configured');
+ const callbackBase=cfg.environment==='sandbox'?process.env.DIDIT_CALLBACK_BASE_URL:'https://www.jitap.app';
+ if(!callbackBase)throw Error('didit_sandbox_callback_not_configured');
+ const parsedCallback=new URL(callbackBase);
+ if(parsedCallback.protocol!=='https:'||parsedCallback.hostname==='www.jitap.app'&&cfg.environment==='sandbox')
+  throw Error('didit_invalid_sandbox_callback');
+ const callback=new URL('/provider?identity_return=1',parsedCallback.origin).toString();
+ const scenario=process.env.DIDIT_SANDBOX_SCENARIO||'approve';
+ if(cfg.environment==='sandbox'&&!['approve','decline_document_expired','review_aml_possible_match'].includes(scenario))
+  throw Error('didit_invalid_sandbox_scenario');
  const result=await fetch('https://verification.didit.me/v3/session/',{
   method:'POST',headers:{'Content-Type':'application/json','x-api-key':process.env.DIDIT_API_KEY!},
-  body:JSON.stringify({workflow_id:cfg.workflow,vendor_data:providerId,
-   callback:'https://www.jitap.app/provider?identity_return=1',callback_method:'completer',
+  body:JSON.stringify({workflow_id:cfg.workflow,vendor_data:sessionReference,
+   callback,callback_method:'completer',language:'en',
+   ...(cfg.environment==='sandbox'?{sandbox_scenario:scenario}:{}),
    metadata:{source:'jitap_provider_onboarding'}}),
   cache:'no-store',redirect:'error',signal:AbortSignal.timeout(14000)
  });
