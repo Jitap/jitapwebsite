@@ -38,3 +38,48 @@
 .jcal-map .jt-travel-location{padding:10px;background:#f1faff}
 .jcal-map .jt-travel-eta{margin:8px}
 @media(max-width:360px){.jt-confirmed-job-actions{grid-template-columns:1fr}}
+
+
+/* JiTap mobile scheduled-work compact detail and persistent visible actions */
+.jcal-details{padding:0 18px 245px}
+.jcal-detail-heading{height:46px;margin-bottom:7px;gap:6px;font-size:18px}
+.jcal-detail-heading button{min-width:38px;min-height:38px}
+.jcal-details h1{font-size:21px;line-height:1.24;font-weight:760;letter-spacing:-.025em;margin:0 0 4px;overflow-wrap:anywhere}
+.jcal-subtitle{font-size:14px;margin:0 0 10px}
+.jcal-customer{border-radius:13px;grid-template-columns:43px 1fr;padding:9px 11px;margin:0 0 9px;gap:7px}
+.jcal-avatar{width:40px;height:40px}
+.jcal-customer h2{font-size:16px}
+.jcal-customer p{font-size:12px;margin:1px 0 0}
+.jcal-call{font-size:13px;padding:7px;grid-column:1/-1}
+.jcal-map{margin:8px 0 11px;border-radius:11px}
+.jcal-map iframe{height:93px}
+.jcal-map .jt-travel-location{padding:7px 9px;font-size:12px}
+.jcal-map .jt-travel-estimate{gap:4px}
+.jcal-map .jt-travel-eta{margin:4px 8px 7px;padding:6px 8px}
+.jcal-map .jt-travel-eta strong{font-size:13px}
+.jcal-map .jt-travel-eta small{font-size:11px}
+.jcal-info{margin:11px 0}
+.jcal-info h2{font-size:17px;margin:0 0 5px}
+.jcal-info p{font-size:14px;line-height:1.35;margin:0 0 5px}
+.jcal-info p:has(svg){gap:9px}
+.jcal-service-brief .jcal-description-clamped{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.jcal-service-brief .jcal-description-expanded{white-space:pre-wrap;overflow-wrap:anywhere}
+.jcal-description-toggle{border:0;background:none;padding:2px 0;color:#1379c5;font-size:12px!important;font-weight:750;cursor:pointer}
+.jcal-info .jcal-ref{font-size:11px;margin:7px 0 0;color:#8895ac}
+.jcal-detail-actions{position:fixed;left:50%;bottom:calc(91px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:50;width:min(430px,100%);margin:0;padding:9px 17px 8px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;background:#fff;box-shadow:0 -5px 19px rgba(14,33,70,.09);border-top:1px solid #eaf0f4}
+.jcal-detail-actions>.jt-work-action{grid-column:1/-1}
+.jcal-detail-actions>.jt-work-action>.jt-work-stage-button{min-height:46px;font-size:16px;border-radius:10px}
+.jcal-detail-actions>.jcal-secondary,.jcal-detail-actions>.jcal-cancel-action{height:35px;min-height:35px;border-radius:9px;font-size:13px!important;line-height:1.1}
+.jcal-detail-actions>.jcal-secondary{border:1px solid #d1dae6;color:#163a74;background:#fff}
+.jcal-detail-actions>.jcal-cancel-action{border:1px solid #f1cbcc;color:#a33140;background:#fff}
+.jcal-detail-actions>.jcal-cancel-action:disabled{opacity:.5}
+.jcal-overlay{z-index:2000}
+.jcal-sheet{padding-bottom:calc(24px + env(safe-area-inset-bottom));max-height:92dvh;overflow-y:auto}
+.jcal-bucket-view{padding:0 18px 130px}
+.jcal-bucket-intro{margin:1px 2px 16px;color:#71829d;font-size:14px;line-height:1.4}
+.jcal-bucket-job{display:grid;width:100%;gap:7px;padding:15px 13px;margin:0 0 10px;text-align:left;border:1px solid #dce7ec;border-radius:13px;background:#f8fbff;color:#173a73;cursor:pointer}
+.jcal-bucket-card-top{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:16px}
+.jcal-bucket-job>span:nth-child(2){font-size:13px;color:#68809c}
+.jcal-bucket-job small{font-size:12px;color:#07864b;font-weight:700}
+.jcal-bucket-empty{padding:45px 12px;display:grid;justify-items:center;gap:11px;text-align:center;color:#66829f}
+@media(max-width:375px){.jcal-details{padding-left:14px;padding-right:14px}.jcal-detail-actions{padding-left:12px;padding-right:12px}}
