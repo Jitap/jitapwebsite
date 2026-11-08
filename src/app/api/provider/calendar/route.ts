@@ -31,7 +31,7 @@ export async function GET(req:NextRequest){
    const record=byId.get(a.request_id);
    const p=record?.payload||{};
    return {id:a.id,requestId:a.request_id,startsAt:a.starts_at,endsAt:a.ends_at,status:a.status,
-    title:(SERVICE_OPTIONS.find(item=>item.value===p.category)?.label||safeText(p.category).replace(/[-_]/g,' ')||'Service')+' Service',
+    title:typeof p.title==='string'&&p.title.trim()?safeText(p.title).slice(0,120):(SERVICE_OPTIONS.find(item=>item.value===p.category)?.label||safeText(p.category).replace(/[-_]/g,' ')||'Service')+' Service',
     category:safeText(p.category),area:safeText(p.area),
     location:safeText(p.locationLabel)||safeText(p.area),
     latitude:typeof p.locationLat==='number'?p.locationLat:null,
