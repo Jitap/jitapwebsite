@@ -6,6 +6,7 @@ import Link from 'next/link';
 type Staff={email:string;role:'admin'|'coordinator'};
 type Case={
  id:string;reference:string;source_kind:string;source_id:string;status:string;priority:string;assigned_to:string|null;next_followup_at:string|null;created_at:string;
+ intervention_status:string;intervention_reason:string|null;intervention_owner:string|null;intervention_opened_at:string|null;jobStatus:string|null;providerName:string|null;appointmentId:string|null;jobUpdatedAt:string|null;
  category:string;area:string;description:string;name:string;phone:string;preferredProviderId?:string;preferredProviderName?:string;preferredDate:string;preferredTime:string;locationLabel:string;destination:string;needsLocation:boolean;needsPhone:boolean;needsSchedule:boolean;canContact:boolean;notifyOptIn:boolean;
 };
 type Activity={action:string;actor_email:string;note:string|null;old_value:string|null;new_value:string|null;created_at:string};
@@ -15,6 +16,8 @@ const statuses=[
  ['new','New'],['incomplete','Incomplete'],['needs_sourcing','Needs sourcing'],['matching','Matching'],['provider_contacted','Provider contacted'],['awaiting_quote','Awaiting quote'],['scheduled','Scheduled'],['in_progress','In progress'],['completed','Completed'],['cancelled','Cancelled'],['closed','Closed']
 ] as const;
 const nameStatus=(value:string)=>statuses.find(s=>s[0]===value)?.[1]||value.replaceAll('_',' ');
+const jobStage=(value:string)=>({confirmed:'Accepted · Confirmed',on_my_way:'On my way',arrived:'Arrived',in_progress:'Work started',completed:'Completed',cancelled:'Cancelled'} as Record<string,string>)[value]||nameStatus(value);
+const lifecycleEvent=(value:string)=>({provider_accepted:'Accepted · Booking confirmed',provider_on_my_way:'On my way',provider_arrived:'Arrived at location',work_started:'Work started',work_completed:'Job completed',customer_rated_by_provider:'Customer rated',provider_cancelled:'Provider cancelled',customer_approved_rematch:'Customer approved rematch',customer_declined_rematch:'Customer declined rematch',reschedule_requested:'Reschedule requested',appointment_time_changed:'Schedule updated',booking_state_snapshot:'Existing booking status (snapshot)'} as Record<string,string>)[value]||value.replaceAll('_',' ');
 function formatDate(date:string){try{return new Date(date).toLocaleString('en-KE',{dateStyle:'medium',timeStyle:'short',timeZone:'Africa/Nairobi'})}catch{return date}}
 export function CoordinatorDashboard(){
  const [staff,setStaff]=useState<Staff|null>(null);
@@ -62,14 +65,15 @@ export function CoordinatorDashboard(){
     if(oldStatus===undefined){
      changes.push({id:item.id+':new',caseId:item.id,title:'New service request',
       detail:'JT-'+item.reference+' · '+item.category.replaceAll('-',' ')+' · '+(item.locationLabel||item.area||'Location pending'),createdAt:Date.now()});
-    }else if(oldStatus!==item.status&&['provider_contacted','needs_sourcing','awaiting_quote','scheduled','in_progress','completed'].includes(item.status)){
-     changes.push({id:item.id+':'+item.status+':'+Date.now(),caseId:item.id,title:'Request status updated',
-      detail:'JT-'+item.reference+' · '+nameStatus(item.status),createdAt:Date.now()});
+    }else if(oldStatus!==[item.status,item.jobStatus||'',item.intervention_status||''].join('|')){
+     const alert=item.intervention_status==='open'||item.intervention_status==='acknowledged';
+     changes.push({id:item.id+':'+Date.now(),caseId:item.id,title:alert?'SOC attention required':'Provider workflow updated',
+      detail:'JT-'+item.reference+' · '+(alert?item.intervention_reason||'Follow-up needed':item.jobStatus?jobStage(item.jobStatus):nameStatus(item.status)),createdAt:Date.now()});
     }
    }
    if(changes.length)setNotices(old=>[...changes.reverse(),...old].slice(0,5));
   }
-  previousCases.current=new Map(incoming.map(item=>[item.id,item.status]));
+  previousCases.current=new Map(incoming.map(item=>[item.id,[item.status,item.jobStatus||'',item.intervention_status||''].join('|')]));
   setStaff(data.staff);setCases(incoming);setLastSynced(new Date());setRefreshIssue(false);
  },[]);
  // Deep-link a BUZZ response directly to its existing customer service ticket.
@@ -215,12 +219,16 @@ export function CoordinatorDashboard(){
   }catch(e){setFeedback(e instanceof Error?e.message:'Could not save')}
   finally{setBusy(false)}
  }
- const visible=useMemo(()=>cases.filter(c=>(filter==='all'||c.status===filter)&&[c.category,c.description,c.area,c.name,c.reference].join(' ').toLowerCase().includes(search.toLowerCase())),[cases,filter,search]);
+ const visible=useMemo(()=>cases.filter(c=>(filter==='all'||(filter==='soc_attention'?['open','acknowledged'].includes(c.intervention_status):c.status===filter))&&[c.category,c.description,c.area,c.name,c.reference,c.providerName||''].join(' ').toLowerCase().includes(search.toLowerCase())).sort((a,b)=>{
+  const priority=(x:Case)=>x.intervention_status==='open'?0:x.intervention_status==='acknowledged'?1:2;
+  return priority(a)-priority(b)||new Date(b.created_at).getTime()-new Date(a.created_at).getTime();
+ }),[cases,filter,search]);
  const active=cases.find(c=>c.id===selected)||null;
  const newCount=cases.filter(c=>c.status==='new').length;
  const incompleteCount=cases.filter(c=>c.status==='incomplete').length;
  const sourcingCount=cases.filter(c=>c.status==='needs_sourcing').length;
  const progressCount=cases.filter(c=>['matching','provider_contacted','awaiting_quote','scheduled','in_progress'].includes(c.status)).length;
+ const interventionCount=cases.filter(c=>c.intervention_status==='open'||c.intervention_status==='acknowledged').length;
  if(checking)return <section className="coordinator-root"><div className="coordinator-auth">Checking authorized staff access…</div></section>;
  if(!staff)return <section className="coordinator-root"><div className="coordinator-auth">
    <div className="coordinator-mark">JiTap · Service Operations</div>
@@ -264,14 +272,17 @@ export function CoordinatorDashboard(){
    <div><AlertTriangle/><strong>{incompleteCount}</strong><span>Incomplete leads</span></div>
    <div><Users/><strong>{sourcingCount}</strong><span>Needs sourcing</span></div>
    <div><CheckCircle2/><strong>{progressCount}</strong><span>In workflow</span></div>
+   <button className="coordinator-intervention-stat" type="button" onClick={()=>setFilter('soc_attention')}><AlertTriangle/><strong>{interventionCount}</strong><span>SOC attention needed</span></button>
   </div>
   <div className="coordinator-layout">
    <div className="coordinator-list">
-    <div className="coordinator-controls"><label><Search size={16}/><input aria-label="Search requests" placeholder="Search service, location, reference…" value={search} onChange={e=>setSearch(e.target.value)}/></label><select value={filter} aria-label="Filter case status" onChange={e=>setFilter(e.target.value)}><option value="all">All statuses</option>{statuses.map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></div>
+    <div className="coordinator-controls"><label><Search size={16}/><input aria-label="Search requests" placeholder="Search service, location, reference…" value={search} onChange={e=>setSearch(e.target.value)}/></label><select value={filter} aria-label="Filter case status" onChange={e=>setFilter(e.target.value)}><option value="all">All statuses</option><option value="soc_attention">Needs SOC attention</option>{statuses.map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></div>
     <div className="coordinator-list-count">{visible.length} cases · newest first</div>
     {visible.map(c=><button key={c.id} className={'coordinator-case'+(c.id===selected?' is-selected':'')} onClick={()=>{setSelected(c.id);setCaseTab('workflow');window.setTimeout(()=>document.getElementById('coordinator-detail-panel')?.scrollIntoView({behavior:'smooth',block:'start'}),30)}}>
       <div className="coordinator-case-reference">JT-{c.reference}</div>
       <div className="coordinator-case-line"><strong>{c.category.replaceAll('-',' ')}</strong><span className={'coordinator-status coordinator-status-'+c.status}>{nameStatus(c.status)}</span></div>
+      {c.jobStatus&&<div className="coordinator-job-stage"><CheckCircle2 size={13}/> {jobStage(c.jobStatus)} {c.providerName?'· '+c.providerName:''}</div>}
+      {['open','acknowledged'].includes(c.intervention_status)&&<div className="coordinator-soc-flag"><AlertTriangle size={14}/>{c.intervention_status==='acknowledged'?'SOC following up · ':'SOC attention · '}{c.intervention_reason||'Follow-up required'}</div>}
       <div className="coordinator-case-desc">{c.description||'Details not yet supplied'}</div>
       <div className="coordinator-case-meta"><span><MapPin size={13}/>{c.locationLabel||c.area||'Location needed'}</span><span>{formatDate(c.created_at)}</span></div>
       {(c.needsLocation||c.needsPhone||c.needsSchedule)&&<div className="coordinator-flags">{c.needsPhone?'Phone missing · ':''}{c.needsLocation?'Exact location missing · ':''}{c.needsSchedule?'Date not selected':''}</div>}
@@ -280,6 +291,25 @@ export function CoordinatorDashboard(){
    </div>
    <div className="coordinator-detail" id="coordinator-detail-panel">
    {active?<><div className="coordinator-detail-top"><span>Service ID: <strong>JT-{active.reference}</strong></span><strong>{nameStatus(active.status)}</strong></div>
+    {active.jobStatus&&<div className="coordinator-live-job"><div><span>Provider status</span><strong>{jobStage(active.jobStatus)}</strong><small>{active.providerName||'Assigned provider'}{active.jobUpdatedAt?' · Updated '+formatDate(active.jobUpdatedAt):''}</small></div><span className="coordinator-live-badge">Auto-synced</span></div>}
+    {['open','acknowledged'].includes(active.intervention_status)&&<section className="coordinator-intervention-card" aria-label="SOC intervention needed">
+      <div className="coordinator-intervention-heading"><AlertTriangle size={19}/><strong>{active.intervention_status==='open'?'Human intervention required':'SOC follow-up underway'}</strong></div>
+      <p>{active.intervention_reason||'This request needs a coordinator to review and follow up.'}</p>
+      {active.intervention_owner&&<small>Coordinator: {active.intervention_owner}</small>}
+      <div className="coordinator-intervention-actions">
+       {active.intervention_status==='open'&&<button type="button" disabled={busy} onClick={()=>update('intervention_acknowledge',null,'SOC has taken responsibility for this case')}>Take ownership</button>}
+       <button type="button" disabled={busy} onClick={()=>update('intervention_resolve',null,'SOC reviewed and resolved the intervention')}>Mark follow-up resolved</button>
+       <button type="button" onClick={()=>setCaseTab('details')}>Notes &amp; follow-up</button>
+      </div>
+    </section>}
+    <section className="coordinator-event-timeline" aria-label="Job progress and activity timeline">
+      <div className="coordinator-timeline-heading"><h3>Live job timeline</h3><span>Automatic event history</span></div>
+      {activity.length?activity.slice(0,35).map((a,i)=><div className="coordinator-event-item" key={a.created_at+':'+i}>
+       <span className="coordinator-event-marker"/>
+       <div><strong>{lifecycleEvent(a.action)}</strong><small>{formatDate(a.created_at)} · {a.actor_email.startsWith('provider:')?'Provider':a.actor_email==='customer'?'Customer':a.actor_email==='jitap-system'?'JiTap system':a.actor_email}</small>
+       {a.note&&<p>{a.note}</p>}</div>
+      </div>):<p className="coordinator-timeline-empty">No activity recorded for this case yet.</p>}
+    </section>
     <div className="coordinator-case-tabs" role="tablist" aria-label="Coordinator case sections">
       <button role="tab" aria-selected={caseTab==='workflow'} className={caseTab==='workflow'?'active':''} onClick={()=>setCaseTab('workflow')} type="button">Provider &amp; Customer Workflow</button>
       <button role="tab" aria-selected={caseTab==='details'} className={caseTab==='details'?'active':''} onClick={()=>setCaseTab('details')} type="button">Case Details</button>
@@ -291,7 +321,7 @@ export function CoordinatorDashboard(){
     <div className="coordinator-quick-actions"><button disabled={busy} onClick={()=>update('status_changed','needs_sourcing')}>Needs sourcing</button><button disabled={busy} onClick={()=>update('status_changed','provider_contacted')}>Provider contacted</button><button disabled={busy} onClick={()=>update('status_changed','completed')}>Mark completed</button></div>
     <h3>Coordinator notes</h3><textarea rows={3} maxLength={2000} value={note} onChange={e=>setNote(e.target.value)} placeholder="What did the customer/provider say? What is the next action?"/><button disabled={busy||note.trim().length<2} onClick={()=>update('note_added',null,note)}>Save note</button>
     <h3>Activity history</h3><div className="coordinator-activity">{activity.length?activity.map((a,i)=><div key={i}><strong>{a.action.replaceAll('_',' ')}</strong><small>{formatDate(a.created_at)} · {a.actor_email}</small>{a.note&&<p>{a.note}</p>}{a.new_value&&<p>{a.new_value}</p>}</div>):<p>No activity recorded yet.</p>}</div></>}
-    {caseTab==='workflow'&&<><p className="coordinator-case-workflow-lead">Assign a verified provider, record their response, and prepare customer updates. If no provider is available, use the Case Details tab to mark Needs sourcing.</p><CoordinatorWorkflow key={active.id} caseItem={active} onChanged={async()=>{await load();await loadDetail(active.id);}}/></>}
+    {caseTab==='workflow'&&<><p className="coordinator-case-workflow-lead">Provider acceptance and job progress update automatically from the provider app. SOC can monitor the timeline, contact the customer or provider, and use Case Details for notes, follow-ups and intervention.</p><CoordinatorWorkflow key={active.id} caseItem={active} onChanged={async()=>{await load();await loadDetail(active.id);}}/></>}
    </>:<div className="coordinator-select">Select a request from the queue to open Provider & Customer Workflow, record provider responses, and prepare customer updates.</div>}
    {feedback&&<p className="coordinator-feedback" role="status">{feedback}</p>}
    </div>
