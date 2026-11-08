@@ -306,3 +306,16 @@
 .jcal-map .jt-travel-location{padding:10px;background:#f1faff}
 .jcal-map .jt-travel-eta{margin:8px}
 @media(max-width:360px){.jt-confirmed-job-actions{grid-template-columns:1fr}}
+
+
+/* Provider dashboard: actionable in-progress and completed summary */
+.jt-provider-job-metrics{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:11px;margin:14px 0 20px}
+.jt-provider-metric{min-width:0;min-height:123px;padding:13px 13px 12px;border-radius:16px;border:1px solid #c9e8da;background:#f3fff8;text-align:left;display:flex;flex-direction:column;gap:7px;color:#153961;cursor:pointer;box-shadow:0 2px 9px rgba(14,54,57,.04)}
+.jt-provider-metric-complete{background:#f4f8ff;border-color:#d6e1f5}
+.jt-provider-metric-top{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:750;white-space:nowrap}
+.jt-provider-metric-top svg:last-child{margin-left:auto;flex-shrink:0}
+.jt-provider-metric strong{font-size:31px;line-height:1;font-weight:790;color:#0a8e52}
+.jt-provider-metric-complete strong{color:#163f80}
+.jt-provider-metric small{font-size:11px;color:#6e809d}
+.jt-provider-metric:focus-visible{outline:3px solid #00bd63;outline-offset:2px}
+@media(max-width:350px){.jt-provider-job-metrics{gap:7px}.jt-provider-metric{padding:12px 9px}.jt-provider-metric-top{font-size:11px}}
