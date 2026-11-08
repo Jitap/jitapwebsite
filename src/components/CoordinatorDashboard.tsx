@@ -4,9 +4,10 @@ import {CheckCircle2,RefreshCw,LogOut,MapPin,Phone,CalendarClock,Search,AlertTri
 import {CoordinatorWorkflow} from '@/components/CoordinatorWorkflow';
 import Link from 'next/link';
 type Staff={email:string;role:'admin'|'coordinator'};
+type WhatsAppDelivery={template_kind:string;status:string;created_at:string;updated_at:string;last_error:string|null};
 type Case={
  id:string;reference:string;source_kind:string;source_id:string;status:string;priority:string;assigned_to:string|null;next_followup_at:string|null;created_at:string;
- intervention_status:string;intervention_reason:string|null;intervention_owner:string|null;intervention_opened_at:string|null;jobStatus:string|null;providerName:string|null;providerPhone:string|null;appointmentId:string|null;jobUpdatedAt:string|null;
+ intervention_status:string;intervention_reason:string|null;intervention_owner:string|null;intervention_opened_at:string|null;jobStatus:string|null;providerName:string|null;providerPhone:string|null;appointmentId:string|null;jobUpdatedAt:string|null;whatsappDeliveries:WhatsAppDelivery[];
  category:string;area:string;description:string;name:string;phone:string;preferredProviderId?:string;preferredProviderName?:string;preferredDate:string;preferredTime:string;locationLabel:string;destination:string;needsLocation:boolean;needsPhone:boolean;needsSchedule:boolean;canContact:boolean;notifyOptIn:boolean;
 };
 type Activity={action:string;actor_email:string;note:string|null;old_value:string|null;new_value:string|null;created_at:string};
@@ -312,6 +313,15 @@ export function CoordinatorDashboard(){
        <button type="button" onClick={()=>{setFlagFormOpen(false);setFlagReason('')}}>Cancel</button></div>
       </div>}
     </section>}
+    <section className="coordinator-whatsapp-status" aria-label="Kapso WhatsApp delivery status">
+      <div className="coordinator-timeline-heading"><h3>WhatsApp delivery · Kapso</h3><span>Live receipts</span></div>
+      {!active.whatsappDeliveries?.length?<p>No WhatsApp notifications queued for this request.</p>:
+       active.whatsappDeliveries.map((delivery,i)=><div className="coordinator-whatsapp-message" key={i}>
+        <div><strong>{delivery.template_kind.replaceAll('_',' ')}</strong><span className={'coordinator-wa-status coordinator-wa-'+delivery.status}>{delivery.status==='skipped'?'No WhatsApp consent':delivery.status}</span></div>
+        <small>{formatDate(delivery.updated_at)}</small>
+        {delivery.last_error&&<small className="coordinator-wa-error">Reason: {delivery.last_error}</small>}
+       </div>)}
+    </section>
     <section className="coordinator-event-timeline" aria-label="Job progress and activity timeline">
       <div className="coordinator-timeline-heading"><h3>Live job timeline</h3><span>Automatic event history</span></div>
       {activity.length?activity.slice(0,35).map((a,i)=><div className="coordinator-event-item" key={a.created_at+':'+i}>
