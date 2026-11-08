@@ -99,3 +99,42 @@
 .coordinator-provider-approval-alert a{color:#083f8b;font-size:13px;font-weight:750}
 .coordinator-provider-approval-alert button{background:none;border:0;cursor:pointer;color:#326a54}
 .coordinator-provider-link{display:inline-block;margin:9px 0;font-weight:780;color:#04784b}
+
+
+/* SOD: synchronized provider workflow and actionable SOC interventions */
+.coordinator-stats{grid-template-columns:repeat(6,minmax(0,1fr))}
+.coordinator-stats>.coordinator-intervention-stat{border:1px solid #efcc91;background:#fff8ea;border-radius:16px;padding:17px;display:flex;flex-direction:column;gap:6px;text-align:left;color:#744a0b;cursor:pointer}
+.coordinator-intervention-stat svg{width:19px;height:19px;color:#bf771c}
+.coordinator-intervention-stat strong{font-size:28px;font-weight:800}
+.coordinator-intervention-stat span{font-size:12px;color:#895c22}
+.coordinator-soc-flag{display:flex;gap:6px;align-items:flex-start;color:#93600c;background:#fff5df;border-radius:9px;padding:7px 9px;font-size:11px;font-weight:700;line-height:1.5;margin:8px 0;overflow-wrap:anywhere}
+.coordinator-soc-flag svg{flex:none;margin-top:1px}
+.coordinator-job-stage{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:750;color:#087a55;margin-top:7px}
+.coordinator-live-job{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#f0fbf6;border:1px solid #c6ead8;padding:13px;border-radius:12px;margin:17px 0 13px}
+.coordinator-live-job>div{display:grid;gap:5px}
+.coordinator-live-job span{font-size:11px;color:#607e72}
+.coordinator-live-job strong{font-size:16px;color:#046b44}
+.coordinator-live-job small{color:#607d73;line-height:1.5;font-size:11px}
+.coordinator-live-badge{flex:none;color:#06754d!important;font-size:10px!important;font-weight:760;background:#d6f8e6;border-radius:20px;padding:6px 8px}
+.coordinator-intervention-card{border:1px solid #edc98c;background:#fffbf2;padding:14px 15px;border-radius:12px;margin:12px 0;color:#724b0d}
+.coordinator-intervention-heading{display:flex;align-items:center;gap:8px}
+.coordinator-intervention-card p{font-size:13px;line-height:1.5;overflow-wrap:anywhere;margin:8px 0}
+.coordinator-intervention-card small{font-size:11px}
+.coordinator-intervention-actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+.coordinator-intervention-actions button{min-height:36px;border-radius:8px;border:1px solid #cfa961;padding:8px 10px;background:#fff;color:#865410;font-size:12px;font-weight:750;cursor:pointer}
+.coordinator-intervention-actions button:first-child{background:#0b8c61;color:#fff;border-color:#0b8c61}
+.coordinator-intervention-actions button:disabled{opacity:.5;cursor:wait}
+.coordinator-event-timeline{margin:14px 0 18px;padding:13px 14px;border:1px solid #e0e8eb;border-radius:12px;background:#fafcfd;max-height:340px;overflow-y:auto}
+.coordinator-timeline-heading{display:flex;justify-content:space-between;gap:9px;align-items:center;margin-bottom:11px}
+.coordinator-timeline-heading h3{font-size:15px;margin:0;color:#13395a}
+.coordinator-timeline-heading span{font-size:10px;color:#719184}
+.coordinator-event-item{display:grid;grid-template-columns:13px minmax(0,1fr);gap:9px;position:relative}
+.coordinator-event-item:not(:last-child):before{content:'';position:absolute;left:5px;top:11px;bottom:0;width:2px;background:#d7e7e0}
+.coordinator-event-marker{width:12px;height:12px;border-radius:50%;background:#0db574;border:2px solid #d2f4e3;position:relative;z-index:1;margin-top:3px}
+.coordinator-event-item>div{padding:1px 0 14px}
+.coordinator-event-item strong{display:block;color:#173a59;font-size:12px;line-height:1.4}
+.coordinator-event-item small{display:block;color:#687e8a;font-size:11px;margin:4px 0}
+.coordinator-event-item p{font-size:11px;line-height:1.48;color:#5d6e77;margin:5px 0 0;overflow-wrap:anywhere}
+.coordinator-timeline-empty{font-size:12px;color:#778993;margin:7px 0}
+@media(max-width:1100px){.coordinator-stats{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:580px){.coordinator-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.coordinator-live-job{align-items:flex-start}.coordinator-event-timeline{max-height:300px}}
