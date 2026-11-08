@@ -48,3 +48,11 @@
 .jt-soc-response-actions button{border:1px solid #0a9d59;border-radius:10px;color:#087044;background:#edfaf2;padding:12px 15px;font-weight:780;cursor:pointer}
 .jt-soc-response-actions button:last-child:not(:first-child){background:#059950;color:white}
 .jt-soc-response-actions button:disabled{opacity:.5;cursor:not-allowed}
+
+
+.jt-soc-kyc{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:11px 0;padding:10px 12px;background:#f2f9ff;border:1px solid #d9e5f4;border-radius:9px;font-size:12px}
+.jt-soc-kyc>strong{color:#163d64}
+.jt-soc-kyc>span{padding:4px 9px;border-radius:20px;font-weight:750}
+.jt-soc-kyc-approved{color:#056d41;background:#d9f6e5}
+.jt-soc-kyc-pending{color:#805c16;background:#fff0d0}
+.jt-soc-kyc small{color:#657d9c}
