@@ -4,7 +4,7 @@ import {useRouter} from 'next/navigation';
 import {ArrowLeft,CalendarDays,ChevronLeft,ChevronRight,Clock3,MapPin,Navigation,Phone,SlidersHorizontal,UserRound,X,CheckCircle2} from 'lucide-react';
 import './calendar.css';
 import {ProviderJobAction} from '@/components/ProviderJobAction';
-import {ProviderTravelEstimate,googleJobDirections} from '@/components/ProviderTravelEstimate';
+import {ProviderTravelEstimate} from '@/components/ProviderTravelEstimate';
 
 type Appointment={
  id:string;requestId:string;startsAt:string|null;endsAt:string|null;status:string;rated:boolean;
@@ -35,6 +35,8 @@ export default function ProviderCalendar(){
  const [error,setError]=useState('');
  const [message,setMessage]=useState('');
  const [detailId,setDetailId]=useState<string|null>(null);
+ const [bucket,setBucket]=useState<'in_progress'|'completed'|null>(null);
+ const [expandedDescription,setExpandedDescription]=useState(false);
  const [filterOpen,setFilterOpen]=useState(false);
  const [showReschedule,setShowReschedule]=useState(false);
  const [showCancel,setShowCancel]=useState(false);
@@ -53,9 +55,10 @@ export default function ProviderCalendar(){
   setAppointments(data.appointments||[]);
  },[router]);
  useEffect(()=>{let active=true;load().catch(e=>{if(active)setError(e.message)}).finally(()=>{if(active)setLoading(false)});return()=>{active=false}},[load]);
- const active=appointments.filter(a=>a.status!=='cancelled');
+ const active=appointments.filter(a=>!['cancelled','completed'].includes(a.status));
  const unscheduled=active.filter(a=>!a.startsAt||!a.endsAt);
- const detail=active.find(a=>a.id===detailId);
+ const detail=appointments.find(a=>a.id===detailId&&a.status!=='cancelled');
+ const filteredJobs=appointments.filter(a=>bucket==='completed'?a.status==='completed':['confirmed','on_my_way','arrived','in_progress'].includes(a.status));
  const dayJobs=active.filter(a=>a.startsAt&&a.endsAt&&dayKey(a.startsAt)===selected).sort((a,b)=>(a.startsAt||'').localeCompare(b.startsAt||''));
  const start=startWeek(selected);
  const days=useMemo(()=>{
@@ -65,7 +68,12 @@ export default function ProviderCalendar(){
   return Array.from({length:42},(_,i)=>addDays(base,i));
  },[selected,monthView,start]);
  const monthLabel=fmt(dayDate(selected),{month:'long',year:'numeric'});
- useEffect(()=>{if(!appointments.length)return;const job=new URLSearchParams(window.location.search).get('job');if(job){const found=appointments.find(a=>a.requestId===job);if(found)setDetailId(found.id)}},[appointments]);
+ useEffect(()=>{
+  const params=new URLSearchParams(window.location.search);
+  const selectedBucket=params.get('bucket');
+  if(selectedBucket==='completed'||selectedBucket==='in_progress')setBucket(selectedBucket);
+ },[]);
+ useEffect(()=>{if(!appointments.length)return;const job=new URLSearchParams(window.location.search).get('job');if(job){const found=appointments.find(a=>a.requestId===job&&a.status!=='cancelled');if(found)setDetailId(found.id)}},[appointments]);
  async function send(body:Record<string,unknown>){
   setBusy(true);setError('');setMessage('');
   try{
@@ -103,7 +111,7 @@ export default function ProviderCalendar(){
  }
  return <main className="jcal-app"><div className="jcal-phone">
   {detail?<div className="jcal-details">
-   <header className="jcal-detail-heading"><button aria-label="Back to calendar" onClick={()=>{setDetailId(null);setError('');setMessage('')}}><ArrowLeft size={22}/></button><strong>Scheduled Work</strong></header>
+   <header className="jcal-detail-heading"><button aria-label="Back to calendar" onClick={()=>{setDetailId(null);setExpandedDescription(false);setError('');setMessage('')}}><ArrowLeft size={22}/></button><strong>Scheduled Work</strong></header>
    <h1>{detail.title}</h1><p className="jcal-subtitle">{detail.category||'Service'} · {detail.area||detail.location}</p>
    <section className="jcal-customer"><div className="jcal-avatar"><UserRound size={27}/></div><div><h2>{detail.customerName}</h2><p><CheckCircle2 size={17}/> Scheduled customer</p></div>{detail.customerPhone&&<a href={'tel:'+detail.customerPhone.replace(/[^+0-9]/g,'')} className="jcal-call"><Phone size={16}/> Call Now</a>}</section>
    <section className="jcal-map" aria-label="Appointment map">
@@ -113,10 +121,19 @@ export default function ProviderCalendar(){
     <ProviderTravelEstimate job={detail}/>
    </section>
    <section className="jcal-info"><h2>Schedule</h2><p><CalendarDays size={20}/>{detail.startsAt&&detail.endsAt?dateTime(detail.startsAt)+' · '+time(detail.startsAt)+' – '+time(detail.endsAt):'Confirmed · Date and time to arrange'}</p>{detail.pendingReschedule&&<p className="jcal-pending"><Clock3 size={18}/> Reschedule awaiting JiTap confirmation</p>}</section>
-   <section className="jcal-info"><h2>Service details</h2><p>{detail.description||'The confirmed service request is scheduled for this time.'}</p><p className="jcal-ref">Ref: JT-{detail.requestId.slice(0,8).toUpperCase()}</p></section>
+   <section className="jcal-info jcal-service-brief"><h2>Service details</h2><p className={expandedDescription?'jcal-description-expanded':'jcal-description-clamped'}>{detail.description||'The confirmed service request is scheduled for this time.'}</p>{(detail.description||'').length>115&&<button type="button" className="jcal-description-toggle" onClick={()=>setExpandedDescription(x=>!x)}>{expandedDescription?'Show less':'Read full details'}</button>}<p className="jcal-ref">Ref: JT-{detail.requestId.slice(0,8).toUpperCase()}</p></section>
    {error&&<p role="alert" className="jcal-error">{error}</p>}{message&&<p role="status" className="jcal-success">{message}</p>}
-   <div className="jcal-detail-actions"><ProviderJobAction appointmentId={detail.id} status={detail.status} rated={detail.rated} onUpdated={load}/><button className="jcal-secondary" disabled={busy||!!detail.pendingReschedule} onClick={()=>openReschedule(detail)}>Reschedule</button><button className="jcal-cancel-action" disabled={busy||!(detail.status==='confirmed'||detail.status==='on_my_way')} onClick={()=>{setCancelReason('');setCancelDetails('');setError('');setShowCancel(true)}}>Cancel this job</button></div>
-  </div>:<>
+   <div className="jcal-detail-actions"><ProviderJobAction appointmentId={detail.id} status={detail.status} rated={detail.rated} onUpdated={load}/><button type="button" className="jcal-secondary" disabled={busy||!!detail.pendingReschedule||!['confirmed','on_my_way'].includes(detail.status)} onClick={()=>openReschedule(detail)}>Reschedule</button><button type="button" className="jcal-cancel-action" disabled={busy||!['confirmed','on_my_way','arrived','in_progress'].includes(detail.status)} onClick={()=>{setCancelReason('');setCancelDetails('');setError('');setShowCancel(true)}}>Cancel job</button></div>
+  </div>:bucket?<section className="jcal-bucket-view">
+   <header className="jcal-detail-heading"><button aria-label="Return to provider home" onClick={()=>router.push('/provider')}><ArrowLeft size={22}/></button><strong>{bucket==='completed'?'Completed Jobs':'In Progress'}</strong></header>
+   <p className="jcal-bucket-intro">{bucket==='completed'?'Your completed service history and customer ratings.':'Accepted and ongoing work. Choose a task to view its details and next action.'}</p>
+   {loading?<p className="jcal-state">Loading jobs…</p>:filteredJobs.length===0?<div className="jcal-bucket-empty"><CalendarDays size={32}/><p>{bucket==='completed'?'No completed jobs yet.':'No active jobs at the moment.'}</p></div>:
+    filteredJobs.map(job=><button type="button" className="jcal-bucket-job" key={job.id} onClick={()=>{setExpandedDescription(false);setDetailId(job.id)}}>
+     <span className="jcal-bucket-card-top"><strong>{job.title}</strong><ChevronRight size={18}/></span>
+     <span>{job.customerName} · {job.location||job.area}</span>
+     <small>{job.status==='completed'?(job.rated?'Completed · Customer rated':'Completed · Rate customer'):job.status==='in_progress'?'Work in progress':job.status==='arrived'?'Arrived':job.status==='on_my_way'?'On my way':'Confirmed'}</small>
+    </button>)}
+  </section>:<>
    <header className="jcal-header"><div><h1>Calendar</h1><p>{monthLabel}</p></div><button aria-label="Calendar view settings" onClick={()=>setFilterOpen(v=>!v)}><SlidersHorizontal size={22}/></button></header>
    {filterOpen&&<div className="jcal-filter"><button onClick={()=>{setMonthView(false);setFilterOpen(false)}}>Week view</button><button onClick={()=>{setMonthView(true);setFilterOpen(false)}}>Month view</button></div>}
    <section className="jcal-date-panel" aria-label="Choose calendar day">
@@ -133,7 +150,7 @@ export default function ProviderCalendar(){
      <div className="jcal-events">{dayJobs.map((a,i)=>{
       const top=Math.max(0,(hour(a.startsAt!)-7)*58);
       const duration=Math.max(1,hour(a.endsAt!)-hour(a.startsAt!));
-      return <button key={a.id} style={{top:top+'px',height:Math.max(65,duration*58-5)+'px'}} className={'jcal-event jcal-event-'+i%3} onClick={()=>setDetailId(a.id)}><span className="jcal-event-dot"/><span><strong>{a.title}</strong><small>{time(a.startsAt!)} – {time(a.endsAt!)}</small><small>{a.location||a.area}</small></span></button>
+      return <button key={a.id} style={{top:top+'px',height:Math.max(65,duration*58-5)+'px'}} className={'jcal-event jcal-event-'+i%3} onClick={()=>{setExpandedDescription(false);setDetailId(a.id)}}><span className="jcal-event-dot"/><span><strong>{a.title}</strong><small>{time(a.startsAt!)} – {time(a.endsAt!)}</small><small>{a.location||a.area}</small></span></button>
      })}</div>
     </section>}
    {!loading&&unscheduled.length>0&&<section className="jcal-unscheduled"><h2>Confirmed jobs · Time to arrange</h2>{unscheduled.map(a=><button key={a.id} onClick={()=>setDetailId(a.id)}><strong>{a.title}</strong><span>{a.location||a.area} · Booking confirmed</span><small>View job and tap On my way</small></button>)}</section>}
