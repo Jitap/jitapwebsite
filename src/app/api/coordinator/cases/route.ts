@@ -7,6 +7,7 @@ type CaseRow={id:string;source_kind:'website_request'|'moving_lead';source_id:st
 type Appointment={id:string;request_id:string;status:string;provider_user_id:string;starts_at:string|null;ends_at:string|null;updated_at:string};
 type Provider={user_id:string;full_name:string;business_name:string};
 type ProviderAccount={user_id:string;phone:string};
+type KapsoRecord={request_id:string;template_kind:string;status:string;created_at:string;updated_at:string;last_error:string|null};
 type Intake={id:string;created_at:string;status:string;payload:Record<string,unknown>};
 type Move={id:string;created_at:string;current_stage:number;pickup_address:string|null;dropoff_address:string|null;moving_date:string|null;moving_time:string|null;home_size:string|null;customer_phone:string|null;customer_email:string|null};
 function safeText(v:unknown,max=500){return typeof v==='string'?v.slice(0,max):''}
@@ -67,13 +68,17 @@ export async function GET(req:NextRequest){
   ]):[[],[]];
   const providerNames=new Map(providers.map(p=>[p.user_id,p.business_name||p.full_name]));
   const providerPhones=new Map(accounts.map(p=>[p.user_id,p.phone]));
+  const kapsoRows=intakeIds.length?await supabasePrivate<KapsoRecord[]>('jitap_kapso_messages?select=request_id,template_kind,status,created_at,updated_at,last_error&request_id='+inFilter(intakeIds)+'&order=created_at.desc&limit=500'):[];
+  const kapsoByRequest=new Map<string,KapsoRecord[]>();
+  for(const delivery of kapsoRows)kapsoByRequest.set(delivery.request_id,[...(kapsoByRequest.get(delivery.request_id)||[]),delivery]);
   const rows=cases.map(c=>{
    const job=latestByRequest.get(c.source_id);
    return {...normalizedRecord(c,sources.get(c.source_id)),
     jobStatus:job?.status||null,appointmentId:job?.id||null,
     providerName:job?providerNames.get(job.provider_user_id)||'Assigned provider':null,
     providerPhone:job?providerPhones.get(job.provider_user_id)||null:null,
-    jobUpdatedAt:job?.updated_at||null};
+    jobUpdatedAt:job?.updated_at||null,
+    whatsappDeliveries:(kapsoByRequest.get(c.source_id)||[]).slice(0,8)};
   });
   if(detailId){
    const activity=await supabasePrivate<{action:string;actor_email:string;note:string|null;old_value:string|null;new_value:string|null;created_at:string}[]>('coordinator_activity?case_id=eq.'+encodeURIComponent(detailId)+'&select=action,actor_email,note,old_value,new_value,created_at&order=created_at.desc&limit=100');
