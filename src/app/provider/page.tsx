@@ -17,7 +17,7 @@ type ProviderProfile={
 type Opportunity={request_id:string;category:string;area:string;preferred_date:string;preferred_time:string;created_at:string;technical_summary:string;proposed_scope:string;urgency:'high'|'normal'|'low'|'unspecified';brief_source:'ai'|'reported';requested_timing:string;job_location:string};
 type PastResponse={request_id:string;decision:string;created_at:string};
 type ConfirmedJob={id:string;requestId:string;status:string;customerName:string;customerPhone:string;location:string;service:string;latitude:number|null;longitude:number|null;placeId:string;rated:boolean};
-type Dashboard={profile:ProviderProfile|null;reviewStatus:string;confirmedJobs:ConfirmedJob[];readNotificationIds:string[];opportunities:Opportunity[];recentResponses:PastResponse[];uploadedMedia:{kind:MediaKind;uploadedAt:string}[]};
+type Dashboard={profile:ProviderProfile|null;onboardingName?:string;reviewStatus:string;confirmedJobs:ConfirmedJob[];readNotificationIds:string[];opportunities:Opportunity[];recentResponses:PastResponse[];uploadedMedia:{kind:MediaKind;uploadedAt:string}[]};
 type Tab='home'|'profile'|'requests'|'verification';
 const empty={full_name:'',business_name:'',categories:[] as string[],service_areas:[] as string[],
  base_area:'Bamburi',experience_years:0,skills:'',is_online:false,submitted_at:null};
@@ -46,7 +46,7 @@ export default function ProviderDashboardPage(){
   if(!res.ok)throw Error('Unable to load provider account');
   const data:Dashboard=await res.json();
   setDashboard(data);
-  setForm(data.profile||empty);
+  setForm(data.profile||{...empty,full_name:data.onboardingName||''});
   if(data.reviewStatus==='approved')setTab(t=>t==='verification'?'home':t);
   else if(!data.profile?.submitted_at)setTab('profile');
  },[router]);
