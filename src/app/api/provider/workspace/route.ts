@@ -124,7 +124,7 @@ export async function GET(req:NextRequest){
    const clean=(x:unknown,max=160)=>typeof x==='string'?x.slice(0,max):'';
    return {id:a.id,requestId:a.request_id,status:a.status,
     customerName:clean(p.name)||'Customer',customerPhone:clean(p.phone,30),
-    location:clean(p.locationLabel)||clean(p.area),service:clean(p.category)||'Service',
+    location:clean(p.locationLabel)||clean(p.area),service:clean(p.title)||clean(p.category)||'Service',
     latitude:typeof p.locationLat==='number'?p.locationLat:null,
     longitude:typeof p.locationLng==='number'?p.locationLng:null,
     placeId:clean(p.locationPlaceId),rated:ratings.some(r=>r.appointment_id===a.id)};
