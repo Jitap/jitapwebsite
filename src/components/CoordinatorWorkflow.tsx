@@ -9,7 +9,7 @@ type ProviderSmsDraft={id:string;assignment_id:string;message:string};
 type ProviderSmsContact={providerId:string;enabled:boolean;maskedPhone:string};
 type SmsAttempt={id:string;customer_update_id:string|null;assignment_id:string|null;recipient_kind:string;gateway?:string;state:string;requested_at:string;http_status:number|null;provider_message_id:string|null};
 type Update={id:string;kind:string;channel:'whatsapp'|'sms'|'phone';message:string;state:'draft'|'sent_manually'|'cancelled';created_at:string;sent_at:string|null};
-type Case={id:string;reference:string;category:string;description:string;area:string;phone:string;status:string;canContact:boolean;source_kind:string;name:string;locationLabel:string;notifyOptIn:boolean;preferredDate?:string;preferredTime?:string};
+type Case={id:string;reference:string;category:string;description:string;area:string;phone:string;status:string;canContact:boolean;source_kind:string;name:string;locationLabel:string;notifyOptIn:boolean;preferredDate?:string;preferredTime?:string;jobStatus?:string|null;providerName?:string|null;appointmentId?:string|null};
 const responseStates=[['contacted','Contacted'],['accepted','Accepted'],['declined','Declined'],['needs_clarification','Needs clarification'],['quote_requested','Quote requested'],['quote_received','Quote received'],['cancelled','Cancelled']] as const;
 const updateKinds=[['request_received','Request received'],['provider_search','Searching for provider'],['provider_found','Provider found'],['quote_update','Quotation update'],['scheduled','Scheduled'],['progress','Job progress'],['completion','Completion'],['clarification','Clarification needed']] as const;
 function toKenyanWhatsApp(phone:string){
@@ -21,7 +21,7 @@ function makeProviderBuzz(c:Case,provider:string){
  const brief=c.description.trim().replace(/(?:\+?254|0)[17]\d{8}/g,'[phone withheld]').replace(/\s+/g,' ').slice(0,270)||c.category;
  const place=c.locationLabel||c.area||'Confirm location';
  const date=[c.preferredDate,c.preferredTime].filter(Boolean).join(' at ')||'Confirm schedule';
- return ('JiTap BUZZ for '+provider+'. JT-'+c.reference+'. Job: '+brief+'. Location: '+place+'. Preferred: '+date+'. Open the secure response link at the end of this SMS to accept, decline or ask a question. Booking not confirmed.').slice(0,600);
+ return ('JiTap BUZZ for '+provider+'. JT-'+c.reference+'. Job: '+brief+'. Location: '+place+'. Preferred: '+date+'. Open the secure response link at the end of this SMS to accept, decline or ask a question. Acceptance immediately confirms the booking.').slice(0,600);
 }
 function makeMessage(c:Case,kind:string,providerName?:string){
  const ref='JT-'+c.reference;
@@ -155,7 +155,8 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
  return <section className="coordinator-workflow">
   <div className="coordinator-contact-summary"><h3>Customer contact</h3><dl><dt>Service ID</dt><dd className="coordinator-service-id">JT-{caseItem.reference}</dd><dt>Name</dt><dd>{caseItem.name||'Not supplied (historical enquiry)'}</dd><dt>Mobile</dt><dd>{caseItem.phone||'Not supplied'}</dd><dt>Service location</dt><dd>{caseItem.locationLabel||caseItem.area||'Not supplied'}</dd><dt>SMS updates</dt><dd>{caseItem.notifyOptIn?'Opted in':'Not opted in / not recorded'}</dd></dl></div>
   <h3><UserRoundCheck size={18}/> Provider assignment</h3>
-  <p className="coordinator-help">Only verified providers already in JiTap's database can be assigned. An assignment is a proposal, not an accepted booking.</p>
+  {caseItem.jobStatus&&caseItem.jobStatus!=='cancelled'&&<div className="coordinator-auto-assignment"><strong>Confirmed booking from the provider app</strong><p>{caseItem.providerName||'Assigned provider'} · {caseItem.jobStatus.replaceAll('_',' ')}</p><small>This booking was accepted directly by the provider. SOD records the milestones automatically; do not create a second assignment.</small></div>}
+  <p className="coordinator-help">Manual proposals are for requests without an active booking. Provider acceptance in the JiTap app immediately confirms the customer booking.</p>
   <label>Choose verified provider
    <select value={providerId} onChange={e=>setProviderId(e.target.value)} disabled={busy||caseItem.status==='incomplete'}>
     <option value="">Select a verified provider…</option>
@@ -178,7 +179,7 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
    <button disabled={busy||!providerConsent||consentSource.trim().length<5||newProviderPhone.trim().length<10} onClick={saveProviderContact}>Save private SMS contact</button>
   </div>}
   <input aria-label="Provider assignment note" maxLength={1000} value={providerNote} onChange={e=>setProviderNote(e.target.value)} placeholder="Private note for sourcing or proposed provider"/>
-  <button disabled={busy||!providerId||caseItem.status==='incomplete'||['closed','completed','cancelled'].includes(caseItem.status)} onClick={()=>action({action:'assign_provider',providerId,note:providerNote},'Provider proposal saved')}>Assign selected provider</button>
+  <button disabled={busy||!providerId||caseItem.status==='incomplete'||['closed','completed','cancelled'].includes(caseItem.status)||!!(caseItem.jobStatus&&['confirmed','on_my_way','arrived','in_progress','completed'].includes(caseItem.jobStatus))} onClick={()=>action({action:'assign_provider',providerId,note:providerNote},'Provider proposal saved')}>Assign selected provider</button>
   {assignments.length? <div className="coordinator-assignment-list">{assignments.map(a=>{
    const p=providers.find(p=>p.id===a.provider_id);
    return <div className="coordinator-assignment" key={a.id}>
@@ -213,7 +214,7 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
     {!providerDrafts.some(d=>d.assignment_id===a.id)&&!smsAttempts.some(s=>s.assignment_id===a.id)&&<small>Save the provider BUZZ draft to unlock SMS sending.</small>}
     {!smsEnabled&&<small>Coordinator SMS sending is not activated.</small>}
    </div>
-  })}</div>:<p className="coordinator-help">No provider proposed yet. Requests without a confirmed provider remain available for manual sourcing.</p>}
+  })}</div>:<p className="coordinator-help">No separate manual provider proposal. If the booking is already confirmed above, SOC can monitor its progress here; otherwise the request remains available for manual sourcing.</p>}
   <h3><MessageSquare size={18}/> Customer updates</h3>
   <div className="coordinator-sms-health">
    <button disabled={checkingSms||busy} onClick={checkSmsDiagnostics}>{checkingSms?'Checking Wasiliana…':'Check Wasiliana setup (no SMS sent)'}</button>
