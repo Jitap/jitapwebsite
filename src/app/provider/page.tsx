@@ -62,6 +62,7 @@ export default function ProviderDashboardPage(){
   setForm(data.profile||{...empty,full_name:data.onboardingName||''});
   if(data.reviewStatus==='approved')setTab(t=>t==='verification'?'home':t);
   else if(!data.profile?.submitted_at)setTab('profile');
+  else setTab(t=>t==='home'?'verification':t);
  },[router]);
  const refreshMedia=useCallback(async()=>{
   const res=await fetch('/api/provider/workspace',{cache:'no-store'});
