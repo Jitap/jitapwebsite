@@ -36,6 +36,8 @@ export function CoordinatorDashboard(){
  const [busy,setBusy]=useState(false);
  const [feedback,setFeedback]=useState('');
  const [note,setNote]=useState('');
+ const [flagReason,setFlagReason]=useState('');
+ const [flagFormOpen,setFlagFormOpen]=useState(false);
  const [followup,setFollowup]=useState('');
  const [lastSynced,setLastSynced]=useState<Date|null>(null);
  const [refreshIssue,setRefreshIssue]=useState(false);
@@ -215,7 +217,7 @@ export function CoordinatorDashboard(){
    const res=await fetch('/api/coordinator/cases',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:selected,action,value,note:extraNote})});
    const data=await res.json();
    if(!res.ok)throw new Error(data.error||'Update rejected');
-   setNote('');await load();await loadDetail(selected);setFeedback('Case updated');
+   setNote('');if(action==='intervention_flag'){setFlagReason('');setFlagFormOpen(false)}await load();await loadDetail(selected);setFeedback('Case updated');
   }catch(e){setFeedback(e instanceof Error?e.message:'Could not save')}
   finally{setBusy(false)}
  }
@@ -302,6 +304,13 @@ export function CoordinatorDashboard(){
        <button type="button" disabled={busy} onClick={()=>update('intervention_resolve',null,'SOC reviewed and resolved the intervention')}>Mark follow-up resolved</button>
        <button type="button" onClick={()=>setCaseTab('details')}>Notes &amp; follow-up</button>
       </div>
+    </section>}
+    {!['open','acknowledged'].includes(active.intervention_status)&&<section className="coordinator-manual-escalation" aria-label="Manual SOC escalation">
+     {!flagFormOpen?<button type="button" className="coordinator-flag-button" onClick={()=>setFlagFormOpen(true)}><AlertTriangle size={15}/> Flag this case for SOC follow-up</button>:
+      <div><label>Reason for human intervention<textarea rows={2} maxLength={500} value={flagReason} onChange={e=>setFlagReason(e.target.value)} placeholder="e.g. Provider not responding, customer needs clarification"/></label>
+       <div><button type="button" disabled={busy||flagReason.trim().length<3} onClick={()=>update('intervention_flag',null,flagReason)}>Flag for SOC</button>
+       <button type="button" onClick={()=>{setFlagFormOpen(false);setFlagReason('')}}>Cancel</button></div>
+      </div>}
     </section>}
     <section className="coordinator-event-timeline" aria-label="Job progress and activity timeline">
       <div className="coordinator-timeline-heading"><h3>Live job timeline</h3><span>Automatic event history</span></div>
