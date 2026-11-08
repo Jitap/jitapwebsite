@@ -41,3 +41,19 @@ body:has(.jt-provider-layout) .footer{display:none}
 .jt-provider-loading-label{flex-basis:100%;text-align:center;font-size:13px}
 @keyframes jt-provider-bounce{0%,65%,100%{transform:translateY(0);opacity:.48}32%{transform:translateY(-9px);opacity:1}}
 @media(prefers-reduced-motion:reduce){.jt-provider-loading>span:not(.jt-provider-loading-label){animation:none;opacity:1}}
+
+
+/* Persistent due-job reminders: available across provider pages */
+.jt-due-reminder-panel{position:fixed;right:max(12px,calc((100vw - 440px)/2));top:92px;z-index:1050;width:min(355px,calc(100vw - 24px));max-height:67dvh;overflow-y:auto;padding:14px 13px;border-radius:14px;background:#fff;border:1px solid #a9debd;box-shadow:0 15px 44px #102b4d39;color:#173865}
+.jt-due-reminder-panel header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:9px}
+.jt-due-reminder-panel header span{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:800;color:#0c7950}
+.jt-due-reminder-panel header strong{background:#00b65c;color:#fff;border-radius:20px;padding:3px 7px;font-size:10px}
+.jt-due-reminder-panel header button{padding:6px 8px;border:1px solid #bdd9ce;background:#eafff3;border-radius:8px;color:#08774b;font-size:11px;font-weight:760;cursor:pointer}
+.jt-due-reminder-panel article{border-top:1px solid #e1ece9;padding:11px 0;position:relative}
+.jt-due-reminder-panel article>strong{display:block;font-size:14px;padding-right:23px}
+.jt-due-reminder-panel article p{font-size:12px;line-height:1.5;color:#607b91;margin:4px 0}
+.jt-due-reminder-panel article small{display:flex;align-items:center;gap:5px;font-size:11px;color:#6b8392}
+.jt-due-reminder-panel .jt-due-dismiss{position:absolute;top:7px;right:0;border:0;background:transparent;color:#8a98a8;cursor:pointer}
+.jt-due-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px}
+.jt-due-actions a,.jt-due-actions button{display:inline-flex;align-items:center;gap:5px;text-decoration:none;border:1px solid #c6e2d4;border-radius:8px;background:#f2fff8;color:#0b7b4d;font-weight:760;font-size:11px;padding:7px 8px;cursor:pointer}
+.jt-due-reminder-panel>p{font-size:12px;color:#ac2633}
