@@ -90,14 +90,14 @@ export async function PATCH(req:NextRequest){
  let data:{id?:string;action?:string;value?:string|null;note?:string}={};
  try{data=await req.json()}catch{return reply({error:'Invalid JSON'},400)}
  if(!data.id||!/^[a-f0-9-]{36}$/i.test(data.id)||typeof data.action!=='string')return reply({error:'Invalid update'},400);
- const actions=new Set(['status_changed','priority_changed','assignment_changed','followup_changed','note_added','intervention_acknowledge','intervention_resolve']);
+ const actions=new Set(['status_changed','priority_changed','assignment_changed','followup_changed','note_added','intervention_acknowledge','intervention_resolve','intervention_flag']);
  if(!actions.has(data.action))return reply({error:'Unsupported action'},400);
  if(typeof data.value==='string'&&data.value.length>150)return reply({error:'Value too long'},400);
  if(typeof data.note==='string'&&data.note.length>2000)return reply({error:'Note too long'},400);
  try{
-  if(data.action==='intervention_acknowledge'||data.action==='intervention_resolve'){
+  if(data.action==='intervention_acknowledge'||data.action==='intervention_resolve'||data.action==='intervention_flag'){
    const result=await supabasePrivate<{id:string;status:string}>('rpc/jitap_soc_manage_intervention',{method:'POST',body:JSON.stringify({
-    p_case_id:data.id,p_actor_email:staff.email,p_action:data.action==='intervention_acknowledge'?'acknowledge':'resolve',p_note:data.note||''
+    p_case_id:data.id,p_actor_email:staff.email,p_action:data.action==='intervention_acknowledge'?'acknowledge':data.action==='intervention_flag'?'flag':'resolve',p_note:data.note||''
    })});
    return reply({ok:true,intervention:result});
   }
