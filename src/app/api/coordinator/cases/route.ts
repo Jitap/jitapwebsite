@@ -14,7 +14,7 @@ function normalizedRecord(c:CaseRow,source?:Intake|Move){
  const isRequest=c.source_kind==='website_request';
  const payload=isRequest?(source as Intake|undefined)?.payload||{}:{};
  const move=!isRequest?source as Move|undefined:undefined;
- const description=isRequest?safeText(payload.description,1600):[move?.home_size?'Move: '+move.home_size:'Moving enquiry',move?.pickup_address?'from '+move.pickup_address:'',move?.dropoff_address?'to '+move.dropoff_address:''].filter(Boolean).join(' ');
+ const description=isRequest?[safeText(payload.title,120),safeText(payload.description,1550)].filter(Boolean).join(' — '):[move?.home_size?'Move: '+move.home_size:'Moving enquiry',move?.pickup_address?'from '+move.pickup_address:'',move?.dropoff_address?'to '+move.dropoff_address:''].filter(Boolean).join(' ');
  return {
   ...c,reference:c.source_id.slice(0,8).toUpperCase(),
   notifyOptIn:isRequest?payload.notifyOptIn===true:false,
