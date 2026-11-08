@@ -71,7 +71,7 @@ export async function diditRequestSession(sessionReference:string):Promise<{
  });
  if(!result.ok)throw Error('didit_session_http_'+result.status);
  const data=await result.json() as {session_id?:string;url?:string;status?:string;workflow_id?:string};
- if(!data.session_id||!data.url||data.workflow_id!==cfg.workflow)throw Error('didit_invalid_session');
+ if(!data.session_id||!data.url||(data.workflow_id&&data.workflow_id!==cfg.workflow))throw Error('didit_invalid_session');
  const url=new URL(data.url);
  if(url.protocol!=='https:'||url.hostname!=='verify.didit.me')throw Error('didit_invalid_session_url');
  return {sessionId:data.session_id,url:url.toString(),status:isDiditStatus(data.status)?data.status:'Not Started'};
