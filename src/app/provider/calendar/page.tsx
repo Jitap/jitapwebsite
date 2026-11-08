@@ -54,7 +54,18 @@ export default function ProviderCalendar(){
   if(res.status===401){router.replace('/login?mode=login');return}
   const data=await res.json();
   if(!res.ok)throw Error(data.error||'Unable to load calendar');
-  setAppointments(data.appointments||[]);
+  setAppointments(previous=>{
+   const old=new Map(previous.map(item=>[item.id,item]));
+   const order=['confirmed','on_my_way','arrived','in_progress','completed'];
+   return (data.appointments||[]).map((incoming:Appointment)=>{
+    const earlier=old.get(incoming.id);
+    if(!earlier)return incoming;
+    if(incoming.status==='cancelled')return incoming;
+    // A delayed read must never roll the UI backwards after a saved stage.
+    const status=order.indexOf(earlier.status)>order.indexOf(incoming.status)?earlier.status:incoming.status;
+    return {...incoming,status,rated:incoming.rated||earlier.rated};
+   });
+  });
  },[router]);
  useEffect(()=>{let active=true;load().catch(e=>{if(active)setError(e.message)}).finally(()=>{if(active)setLoading(false)});return()=>{active=false}},[load]);
  const active=appointments.filter(a=>!['cancelled','completed'].includes(a.status));
