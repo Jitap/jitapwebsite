@@ -9,6 +9,8 @@ export function ProviderNewJob({date,onClose,onCreated}:{date:string;onClose:()=
  date,startTime:'09:00',endTime:'10:00',repeat:'none' as Repeat,interval:1,unit:'weeks' as Rule['unit'],
  count:1,reminderMinutes:30,reminderChannel:'in_app' as 'in_app'|'whatsapp_manual',whatsappOptIn:false});
  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[success,setSuccess]=useState('');
+ const [serviceId,setServiceId]=useState('');
+ const [copied,setCopied]=useState(false);
  const put=<K extends keyof typeof form>(key:K,value:(typeof form)[K])=>setForm(x=>({...x,[key]:value}));
  async function submit(e:FormEvent<HTMLFormElement>){
   e.preventDefault();setError('');setSuccess('');
@@ -19,6 +21,7 @@ export function ProviderNewJob({date,onClose,onCreated}:{date:string;onClose:()=
    const response=await fetch('/api/provider/calendar/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(form)});
    const data=await response.json();
    if(!response.ok)throw Error(data.error||'Unable to create booking.');
+   setServiceId(data.reference);
    setSuccess('Created '+data.count+' confirmed '+(data.count===1?'booking':'bookings')+'. Service ID: '+data.reference);
    await onCreated(data.requestId);
   }catch(e){setError(e instanceof Error?e.message:'Could not save booking')}finally{setBusy(false)}
@@ -26,7 +29,10 @@ export function ProviderNewJob({date,onClose,onCreated}:{date:string;onClose:()=
  return <div className="jcal-new-overlay" role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)onClose()}}>
   <section className="jcal-new-sheet" role="dialog" aria-modal="true" aria-labelledby="jcal-new-job-heading">
    <header><div><span className="jcal-new-eyebrow"><CalendarPlus size={16}/> PROVIDER BOOKING</span><h2 id="jcal-new-job-heading">Create a job</h2><p>Record a booking received by call or WhatsApp.</p></div><button type="button" onClick={onClose} aria-label="Close create job"><X size={23}/></button></header>
-   {success?<div className="jcal-new-success"><CheckCircle2 size={34}/><strong>{success}</strong><p>This booking is now in your calendar and JiTap Service Operations. Your customer can track it after phone verification.</p><button type="button" onClick={onClose}>View calendar</button></div>:
+   {success?<div className="jcal-new-success"><CheckCircle2 size={34}/><strong>{success}</strong><p>This booking is now in your calendar and JiTap Service Operations. Your customer can track it after phone verification.</p>
+    <div className="jcal-new-sharing"><button type="button" onClick={async()=>{try{await navigator.clipboard.writeText('https://www.jitap.app/track?ref='+encodeURIComponent(serviceId));setCopied(true)}catch{}}}>{copied?'Link copied':'Copy tracking link'}</button>
+    <a href={'https://wa.me/'+form.phone.replace(/[^0-9]/g,'').replace(/^0/,'254')+'?text='+encodeURIComponent('Hi '+form.customerName+', your booking '+form.title+' is recorded in JiTap. Service ID: '+serviceId+'. Track your request here: https://www.jitap.app/track?ref='+encodeURIComponent(serviceId))} target="_blank" rel="noopener noreferrer">Share via WhatsApp</a></div>
+    <button type="button" onClick={onClose}>View calendar</button></div>:
    <form onSubmit={submit}>
     <label>Job title<input required maxLength={120} placeholder="e.g. Repair kitchen sink" value={form.title} onChange={e=>put('title',e.target.value)}/></label>
     <div className="jcal-new-pair"><label>Customer name<input required maxLength={120} placeholder="Full name" value={form.customerName} onChange={e=>put('customerName',e.target.value)}/></label><label>Mobile number<input required type="tel" inputMode="tel" placeholder="07XXXXXXXX" value={form.phone} onChange={e=>put('phone',e.target.value)}/></label></div>
