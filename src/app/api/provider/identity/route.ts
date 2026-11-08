@@ -10,7 +10,13 @@ type Workspace={user_id:string;submitted_at:string|null};
 const latest=(userId:string)=>'jitap_provider_kyc_sessions?provider_user_id=eq.'+
  encodeURIComponent(userId)+'&select=id,provider_user_id,didit_session_id,workflow_id,environment,status,verification_url,consented_at,created_at,updated_at,decided_at&order=created_at.desc&limit=1';
 async function readLatest(userId:string):Promise<KycSession|null>{
- const rows=await supabasePrivate<KycSession[]>(latest(userId));
+ // Sandbox results are never displayed as live identity verification.
+ const cfg=diditConfig();
+ if(!cfg.workflow)return null;
+ const base=latest(userId);
+ const path=base.replace('&select=', '&environment=eq.'+cfg.environment+
+  '&workflow_id=eq.'+encodeURIComponent(cfg.workflow)+'&select=');
+ const rows=await supabasePrivate<KycSession[]>(path);
  return rows[0]||null;
 }
 export async function GET(req:NextRequest){
