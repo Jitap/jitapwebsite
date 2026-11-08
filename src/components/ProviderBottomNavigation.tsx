@@ -14,8 +14,8 @@ export default function ProviderBottomNavigation(){
  const items=[
   {name:'Home',href:'/provider',icon:Home,active:!profile&&!requestDetail&&!wallet&&!calendar&&section!=='requests'},
   {name:'Requests',href:'/provider?view=requests',icon:ClipboardList,active:requestDetail||(!profile&&section==='requests')},
-  {name:'Wallet',href:'/provider/wallet',icon:Wallet,active:wallet},
   {name:'Calendar',href:'/provider/calendar',icon:CalendarDays,active:calendar},
+  {name:'Wallet',href:'/provider/wallet',icon:Wallet,active:wallet},
   {name:'Profile',href:'/provider/profile',icon:UserRound,active:profile&&section!=='calendar'},
  ];
  return <nav className="jt-provider-bottom-nav" aria-label="Provider main navigation">
