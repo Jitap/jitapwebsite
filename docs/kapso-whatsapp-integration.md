@@ -20,27 +20,34 @@ Production environment (Vercel project `jitapwebsite`):
 
 ## Create and obtain approval for Utility templates
 
-Create five templates in the Kapso templates area for the connected WhatsApp Business Account; select **Utility** and **English (US)**. All templates have **four text body parameters**, in this exact order:
-`{{1}}` customer name, `{{2}}` JiTap reference, `{{3}}` service title, `{{4}}` secure customer tracking link.
+Create five **Utility**, **English (US)** templates. All templates have exactly **three body text variables**:
+`{{1}}` customer name, `{{2}}` JiTap ticket ID (such as JT-342C1191), and `{{3}}` service name/title.
 
-Suggested bodies, edit if required by Meta policy:
+Add one **Call to Action → Visit Website** button, index 0, to **every** template:
+- Button label: `View Booking`
+- Dynamic website URL: `https://www.jitap.app/track?ref={{1}}`
+- Button URL example/suffix: `JT-342C1191`
+
+**Do not add the entire URL as a body variable.** Meta may reject full URLs in text placeholders. The button parameter is sent separately using the Service ID.
+
+Create these templates with the exact names:
 
 **jitap_booking_confirmed**
-`Hi {{1}}, your JiTap booking {{2}} for {{3}} is confirmed. View your provider and job details: {{4}}`
+`Hi {{1}}, your JiTap booking {{2}} for {{3}} is confirmed. View your provider and job details using the button below.`
 
 **jitap_appointment_reminder**
-`Hi {{1}}, this is a reminder about your JiTap booking {{2}} for {{3}}. Check your scheduled time and job details: {{4}}`
+`Hi {{1}}, this is a reminder about your JiTap booking {{2}} for {{3}}. Check your appointment time and location using the button below.`
 
 **jitap_booking_cancelled**
-`Hi {{1}}, the provider for JiTap booking {{2}} ({{3}}) has cancelled. Please review your request and approve or decline a rematch: {{4}}`
+`Hi {{1}}, the provider for JiTap booking {{2}} ({{3}}) has cancelled. Please review your request and approve or decline a rematch using the button below.`
 
 **jitap_rematch_approved**
-`Hi {{1}}, JiTap is looking for a replacement provider for booking {{2}} ({{3}}). Track the request here: {{4}}`
+`Hi {{1}}, JiTap is looking for a replacement provider for booking {{2}} ({{3}}). Track your request using the button below.`
 
 **jitap_booking_rescheduled**
-`Hi {{1}}, the scheduled time for JiTap booking {{2}} ({{3}}) has changed. See the current confirmed schedule: {{4}}`
+`Hi {{1}}, the scheduled time for JiTap booking {{2}} ({{3}}) has changed. See the updated schedule using the button below.`
 
-The API does not bypass WhatsApp's 24-hour customer service window. All business-initiated notifications are sent as Meta-approved template messages. Template names and parameter counts must match the **approved** versions.
+Use sample body values `Peter`, `JT-342C1191`, `Plumbing` and the button URL suffix `JT-342C1191`. All five templates must be **APPROVED** by Meta before setting `KAPSO_ENABLED=true`. Keep Header none, Footer optional, and avoid promotional content.
 
 ## Register the signed webhook at Kapso
 
