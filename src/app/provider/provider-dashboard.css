@@ -319,3 +319,46 @@
 .jt-provider-metric small{font-size:11px;color:#6e809d}
 .jt-provider-metric:focus-visible{outline:3px solid #00bd63;outline-offset:2px}
 @media(max-width:350px){.jt-provider-job-metrics{gap:7px}.jt-provider-metric{padding:12px 9px}.jt-provider-metric-top{font-size:11px}}
+
+
+/* Compact provider availability directly underneath notification and profile. */
+.jt-provider-layout .jt-provider-home-header{align-items:flex-start;padding-bottom:5px;gap:10px}
+.jt-provider-layout .jt-provider-home-header-right{
+ display:grid;grid-template-columns:36px 38px;grid-template-rows:40px 28px;
+ align-items:center;justify-items:center;column-gap:13px;row-gap:2px;
+}
+.jt-provider-layout .jt-provider-header-online{
+ grid-column:1 / -1;grid-row:2;display:flex;align-items:center;
+ justify-content:flex-end;gap:7px;width:100%;
+ background:none!important;border:0!important;box-shadow:none!important;padding:0;
+}
+.jt-provider-layout .jt-provider-header-online>span{
+ display:flex;align-items:center;gap:4px;font-size:11px;line-height:1;
+ font-weight:750;color:#16845a;white-space:nowrap;
+}
+.jt-provider-layout .jt-provider-header-online>span.is-offline{color:#798596}
+.jt-provider-layout .jt-provider-header-online .jt-provider-live-dot{
+ width:6px;height:6px;flex:none;
+}
+.jt-provider-layout .jt-provider-header-online .is-offline .jt-provider-live-dot{background:#9ca3af}
+.jt-provider-layout .jt-provider-header-online .jt-provider-toggle{
+ display:flex;flex:none;align-items:center;justify-content:flex-start;
+ width:43px!important;height:25px!important;min-width:43px;
+ padding:3px!important;margin:0;background:#b8c1c9;border:0;
+ border-radius:99px;cursor:pointer;
+}
+.jt-provider-layout .jt-provider-header-online .jt-provider-toggle.active{
+ background:#00b95c;justify-content:flex-end;
+}
+.jt-provider-layout .jt-provider-header-online .jt-provider-toggle span{
+ display:block;width:19px!important;height:19px!important;
+ border-radius:50%;background:#fff;box-shadow:0 1px 3px #052a321f;
+}
+.jt-provider-layout .jt-provider-header-online .jt-provider-toggle:focus-visible{
+ outline:3px solid #164a90;outline-offset:3px;
+}
+.jt-provider-layout .jt-provider-home-greeting{padding-top:0;padding-bottom:9px}
+@media(max-width:360px){
+ .jt-provider-layout .jt-provider-home-header-right{column-gap:7px}
+ .jt-provider-layout .jt-provider-header-online{gap:5px}
+}
