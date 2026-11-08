@@ -1,10 +1,11 @@
 'use client';
 import {useCallback,useEffect,useMemo,useState,type FormEvent} from 'react';
 import {useRouter} from 'next/navigation';
-import {ArrowLeft,CalendarDays,ChevronLeft,ChevronRight,Clock3,MapPin,Navigation,Phone,SlidersHorizontal,UserRound,X,CheckCircle2} from 'lucide-react';
+import {ArrowLeft,CalendarDays,ChevronLeft,ChevronRight,Clock3,MapPin,Navigation,Phone,SlidersHorizontal,UserRound,X,CheckCircle2,Plus} from 'lucide-react';
 import './calendar.css';
 import {ProviderJobAction} from '@/components/ProviderJobAction';
 import {ProviderTravelEstimate} from '@/components/ProviderTravelEstimate';
+import {ProviderNewJob} from '@/components/ProviderNewJob';
 
 type Appointment={
  id:string;requestId:string;startsAt:string|null;endsAt:string|null;status:string;rated:boolean;
@@ -40,6 +41,7 @@ export default function ProviderCalendar(){
  const [filterOpen,setFilterOpen]=useState(false);
  const [showReschedule,setShowReschedule]=useState(false);
  const [showCancel,setShowCancel]=useState(false);
+ const [newJobOpen,setNewJobOpen]=useState(false);
  const [cancelReason,setCancelReason]=useState('');
  const [cancelDetails,setCancelDetails]=useState('');
  const [newDate,setNewDate]=useState('');
@@ -134,7 +136,7 @@ export default function ProviderCalendar(){
      <small>{job.status==='completed'?(job.rated?'Completed · Customer rated':'Completed · Rate customer'):job.status==='in_progress'?'Work in progress':job.status==='arrived'?'Arrived':job.status==='on_my_way'?'On my way':'Confirmed'}</small>
     </button>)}
   </section>:<>
-   <header className="jcal-header"><div><h1>Calendar</h1><p>{monthLabel}</p></div><button aria-label="Calendar view settings" onClick={()=>setFilterOpen(v=>!v)}><SlidersHorizontal size={22}/></button></header>
+   <header className="jcal-header"><div><h1>Calendar</h1><p>{monthLabel}</p></div><div className="jcal-header-actions"><button aria-label="Week or month view" title="Week / Month" onClick={()=>setFilterOpen(v=>!v)}><SlidersHorizontal size={22}/></button><button type="button" aria-label="Create new job" title="Create booking" className="jcal-add-button" onClick={()=>setNewJobOpen(true)}><Plus size={22}/></button></div></header>
    {filterOpen&&<div className="jcal-filter"><button onClick={()=>{setMonthView(false);setFilterOpen(false)}}>Week view</button><button onClick={()=>{setMonthView(true);setFilterOpen(false)}}>Month view</button></div>}
    <section className="jcal-date-panel" aria-label="Choose calendar day">
     <div className="jcal-month-switch"><button onClick={()=>setSelected(addDays(selected,monthView?-28:-7))} aria-label="Previous dates"><ChevronLeft size={20}/></button><span>{monthLabel}</span><button onClick={()=>setSelected(addDays(selected,monthView?28:7))} aria-label="Next dates"><ChevronRight size={20}/></button></div>
@@ -155,6 +157,7 @@ export default function ProviderCalendar(){
     </section>}
    {!loading&&unscheduled.length>0&&<section className="jcal-unscheduled"><h2>Confirmed jobs · Time to arrange</h2>{unscheduled.map(a=><button key={a.id} onClick={()=>setDetailId(a.id)}><strong>{a.title}</strong><span>{a.location||a.area} · Booking confirmed</span><small>View job and tap On my way</small></button>)}</section>}
   </>}
+  {newJobOpen&&<ProviderNewJob date={selected} onClose={()=>setNewJobOpen(false)} onCreated={async(requestId)=>{await load();setBucket(null);const url=new URL(window.location.href);url.searchParams.set('job',requestId);window.history.replaceState(null,'',url.pathname+url.search);}}/>}
   {showCancel&&detail&&<div className="jcal-overlay" role="presentation" onClick={()=>setShowCancel(false)}><section className="jcal-sheet" role="dialog" aria-modal="true" aria-labelledby="jcal-cancel-title" onClick={e=>e.stopPropagation()}>
    <header><h2 id="jcal-cancel-title">Cancel Scheduled Work</h2><button onClick={()=>setShowCancel(false)} aria-label="Close"><X size={22}/></button></header>
    <p className="jcal-cancel-explanation">Select why you cannot complete this job. The customer will be notified and asked to approve a rematch. The job will not be offered to others until they approve.</p>
