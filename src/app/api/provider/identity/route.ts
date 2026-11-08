@@ -20,7 +20,7 @@ export async function GET(req:NextRequest){
   const cfg=diditConfig();
   let row=await readLatest(session.userId);
   // Return redirects are not proof of verification. Verify via Didit's API.
-  if(req.nextUrl.searchParams.get('refresh')==='1'&&cfg.enabled&&cfg.configured&&row?.didit_session_id){
+  if(req.nextUrl.searchParams.get('refresh')==='1'&&cfg.enabled&&cfg.configured&&row?.didit_session_id&&row.workflow_id===cfg.workflow&&row.environment===cfg.environment){
    const status=await diditRetrieveDecision(row.didit_session_id);
    if(status&&status!==row.status){
     await supabasePrivate('rpc/jitap_didit_apply_event',{method:'POST',
@@ -54,10 +54,10 @@ export async function POST(req:NextRequest){
    encodeURIComponent(session.userId)+'&select=status&limit=1');
   if(review?.status==='approved')return reply({status:'Approved',alreadyApproved:true});
   const current=await readLatest(session.userId);
-  if(current?.status==='Approved')return reply({status:'Approved',identityVerified:true});
-  if(current&&['Not Started','In Progress','Resubmitted'].includes(current.status)&&current.verification_url)
+  if(current?.status==='Approved'&&current.environment===cfg.environment&&current.workflow_id===cfg.workflow)return reply({status:'Approved',identityVerified:true});
+  if(current&&current.workflow_id===cfg.workflow&&current.environment===cfg.environment&&['Not Started','In Progress','Resubmitted'].includes(current.status)&&current.verification_url)
    return reply({status:current.status,url:current.verification_url});
-  if(current&&['creating','In Review'].includes(current.status))
+  if(current&&current.workflow_id===cfg.workflow&&current.environment===cfg.environment&&['creating','In Review'].includes(current.status))
    return reply({error:current.status==='In Review'?'Your identity is under review.':'A verification session is being prepared. Refresh shortly.'},409);
   const created=await supabasePrivate<{id:string}[]>('jitap_provider_kyc_sessions',{
    method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({
@@ -66,7 +66,7 @@ export async function POST(req:NextRequest){
    })
   });
   rowId=created[0]?.id||null;if(!rowId)throw Error('unable_to_reserve_session');
-  const result=await diditRequestSession(session.userId);
+  const result=await diditRequestSession(rowId);
   const saved=await supabasePrivate<KycSession[]>('jitap_provider_kyc_sessions?id=eq.'+rowId,{
    method:'PATCH',headers:{Prefer:'return=representation'},
    body:JSON.stringify({didit_session_id:result.sessionId,verification_url:result.url,
