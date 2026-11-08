@@ -266,7 +266,12 @@ export default function ProviderDashboardPage(){
        {job.customerPhone&&<p><a href={'tel:'+job.customerPhone.replace(/[^+0-9]/g,'')}>{job.customerPhone} · Call customer</a></p>}
        <ProviderTravelEstimate job={job}/>
        <div className="jt-confirmed-job-actions">
-        <ProviderJobAction appointmentId={job.id} status={job.status} rated={job.rated} onUpdated={refresh}/>
+        <ProviderJobAction key={job.id} appointmentId={job.id} status={job.status} rated={job.rated}
+         onUpdated={async(nextStatus)=>{
+          if(nextStatus)setDashboard(current=>current?{...current,confirmedJobs:current.confirmedJobs.map(item=>
+           item.id===job.id?{...item,...(nextStatus==='rated'?{rated:true}:{status:nextStatus})}:item)}:current);
+          await refresh();
+         }}/>
         <button type="button" className="jt-confirmed-view" onClick={()=>router.push('/provider/calendar?job='+encodeURIComponent(job.requestId))}>View job & directions <ChevronRight size={16}/></button>
        </div>
       </article>)}
