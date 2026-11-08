@@ -26,7 +26,7 @@ No Didit secret belongs in GitHub, public client JavaScript, Supabase tables, or
 ## User journey
 1. Provider signs in using existing SMS OTP and submits full name, services and service areas.
 2. Provider opens **Verification** and consents to sensitive-identity processing.
-3. JiTap's authenticated server creates a Didit V3 session using the provider UUID as `vendor_data`.
+3. JiTap's authenticated server creates a Didit V3 session using a unique KYC session UUID as `vendor_data` (linked privately to the provider).
 4. Provider is redirected to Didit's hosted capture for ID OCR, selfie/liveness and face match.
 5. Didit redirects to `https://www.jitap.app/provider?identity_return=1` and sends a signed `status.updated` webhook.
 6. The provider can refresh the real Didit decision. Browser URL parameters are never accepted as proof.
@@ -45,3 +45,19 @@ No Didit secret belongs in GitHub, public client JavaScript, Supabase tables, or
 https://docs.didit.me/integration/api-full-flow
 https://docs.didit.me/integration/webhooks
 https://docs.didit.me/integration/verification-statuses
+
+## Sandbox test configuration (November 2026)
+
+Sandbox workflow: `55c4229c-fbef-4bc1-a440-4600f6e32514` (published version 1, Kenya National ID OCR, passive liveness, face match).
+
+The Vercel **Preview** environment has been preconfigured with:
+- `DIDIT_WORKFLOW_ID=55c4229c-fbef-4bc1-a440-4600f6e32514`
+- `DIDIT_ENVIRONMENT=sandbox`
+- `DIDIT_ENABLED=false` (until secrets/callback/endpoint verified)
+- `DIDIT_SANDBOX_SCENARIO=approve`
+
+Still required in Preview: `DIDIT_API_KEY` (sandbox), `DIDIT_WEBHOOK_SECRET` (sandbox destination secret), `DIDIT_CALLBACK_BASE_URL` (the stable https origin of a dedicated, publicly reachable preview deployment). Configure the Didit **sandbox** webhook destination to the matching preview origin + `/api/webhooks/didit`, not the live production domain. Vercel Deployment Protection must allow Didit's signed webhook delivery without redirecting the POST to login. Do not broadly disable protection for the whole project. Prefer an isolated preview target with limited access to a single webhook path.
+
+The server now sets `language: "en"` on every session; sandbox sessions pass the server-only `DIDIT_SANDBOX_SCENARIO` (allowed: `approve`, `decline_document_expired`, `review_aml_possible_match`). A new unique KYC-session ID is used as `vendor_data` each time to prevent Didit session reuse. The live environment never passes `sandbox_scenario`.
+
+For each simulated scenario, record a new verified provider test account and create a new sandbox session, test Didit's signed webhook receipt, confirm the status in `jitap_provider_kyc_sessions`, and verify SOC only permits approving a provider with a **live** identity approval. Sandbox approvals cannot grant live SOC approval.
