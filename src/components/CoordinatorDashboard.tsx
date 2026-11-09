@@ -24,7 +24,6 @@ export function CoordinatorDashboard(){
  const [staff,setStaff]=useState<Staff|null>(null);
  const [checking,setChecking]=useState(true);
  const [email,setEmail]=useState('');
- const [code,setCode]=useState('');
  const [sent,setSent]=useState(false);
  const [authMessage,setAuthMessage]=useState('');
  const [logging,setLogging]=useState(false);
@@ -202,11 +201,30 @@ export function CoordinatorDashboard(){
    const res=await fetch('/api/coordinator/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,email,token:code})});
    const body=await res.json();
    if(!res.ok){setAuthMessage(body.error||'Sign-in could not be completed');return}
-   if(action==='send'){setSent(true);setAuthMessage('If this email is authorized, check your inbox for a JiTap sign-in link or verification code.')}
-   else {setStaff(body.staff);setSent(false);setCode('');await load()}
+   if(action==='send'){setSent(true);setAuthMessage('')}
+   else {setStaff(body.staff);setSent(false);await load()}
   }catch{setAuthMessage('Could not reach the sign-in service')}
   finally{setLogging(false)}
  }
+ // Magic-link authentication happens in the email browser tab. Staff who return
+ // to this original tab should see their authenticated session automatically.
+ useEffect(()=>{
+  if(!sent||staff)return;
+  let alive=true;
+  const check=async()=>{
+   if(!alive)return;
+   try{
+    const res=await fetch('/api/coordinator/auth',{cache:'no-store'});
+    if(!res.ok||!alive)return;
+    const data=await res.json() as {staff?:Staff};
+    if(data.staff){setStaff(data.staff);setSent(false);await load()}
+   }catch{}
+  };
+  const onFocus=()=>void check();
+  window.addEventListener('focus',onFocus);
+  const interval=window.setInterval(()=>{if(document.visibilityState==='visible')void check()},5000);
+  return()=>{alive=false;window.removeEventListener('focus',onFocus);window.clearInterval(interval)};
+ },[sent,staff,load]);
  async function logout(){
   await fetch('/api/coordinator/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'logout'})});
   previousCases.current=null;previousProviderIds.current=null;previousReadyProviderIds.current=null;setProviderQueue({pending:0,ready:0});setProviderNotice('');setStaff(null);setCases([]);setSelected(null);setActivity([]);setNotices([]);setLastSynced(null);
@@ -237,11 +255,10 @@ export function CoordinatorDashboard(){
    <div className="coordinator-mark">JiTap · Service Operations</div>
    <h1>Coordinator sign in</h1>
    <p>Private staff workspace. Only approved JiTap team emails can access customer requests.</p>
-   <form onSubmit={e=>{e.preventDefault();authenticate(sent?'verify':'send')}}>
-    <label>Work email<input type="email" autoComplete="email" required value={email} onChange={e=>{setEmail(e.target.value);setSent(false)}} placeholder="you@jitap.app"/></label>
-    {sent&&<label>Email verification code<input type="text" inputMode="numeric" autoComplete="one-time-code" minLength={6} maxLength={8} required value={code} onChange={e=>setCode(e.target.value)} placeholder="6-digit code"/></label>}
-    <button type="submit" disabled={logging}>{logging?'Processing…':sent?'Verify and sign in':'Email me a code'}</button>
-    {sent&&<button type="button" className="coordinator-secondary" onClick={()=>authenticate('send')}>Resend code</button>}
+   <form onSubmit={e=>{e.preventDefault();void authenticate('send')}}>
+    <label>Work email<input type="email" autoComplete="email" required value={email} onChange={e=>{setEmail(e.target.value);setSent(false);setAuthMessage('')}} placeholder="you@jitap.app"/></label>
+    <button type="submit" disabled={logging}>{logging?'Sending link…':'Verify'}</button>
+    {sent&&<div className="coordinator-link-help" role="status"><strong><CheckCircle2 size={18} aria-hidden="true"/> Check your email</strong><span>Open the sign-in link from JiTap to access Service Operations. No verification code is required.</span><button type="button" className="coordinator-secondary" disabled={logging} onClick={()=>void authenticate('send')}>Resend sign-in link</button></div>}
    </form>
    {authMessage&&<p role="status">{authMessage}</p>}
    {feedback&&<p role="status">{feedback}</p>}
