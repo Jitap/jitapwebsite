@@ -20,7 +20,8 @@ export function validOrigin(request:NextRequest){
 export async function supabasePrivate<T>(path:string,init:RequestInit={}):Promise<T>{
  if(!SUPABASE_BASE_URL||!SECRET)throw new Error('Coordinator database not configured');
  const response=await fetch(SUPABASE_BASE_URL+'/rest/v1/'+path,{
-  ...init,headers:{apikey:SECRET,Authorization:'Bearer '+SECRET,
+  ...init,headers:{apikey:SECRET,
+   ...(SECRET.startsWith('sb_secret_')?{}:{Authorization:'Bearer '+SECRET}),
    'Content-Type':'application/json',...init.headers},
   cache:'no-store',signal:AbortSignal.timeout(12000)
  });
