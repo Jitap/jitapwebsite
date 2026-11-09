@@ -4,7 +4,7 @@ import Link from 'next/link';
 import {CheckCircle2,ShieldCheck,UserRound,XCircle} from 'lucide-react';
 import './provider-reviews.css';
 type BuzzResponse={serviceId:string;provider:string;decision:string;note:string;createdAt:string;caseId:string|null;caseStatus:string;priority:string;technicalSummary:string;briefSource:'ai'|'reported'};
-type Provider={user_id:string;full_name:string;business_name:string;categories:string[];service_areas:string[];experience_years:number;skills:string;submitted_at:string;review:string;is_online:boolean;mediaKinds:string[];readyForApproval:boolean;identityStatus:string;identityUpdatedAt:string|null};
+type Provider={user_id:string;full_name:string;business_name:string;categories:string[];service_areas:string[];experience_years:number;skills:string;submitted_at:string;review:string;is_online:boolean;mediaKinds:string[];readyForApproval:boolean;identityStatus:string;identityUpdatedAt:string|null;identityEnvironment:string|null};
 export default function CoordinatorProviderReviews(){
  const [providers,setProviders]=useState<Provider[]>([]);
  const [buzzResponses,setBuzzResponses]=useState<BuzzResponse[]>([]);
@@ -84,10 +84,19 @@ export default function CoordinatorProviderReviews(){
       {p.mediaKinds?.includes(kind)?<a href={'/api/coordinator/provider-media?userId='+encodeURIComponent(p.user_id)+'&kind='+kind} target="_blank" rel="noopener noreferrer" title="Open private image in a new tab">
        <img src={'/api/coordinator/provider-media?userId='+encodeURIComponent(p.user_id)+'&kind='+kind} alt={'Uploaded '+kind.replaceAll('_',' ')}/>
        <span>View secure photo</span>
-      </a>:<div className="jt-soc-no-photo">Not uploaded</div>}
+      </a>:kind==='id_front'||kind==='id_back'?
+       <div className={'jt-soc-didit-document '+(p.identityStatus==='Approved'?'is-verified':'')}>
+        <ShieldCheck size={25} aria-hidden="true"/>
+        <strong>{p.identityStatus==='Approved'?'Checked by Didit':'Handled by Didit'}</strong>
+        <span>{p.identityStatus==='Approved'?
+         'ID verification recorded. Image held by Didit, not uploaded to JiTap.':
+         'Identity documents are collected through Didit, not this upload gallery.'}</span>
+       </div>
+      :<div className="jt-soc-no-photo">Not uploaded</div>}
      </div>)}
     </div>
-    <div className="jt-soc-kyc"><strong>Didit identity check</strong><span className={p.readyForApproval?'jt-soc-kyc-approved':'jt-soc-kyc-pending'}>{p.identityStatus==='not_started'?'Not started':p.identityStatus}</span>
+    <div className="jt-soc-kyc"><strong>Didit identity check</strong><span className={p.identityStatus==='Approved'?'jt-soc-kyc-approved':'jt-soc-kyc-pending'}>{p.identityStatus==='not_started'?'Not started':p.identityStatus}</span>
+    {p.identityEnvironment&&<small className="jt-soc-kyc-environment">{p.identityEnvironment==='sandbox'?'Sandbox test — not valid for live approval':'Live verification'}</small>}
     {p.identityUpdatedAt&&<small>Updated {new Date(p.identityUpdatedAt).toLocaleString('en-KE',{dateStyle:'medium',timeStyle:'short',timeZone:'Africa/Nairobi'})}</small>}
     </div>
     {!p.readyForApproval&&p.review!=='approved'&&<p className="jt-soc-verify-warning">A live Didit identity approval is required before new provider approval. Existing uploaded ID photos alone are insufficient.</p>}
