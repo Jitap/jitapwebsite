@@ -1,0 +1,133 @@
+/* JiTap customer app — mobile-first recreation of the supplied customer homepage reference. */
+body:has(.jt-customer-app)>.header,
+body:has(.jt-customer-app)>.footer{display:none}
+body:has(.jt-customer-app){background:#eef7f5}
+body:has(.jt-customer-app) #main{min-height:100dvh}
+.jt-customer-app{min-height:100dvh;color:#0b2542;background:#eef7f5;padding-bottom:calc(95px + env(safe-area-inset-bottom,0px));font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.jt-customer-app button,.jt-customer-app textarea,.jt-customer-app select{font:inherit}
+.jt-customer-loading{min-height:78dvh;display:grid;place-items:center;color:#173967;font-weight:700}
+.jt-customer-topbar{height:99px;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:8px clamp(19px,4.5vw,70px);position:relative;z-index:4;box-shadow:0 2px 9px rgba(5,20,48,.05)}
+.jt-customer-logo{display:flex;align-items:center;max-width:200px}
+.jt-customer-logo img{display:block;object-fit:contain;width:185px;height:84px}
+.jt-customer-top-actions{display:flex;align-items:center;gap:19px}
+.jt-customer-bell{border:0;background:transparent;display:grid;place-items:center;color:#14216c;width:54px;height:54px;position:relative}
+.jt-customer-bell-count{position:absolute;top:0;right:0;min-width:24px;height:24px;background:#05bd60;color:white;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:800;padding:2px 5px}
+.jt-customer-avatar{display:grid;place-items:center;width:57px;height:57px;background:#d7f5e9;border:4px solid #eef2f4;box-shadow:0 0 0 1px #d4e5e5;border-radius:50%;color:#0a8858;font-weight:900;font-size:20px}
+.jt-customer-hero{position:relative;overflow:hidden;isolation:isolate;min-height:clamp(760px,calc(100dvh - 103px),1000px);background:#143851}
+.jt-customer-hero-bg{position:absolute;z-index:-3;inset:0;width:100%;height:100%;object-fit:cover;object-position:65% 50%}
+.jt-customer-hero-shade{position:absolute;z-index:-2;inset:0;background:linear-gradient(94deg,rgba(4,31,52,.96),rgba(7,39,65,.90) 42%,rgba(6,33,55,.63) 72%,rgba(9,45,62,.43)),linear-gradient(180deg,transparent 60%,rgba(5,25,38,.3))}
+.jt-customer-hero-inner{width:min(1110px,100% - 64px);min-height:inherit;position:relative;margin:0 auto;padding:46px 0 184px;z-index:1}
+.jt-customer-eyebrow{display:flex;align-items:center;gap:15px;color:#8af5c0;letter-spacing:.13em;font-weight:800;font-size:14px;margin:0 0 24px}
+.jt-customer-eyebrow span{display:inline-block;width:12px;height:12px;border-radius:50%;background:#02ce70;flex:none}
+.jt-customer-hero h1{color:#fff;font-size:clamp(54px,6.2vw,84px);line-height:.99;letter-spacing:-.055em;font-weight:870;margin:0 0 21px;text-wrap:balance}
+.jt-customer-hero h1 em{color:#83f9b7;font-style:normal}
+.jt-customer-intro{color:#f3f9ff;font-size:clamp(16px,1.9vw,22px);line-height:1.48;max-width:780px;margin:0 0 29px}
+.jt-customer-ask{position:relative;z-index:2;max-width:960px;border-radius:29px;padding:11px;background:#fff;border:5px solid #4dd1e9;box-shadow:0 15px 35px #071b323d;display:grid;gap:10px}
+.jt-customer-query{display:flex;align-items:flex-start;gap:17px;padding:14px 18px 8px;color:#164563}
+.jt-customer-query svg{flex:none;margin-top:11px}
+.jt-customer-query textarea{border:0;background:transparent;color:#1d3659;width:100%;min-height:65px;resize:vertical;line-height:1.5;font-size:clamp(17px,2.4vw,24px);outline:0}
+.jt-customer-query textarea::placeholder{color:#7a8aa5;opacity:1}
+.jt-customer-location{min-height:69px;border-radius:100px;border:1px solid #d5dce5;display:flex;align-items:center;padding:6px 21px;gap:18px;color:#075575;background:#fff}
+.jt-customer-location select{border:0;background:transparent;appearance:none;min-width:0;width:100%;font-size:21px;color:#12344c;outline:0;font-weight:750;cursor:pointer}
+.jt-customer-location svg{flex:none}
+.jt-customer-submit{background:linear-gradient(100deg,#06394a,#014654);border:0;border-radius:100px;min-height:75px;display:flex;align-items:center;justify-content:center;gap:18px;color:#fff;font-size:25px;font-weight:850;box-shadow:0 3px 5px #03213120;transition:filter .18s}
+.jt-customer-submit:hover{filter:brightness(1.15)}
+.jt-customer-error{position:relative;z-index:2;background:#fff1f0;padding:10px;border-radius:10px;color:#ac293c;font-weight:700;margin-top:10px}
+.jt-customer-facts{display:flex;align-items:center;gap:0;max-width:850px;margin:28px 0 30px;color:white}
+.jt-customer-facts>div{display:flex;flex-direction:column;justify-content:center;gap:0;padding:0 25px;min-height:60px;border-left:1px solid #d4f6ef7c}
+.jt-customer-facts>div:first-child{border-left:0;padding-left:0}
+.jt-customer-facts strong{font-size:32px;font-weight:850;line-height:1.15;letter-spacing:-.03em}
+.jt-customer-facts b{font-size:15px;font-weight:850;letter-spacing:.06em}
+.jt-customer-facts span{font-size:16px;line-height:1.5;color:#f0f6ff}
+.jt-customer-popular{display:flex;align-items:center;gap:10px;flex-wrap:wrap;position:relative;z-index:2;color:#fff;max-width:960px}
+.jt-customer-popular strong{font-size:17px;margin-right:4px}
+.jt-customer-popular button{padding:12px 23px;border:0;border-radius:99px;background:rgba(236,255,247,.94);color:#075264;font-weight:550;font-size:17px;transition:background .18s}
+.jt-customer-popular button:hover{background:#c5ffdf}
+.jt-customer-mascot{position:absolute;z-index:0;width:clamp(200px,30vw,370px);height:auto;bottom:-116px;right:11%;pointer-events:none;filter:drop-shadow(0 5px 16px #00182650)}
+.jt-customer-bottom-nav{position:fixed;z-index:20;bottom:calc(13px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);width:min(910px,calc(100% - 22px));display:grid;grid-template-columns:repeat(5,minmax(0,1fr));align-items:stretch;gap:5px;background:rgba(253,255,255,.96);border:2px solid #e4f3ec;border-radius:36px;padding:10px 15px;box-shadow:0 15px 35px rgba(0,52,57,.18);backdrop-filter:blur(18px)}
+.jt-customer-bottom-nav button{position:relative;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;color:#6c7995;background:transparent;border:0;min-height:74px;border-radius:28px;font-size:13px;font-weight:500;min-width:0;cursor:pointer}
+.jt-customer-bottom-nav button svg{flex:none}
+.jt-customer-bottom-nav button.is-active{background:linear-gradient(135deg,#e0fcef,#c4f4da);color:#008949;font-weight:800;box-shadow:0 8px 20px #088f4f16}
+.jt-customer-nav-alert{position:absolute;top:8px;right:25%;width:7px;height:7px;border-radius:50%;background:#00c16c}
+.jt-customer-below{max-width:1110px;margin:0 auto;padding:46px 32px 60px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.jt-customer-below h2{font-size:29px;margin:7px 0;color:#092e48}
+.jt-customer-below p{font-size:15px;margin:0}
+.jt-customer-section-kicker{color:#087e5b;letter-spacing:.15em;font-size:12px;font-weight:800}
+.jt-customer-quicklinks{display:flex;gap:12px}
+.jt-customer-quicklinks a,.jt-customer-quicklinks button{display:flex;align-items:center;gap:13px;color:#10415a;background:#fff;border:1px solid #cfe8e0;border-radius:14px;padding:16px;font-size:14px;font-weight:750;white-space:nowrap}
+.jt-customer-quicklinks a svg:first-child,.jt-customer-quicklinks button svg:first-child{color:#078553}
+.jt-customer-tabview{max-width:990px;margin:0 auto;min-height:calc(100dvh - 110px);padding:38px 25px 120px}
+.jt-customer-view-heading{display:flex;align-items:end;justify-content:space-between;gap:22px;margin-bottom:26px}
+.jt-customer-view-heading h1{font-size:clamp(30px,4vw,44px);line-height:1.1;color:#0b2254;margin:8px 0}
+.jt-customer-view-heading p{font-size:16px;margin:0;color:#627882}
+.jt-customer-new-request,.jt-customer-empty>a,.jt-customer-empty>button{padding:13px 19px;display:inline-flex;border-radius:13px;background:#068956;color:#fff;font-weight:750;border:0;white-space:nowrap}
+.jt-customer-tabview .jt-requests-list{display:grid;gap:18px}
+.jt-customer-empty{border:1px solid #d7ebe2;background:#fff;min-height:290px;border-radius:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:35px;gap:10px}
+.jt-customer-empty>svg{width:46px;height:46px;color:#0b946b}
+.jt-customer-empty h2,.jt-customer-empty h1{color:#0b2254;font-size:24px;margin:0}
+.jt-customer-empty p{max-width:390px;margin:2px 0 12px}
+.jt-customer-schedule{display:grid;gap:14px}
+.jt-customer-schedule-item{display:grid;grid-template-columns:190px minmax(0,1fr) auto;align-items:center;gap:16px;padding:20px;background:white;border:1px solid #d5e8e3;border-radius:19px}
+.jt-customer-schedule-item>div:first-child{display:flex;align-items:center;gap:10px;color:#07875c}
+.jt-customer-schedule-item>div:nth-child(2){display:grid;gap:5px}
+.jt-customer-schedule-item small{color:#75858e;font-size:12px}
+.jt-customer-profile-card{display:flex;align-items:center;gap:20px;background:#fff;padding:25px;border-radius:22px;margin-bottom:15px;border:1px solid #d8e7df}
+.jt-customer-profile-avatar{display:grid;place-items:center;width:84px;height:84px;border-radius:50%;background:#d4f6e7;color:#087855;font-size:28px;font-weight:900}
+.jt-customer-profile-card h2{font-size:24px;margin:0 0 5px}
+.jt-customer-profile-card p{margin:0}
+.jt-customer-profile-row{display:flex;justify-content:space-between;gap:10px;background:#fff;border:1px solid #d8e7df;padding:19px 24px;border-radius:14px;margin:10px 0;font-size:15px;flex-wrap:wrap}
+.jt-customer-profile-row span{color:#657c87}
+.jt-customer-profile-actions{display:flex;gap:13px;flex-wrap:wrap;margin-top:23px}
+.jt-customer-profile-actions button{border:1px solid #b4d6c5;background:white;border-radius:12px;color:#0f654a;padding:13px 18px;display:flex;align-items:center;gap:10px;font-weight:800}
+.jt-customer-profile-actions button:last-child{color:#a52438;border-color:#edc9d0}
+@media(min-width:980px){.jt-customer-hero-inner{padding-top:65px}.jt-customer-hero h1{font-size:80px}.jt-customer-mascot{bottom:-80px;right:0}}
+@media(max-width:720px){
+ .jt-customer-topbar{height:91px;padding:6px 18px}
+ .jt-customer-logo img{width:163px;height:78px}
+ .jt-customer-top-actions{gap:9px}
+ .jt-customer-avatar{width:50px;height:50px}
+ .jt-customer-bell{width:46px;height:50px}
+ .jt-customer-hero{min-height:calc(100dvh - 92px);min-height:max(770px,calc(100dvh - 92px))}
+ .jt-customer-hero-inner{width:calc(100% - 36px);padding-top:38px;padding-bottom:230px}
+ .jt-customer-eyebrow{font-size:11px;letter-spacing:.11em;margin-bottom:20px;gap:9px}
+ .jt-customer-eyebrow span{width:10px;height:10px}
+ .jt-customer-hero h1{font-size:clamp(42px,8.5vw,67px)}
+ .jt-customer-intro{font-size:clamp(14px,3.7vw,19px);line-height:1.53;margin-bottom:22px}
+ .jt-customer-ask{padding:6px;border-width:4px;border-radius:29px;gap:7px}
+ .jt-customer-query{padding:11px 12px 5px;gap:12px}
+ .jt-customer-query svg{width:23px;margin-top:7px}
+ .jt-customer-query textarea{min-height:64px;font-size:17px}
+ .jt-customer-location{min-height:60px;padding:4px 16px;gap:10px}
+ .jt-customer-location select{font-size:18px}
+ .jt-customer-location svg{width:20px}
+ .jt-customer-submit{min-height:63px;font-size:21px}
+ .jt-customer-facts{margin:22px 0;gap:0}
+ .jt-customer-facts>div{padding:0 13px;min-height:50px}
+ .jt-customer-facts strong{font-size:27px}
+ .jt-customer-facts b{font-size:11px;letter-spacing:0}
+ .jt-customer-facts span{font-size:12px}
+ .jt-customer-popular{gap:8px}
+ .jt-customer-popular strong{font-size:14px}
+ .jt-customer-popular button{font-size:13px;padding:9px 13px}
+ .jt-customer-mascot{bottom:-70px;width:clamp(190px,40vw,300px);right:5%}
+ .jt-customer-bottom-nav{width:calc(100% - 12px);border-radius:31px;padding:8px 7px;gap:0;bottom:calc(9px + env(safe-area-inset-bottom,0px))}
+ .jt-customer-bottom-nav button{min-height:71px;gap:5px;font-size:11px;border-radius:22px}
+ .jt-customer-bottom-nav button svg{width:25px;height:25px}
+ .jt-customer-below{padding:34px 18px 48px;display:grid}
+ .jt-customer-quicklinks{flex-wrap:wrap}
+ .jt-customer-tabview{padding:29px 18px 118px}
+ .jt-customer-view-heading{align-items:flex-start;flex-direction:column}
+ .jt-customer-schedule-item{grid-template-columns:1fr auto}
+ .jt-customer-schedule-item>div:first-child{grid-column:1/-1}
+}
+@media(max-width:380px){
+ .jt-customer-logo img{width:142px}
+ .jt-customer-topbar{padding-left:11px;padding-right:11px}
+ .jt-customer-hero-inner{width:calc(100% - 24px)}
+ .jt-customer-hero h1{font-size:41px}
+ .jt-customer-popular button{padding:8px 10px;font-size:12px}
+ .jt-customer-bottom-nav button{font-size:10px}
+ .jt-customer-bottom-nav button svg{width:23px;height:23px}
+ .jt-customer-facts>div{padding:0 8px}
+}
+@media(prefers-reduced-motion:reduce){.jt-customer-submit,.jt-customer-popular button{transition:none}}
