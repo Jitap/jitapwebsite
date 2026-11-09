@@ -1,12 +1,15 @@
 'use client';
 import {useEffect,useState} from 'react';
 import Link from 'next/link';
+import {useRouter} from 'next/navigation';
 import {CheckCircle2,ShieldCheck,UserRound,XCircle} from 'lucide-react';
 import './provider-reviews.css';
 import {ProviderIdentityEvidence} from '@/components/ProviderIdentityEvidence';
 type BuzzResponse={serviceId:string;provider:string;decision:string;note:string;createdAt:string;caseId:string|null;caseStatus:string;priority:string;technicalSummary:string;briefSource:'ai'|'reported'};
 type Provider={user_id:string;full_name:string;business_name:string;categories:string[];service_areas:string[];experience_years:number;skills:string;submitted_at:string;review:string;is_online:boolean;mediaKinds:string[];readyForApproval:boolean;identityStatus:string;identityUpdatedAt:string|null;identityEnvironment:string|null};
 export default function CoordinatorProviderReviews(){
+ const router=useRouter();
+ const [authenticationRequired,setAuthenticationRequired]=useState(false);
  const [providers,setProviders]=useState<Provider[]>([]);
  const [buzzResponses,setBuzzResponses]=useState<BuzzResponse[]>([]);
  const [role,setRole]=useState('');
@@ -20,7 +23,15 @@ export default function CoordinatorProviderReviews(){
  async function reload(){
   const r=await fetch('/api/coordinator/provider-reviews',{cache:'no-store'});
   const d=await r.json().catch(()=>({}));
+  if(r.status===401){
+   setAuthenticationRequired(true);
+   setProviders([]);setBuzzResponses([]);setRole('');
+   setPendingCount(0);setReadyCount(0);
+   router.replace('/coordinator?next=%2Fcoordinator%2Fproviders');
+   return;
+  }
   if(!r.ok)throw Error(d.error||'Unable to load provider reviews');
+  setAuthenticationRequired(false);
   setProviders(d.providers||[]);setBuzzResponses(d.buzzResponses||[]);setRole(d.role||'');setPendingCount(d.pendingCount||0);setReadyCount(d.readyCount||0);
  }
  useEffect(()=>{
@@ -70,7 +81,7 @@ export default function CoordinatorProviderReviews(){
   <Link href="/coordinator">← Service Operations</Link>
   <h1><ShieldCheck size={31}/> Provider verification</h1>
   <p>Review provider applications and Didit identity verification results. Didit handles ID OCR, liveness and face matching; JiTap separately checks professional suitability. Existing uploaded documents remain private.</p>
-  {loading?<p role="status">Loading profiles…</p>:<>
+  {authenticationRequired?<div className="jt-staff-review-card" role="status"><strong>Staff sign-in required</strong><p>Sign in to Service Operations to view provider records and restricted Didit identity details.</p><Link href="/coordinator?next=%2Fcoordinator%2Fproviders">Sign in to Service Operations</Link></div>:loading?<p role="status">Loading profiles…</p>:<>
    {error&&<div role="alert" className="jt-staff-review-error">{error}</div>}
    {notice&&<div role="status" className="jt-staff-review-success">{notice}</div>}
    <div className="jt-soc-approval-metrics"><div><strong>{pendingCount}</strong><span>Pending applications</span></div><div><strong>{readyCount}</strong><span>Didit identity approved</span></div><div><strong>{providers.length}</strong><span>Total submitted providers</span></div></div>
