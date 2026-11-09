@@ -286,7 +286,7 @@ export default function ProviderDashboardPage(){
           }
           await refresh();
          }}/>
-        <button type="button" className="jt-confirmed-view" onClick={()=>router.push('/provider/calendar?job='+encodeURIComponent(job.requestId))}>View job & directions <ChevronRight size={16}/></button>
+        <button type="button" className="jt-confirmed-view" onClick={()=>router.push('/provider/calendar?job='+encodeURIComponent(job.requestId))}>View <ChevronRight size={16}/></button>
        </div>
       </article>)}
      </section>}
