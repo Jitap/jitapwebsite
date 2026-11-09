@@ -56,3 +56,10 @@
 .jt-soc-kyc-approved{color:#056d41;background:#d9f6e5}
 .jt-soc-kyc-pending{color:#805c16;background:#fff0d0}
 .jt-soc-kyc small{color:#657d9c}
+
+/* Didit-hosted identity documents: show verified status without implying JiTap stores ID photos. */
+.jt-soc-didit-document{min-height:118px;padding:12px 8px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;text-align:center;background:#edf4f8;border-radius:9px;color:#476479}
+.jt-soc-didit-document.is-verified{background:#e9f8f0;color:#08764b}
+.jt-soc-didit-document strong{font-size:12px;min-height:0;color:inherit}
+.jt-soc-didit-document span{font-size:11px;line-height:1.45}
+.jt-soc-kyc-environment{border:1px solid #d4e0ec;border-radius:20px;padding:4px 8px;background:#fff;font-weight:650}
