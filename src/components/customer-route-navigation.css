@@ -1,0 +1,15 @@
+/* Keep the customer app shell through service discovery and request stages. */
+body:has(.jt-customer-route-nav)>.header,
+body:has(.jt-customer-route-nav)>.footer{display:none}
+body:has(.jt-customer-route-nav) #main{padding-bottom:calc(95px + env(safe-area-inset-bottom,0px));background:#f5faf9;min-height:100dvh}
+.jt-customer-route-header{height:70px;background:white;display:flex;align-items:center;justify-content:space-between;padding:5px clamp(15px,4vw,50px);border-bottom:1px solid #e4eee9;position:relative;z-index:9}
+.jt-customer-route-header>a{display:flex;align-items:center}
+.jt-customer-route-header img{width:134px;height:60px;object-fit:contain;display:block}
+.jt-customer-route-header>div{display:flex;align-items:center;gap:14px;color:#152767}
+.jt-customer-route-header>div>a{display:grid;place-items:center}
+.jt-customer-route-avatar{border:1px solid #bbebd1;background:#dff8ed;border-radius:50%;width:40px;height:40px;color:#078356;font-size:12px;font-weight:850}
+.jt-customer-route-bottom{position:fixed;z-index:80;bottom:calc(8px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);display:grid;grid-template-columns:repeat(5,minmax(0,1fr));width:min(640px,calc(100% - 14px));align-items:stretch;gap:0;padding:7px 5px;background:#ffffffed;border:1px solid #e0eee8;box-shadow:0 10px 28px #19465a24;border-radius:25px;backdrop-filter:blur(18px)}
+.jt-customer-route-bottom a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-height:62px;border-radius:19px;color:#708099;font-size:11px;line-height:1.2;text-align:center}
+.jt-customer-route-bottom a.is-context{background:#e6f8ef;color:#087d53;font-weight:760}
+.jt-customer-route-bottom svg{flex:none}
+@media(max-width:480px){.jt-customer-route-header{height:67px;padding:4px 13px}.jt-customer-route-header img{width:129px;height:57px}.jt-customer-route-bottom a{font-size:10px;min-height:59px}.jt-customer-route-bottom svg{width:22px;height:22px}}
