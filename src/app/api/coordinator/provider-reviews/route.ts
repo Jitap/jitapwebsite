@@ -34,6 +34,7 @@ export async function GET(req:NextRequest){
    return {...p,review:map.get(p.user_id)?.status||'pending',mediaKinds:kinds,
     identityStatus:latestKyc.get(p.user_id)?.status||'not_started',
     identityUpdatedAt:latestKyc.get(p.user_id)?.updated_at||null,
+    identityEnvironment:latestKyc.get(p.user_id)?.environment||null,
     readyForApproval:latestKyc.get(p.user_id)?.status==='Approved'&&latestKyc.get(p.user_id)?.environment==='live'};
   });
   const pendingCount=providers.filter(p=>p.review==='pending').length;
