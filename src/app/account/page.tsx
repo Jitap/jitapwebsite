@@ -1,48 +1,171 @@
 'use client';
-import {useEffect,useState} from 'react';
+import {useEffect,useState,type FormEvent} from 'react';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
-import {BriefcaseBusiness,ClipboardList,LogOut,MapPin,UserRound,Wrench} from 'lucide-react';
+import {ArrowRight,Bell,BriefcaseBusiness,CalendarDays,ChevronDown,ClipboardList,Home,LogOut,MapPin,Sparkles,UserRound,Wallet} from 'lucide-react';
+import {areas,inferService} from '@/lib/data';
 import {CustomerTicketCard,type CustomerTicket} from '@/components/CustomerTicketCard';
+import './customer-home.css';
+
 type Account={authenticated:boolean;accountType:'customer'|'provider';primaryAccountType?:'customer'|'provider';phone:string;fullName?:string|null};
-type CustomerRequest=CustomerTicket;
+type Tab='home'|'requests'|'calendar'|'wallet'|'profile';
+const tabs:readonly {key:Tab;label:string;icon:typeof Home}[]=[
+ {key:'home',label:'Home',icon:Home},
+ {key:'requests',label:'Requests',icon:ClipboardList},
+ {key:'calendar',label:'Calendar',icon:CalendarDays},
+ {key:'wallet',label:'Wallet',icon:Wallet},
+ {key:'profile',label:'Profile',icon:UserRound}
+];
+function humanDate(value:string){
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(value))return 'Date to be confirmed';
+ const date=new Date(value+'T12:00:00Z');
+ return Number.isNaN(date.getTime())?'Date to be confirmed':date.toLocaleDateString('en-KE',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'});
+}
 export default function AccountPage(){
- const [account,setAccount]=useState<Account|null>(null),[loading,setLoading]=useState(true),[error,setError]=useState('');
- const [requests,setRequests]=useState<CustomerRequest[]>([]);
+ const router=useRouter();
+ const [account,setAccount]=useState<Account|null>(null);
+ const [loading,setLoading]=useState(true);
+ const [error,setError]=useState('');
+ const [requests,setRequests]=useState<CustomerTicket[]>([]);
  const [requestsLoading,setRequestsLoading]=useState(true);
  const [requestsError,setRequestsError]=useState('');
- const router=useRouter();
+ const [tab,setTab]=useState<Tab>('home');
+ const [area,setArea]=useState('Nyali');
+ const [description,setDescription]=useState('');
+ useEffect(()=>{
+  try{const selected=window.localStorage.getItem('jitap:area');if(selected&&areas.includes(selected))setArea(selected)}catch{}
+  const params=new URLSearchParams(window.location.search);
+  const section=params.get('tab');
+  if(section&&['home','requests','calendar','wallet','profile'].includes(section))setTab(section as Tab);
+ },[]);
+ useEffect(()=>{
+  let active=true;
+  fetch('/api/auth/session',{cache:'no-store',credentials:'same-origin'})
+   .then(async r=>{if(!r.ok)throw Error('Sign in required');return r.json()})
+   .then(data=>{if(active){setAccount(data);if(data.accountType==='provider')router.replace('/provider')}})
+   .catch(()=>{if(active)router.replace('/login?role=customer')})
+   .finally(()=>{if(active)setLoading(false)});
+  return()=>{active=false};
+ },[router]);
  useEffect(()=>{
   if(account?.accountType!=='customer')return;
   let active=true;
-  const refresh=()=>fetch('/api/account/requests',{cache:'no-store'}).then(async r=>{if(!r.ok)throw Error('Unable to load');return r.json()}).then(data=>{if(active){setRequests(Array.isArray(data.requests)?data.requests:[]);setRequestsError('')}}).catch(()=>{if(active)setRequestsError('Request history is temporarily unavailable.')}).finally(()=>{if(active)setRequestsLoading(false)});
+  const refresh=()=>fetch('/api/account/requests',{cache:'no-store',credentials:'same-origin'})
+   .then(async r=>{if(!r.ok)throw Error('Unable to load');return r.json()})
+   .then(data=>{if(active){setRequests(Array.isArray(data.requests)?data.requests:[]);setRequestsError('')}})
+   .catch(()=>{if(active)setRequestsError('Request history is temporarily unavailable.')})
+   .finally(()=>{if(active)setRequestsLoading(false)});
   void refresh();
-  const interval=window.setInterval(()=>{if(document.visibilityState==='visible')void refresh()},10000);
+  const interval=window.setInterval(()=>{if(document.visibilityState==='visible')void refresh()},15000);
   return()=>{active=false;window.clearInterval(interval)};
  },[account?.accountType]);
- useEffect(()=>{let active=true;fetch('/api/auth/session',{cache:'no-store'}).then(async r=>{if(!r.ok)throw Error('Sign in required');return r.json()}).then(data=>{if(active){setAccount(data);if(data.accountType==='provider')router.replace('/provider')}}).catch(()=>{if(active)router.replace('/login?mode=login')}).finally(()=>{if(active)setLoading(false)});return()=>{active=false}},[router]);
+ function navigate(next:Tab){
+  setTab(next);
+  window.history.replaceState(null,'',next==='home'?'/account':'/account?tab='+next);
+  window.scrollTo({top:0,behavior:'smooth'});
+ }
+ function submitAsk(event:FormEvent<HTMLFormElement>){
+  event.preventDefault();
+  const query=description.trim();
+  if(!query){setError('Tell JiTap what you need help with.');return}
+  setError('');
+  const category=inferService(query)||'other-services';
+  try{window.localStorage.setItem('jitap:area',area)}catch{}
+  router.push('/request?category='+encodeURIComponent(category)+'&area='+encodeURIComponent(area)+'&description='+encodeURIComponent(query));
+ }
+ function popular(query:string,category:string){
+  try{window.localStorage.setItem('jitap:area',area)}catch{}
+  router.push('/request?category='+encodeURIComponent(category)+'&area='+encodeURIComponent(area)+'&description='+encodeURIComponent(query));
+ }
  async function switchProvider(){
   const r=await fetch('/api/auth/mode',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'provider'})});
   if(!r.ok){setError('Could not open provider onboarding.');return}
   window.dispatchEvent(new Event('jitap:auth-changed'));router.push('/provider');router.refresh();
  }
- async function signOut(){const r=await fetch('/api/auth/session',{method:'DELETE'});if(!r.ok){setError('Unable to sign out. Please try again.');return}window.dispatchEvent(new Event('jitap:auth-changed'));router.replace('/login?mode=login');router.refresh()}
- return <main className="jt-account-page"><div className="container jt-account-shell">
-  {loading?<p role="status">Checking your JiTap account…</p>:account?<>
-   <div className="jt-account-head"><span><UserRound size={25}/></span><div><p>JITAP ACCOUNT</p><h1>{account.fullName?('Habari, '+account.fullName.split(' ')[0]+'!'):'Welcome to JiTap!'}</h1><p>{account.accountType==='provider'?'Your provider account':'Your customer account'}</p></div></div>
-   <div className="jt-account-summary"><strong>{account.accountType==='provider'?'Service provider':'Customer'}</strong><span>{account.phone}</span><span>Mobile number verified</span></div>
-   <div className="jt-account-cards">
-    {account.accountType==='provider'?<><Link href="/provider"><BriefcaseBusiness/><strong>Provider onboarding & dashboard</strong><small>Complete your profile and manage availability.</small></Link><Link href="/provider"><ClipboardList/><strong>Live BUZZ opportunities</strong><small>Review requests matching your verified profile and coverage areas.</small></Link></>:<><Link href="/request"><ClipboardList/><strong>Request a service</strong><small>Describe what you need and where.</small></Link><Link href="/services"><Wrench/><strong>Explore local services</strong><small>Discover JiTap's service categories.</small></Link></>}
-   </div>
-   {account.accountType==='customer'&&<section className="jt-customer-requests" id="my-requests" aria-labelledby="jt-my-requests-title">
-    <div className="jt-customer-requests-head"><div><span>YOUR SERVICE HISTORY</span><h2 id="jt-my-requests-title">My Requests</h2></div><Link href="/request">+ New request</Link></div>
-    {requestsLoading?<p role="status">Loading your service requests…</p>:requestsError?<p role="alert">{requestsError}</p>:requests.length===0?<div className="jt-requests-empty"><ClipboardList size={29}/><p>No service requests linked to your account yet.</p><small>When you submit a new request while signed in, it will appear here.</small></div>:
-     <div className="jt-requests-list">{requests.map(r=><CustomerTicketCard key={r.reference} ticket={r}/>)}</div>}
+ async function signOut(){
+  const r=await fetch('/api/auth/session',{method:'DELETE'});
+  if(!r.ok){setError('Unable to sign out. Please try again.');return}
+  window.dispatchEvent(new Event('jitap:auth-changed'));router.replace('/login?role=customer');router.refresh();
+ }
+ const needsAttention=requests.filter(r=>!!r.rematch).length;
+ const upcoming=requests.filter(r=>/^\d{4}-\d{2}-\d{2}$/.test(r.date)&&r.date>=new Date().toISOString().slice(0,10))
+  .sort((a,b)=>a.date.localeCompare(b.date)||a.time.localeCompare(b.time));
+ const initials=(account?.fullName||'Customer').split(/\s+/).filter(Boolean).slice(0,2).map(part=>part[0]?.toUpperCase()).join('');
+ return <main className="jt-customer-app">
+  {loading?<div className="jt-customer-loading" role="status">Opening your JiTap account…</div>:account?.accountType==='customer'?<>
+   <header className="jt-customer-topbar">
+    <Link href="/account" className="jt-customer-logo" onClick={e=>{e.preventDefault();navigate('home')}} aria-label="JiTap customer home">
+     <img src="/images/jitap-logo.svg" alt="JiTap — Ask Match Buzz" width={183} height={96}/>
+    </Link>
+    <div className="jt-customer-top-actions">
+     <button type="button" className="jt-customer-bell" aria-label={needsAttention?needsAttention+' requests need your attention':'View your requests'} onClick={()=>navigate('requests')}>
+      <Bell size={31} strokeWidth={1.8}/>{needsAttention>0&&<span className="jt-customer-bell-count">{needsAttention}</span>}
+     </button>
+     <button type="button" className="jt-customer-avatar" aria-label="Open your profile" onClick={()=>navigate('profile')}>{initials||'J'}</button>
+    </div>
+   </header>
+   {tab==='home'?<>
+    <section className="jt-customer-hero" aria-labelledby="jt-customer-hero-title">
+     <img className="jt-customer-hero-bg" src="/images/approved/hero-coast.png" alt="" fetchPriority="high"/>
+     <div className="jt-customer-hero-shade" aria-hidden="true"/>
+     <div className="jt-customer-hero-inner">
+      <div className="jt-customer-eyebrow"><span aria-hidden="true"/> MOMBASA'S LOCAL SKILLS NETWORK</div>
+      <h1 id="jt-customer-hero-title">Every job needs<br/>the right <em>fundi.</em></h1>
+      <p className="jt-customer-intro">Tap in to local skills for repairs, cleaning, installations and everything that keeps your home running. Just tell JiTap what needs doing.</p>
+      <form className="jt-customer-ask" onSubmit={submitAsk} role="search" aria-label="Ask JiTap for a service">
+       <label className="jt-customer-query"><Sparkles size={26} aria-hidden="true"/>
+        <textarea value={description} onChange={e=>setDescription(e.target.value)} placeholder="How can I help you today - e.g. my sink is leaking" aria-label="Describe what you need" maxLength={1500} rows={2} required onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.nativeEvent.isComposing){e.preventDefault();e.currentTarget.form?.requestSubmit()}}}/>
+       </label>
+       <label className="jt-customer-location"><MapPin size={25} aria-hidden="true"/><select aria-label="Service area" value={area} onChange={e=>setArea(e.target.value)}>
+        {areas.map(value=><option key={value} value={value}>{value}</option>)}
+       </select><ChevronDown size={20} aria-hidden="true"/></label>
+       <button className="jt-customer-submit" type="submit">Ask JiTap <ArrowRight size={25} aria-hidden="true"/></button>
+      </form>
+      {error&&<p className="jt-customer-error" role="alert">{error}</p>}
+      <div className="jt-customer-facts">
+       <div><strong>300+</strong><span>Households</span></div>
+       <div><strong>{areas.length}</strong><span>request areas</span></div>
+       <div><b>ASK • MATCH • BUZZ</b><span>the JiTap way</span></div>
+      </div>
+      <div className="jt-customer-popular"><strong>Popular:</strong>
+       <button type="button" onClick={()=>popular('My tap is leaking','plumbing')}>Leaking tap</button>
+       <button type="button" onClick={()=>popular('I need a fundi wa stima','electrical')}>Fundi wa stima</button>
+       <button type="button" onClick={()=>popular('I need a Mama Fua for cleaning','cleaning')}>Mama Fua</button>
+      </div>
+      <img className="jt-customer-mascot" src="/images/approved/mascot-original.png" alt="JiTap's friendly assistant mascot"/>
+     </div>
+    </section>
+    <section className="jt-customer-below">
+     <div><span className="jt-customer-section-kicker">WELCOME BACK</span><h2>{account.fullName?'Habari, '+account.fullName.split(' ')[0]+'!':'How can JiTap help?'}</h2><p>Describe a task above or explore local services.</p></div>
+     <div className="jt-customer-quicklinks">
+      <Link href="/services"><BriefcaseBusiness size={24}/> Explore services <ArrowRight size={18}/></Link>
+      <button type="button" onClick={()=>navigate('requests')}><ClipboardList size={24}/> My Requests <ArrowRight size={18}/></button>
+     </div>
+    </section>
+   </>:<section className="jt-customer-tabview">
+    {tab==='requests'&&<>
+     <div className="jt-customer-view-heading"><div><span className="jt-customer-section-kicker">YOUR SERVICE HISTORY</span><h1>My Requests</h1><p>Keep track of your services and provider updates.</p></div><Link href="/request" className="jt-customer-new-request">+ New request</Link></div>
+     {requestsLoading?<p role="status">Loading your requests…</p>:requestsError?<p role="alert">{requestsError}</p>:requests.length===0?<div className="jt-customer-empty"><ClipboardList/><h2>No requests yet</h2><p>Your submitted service requests will appear here.</p><Link href="/request">Request a service</Link></div>:<div className="jt-requests-list">{requests.map(r=><CustomerTicketCard ticket={r} key={r.reference}/>)}</div>}
+    </>}
+    {tab==='calendar'&&<>
+     <div className="jt-customer-view-heading"><div><span className="jt-customer-section-kicker">YOUR SCHEDULE</span><h1>Calendar</h1><p>Requested service dates from your JiTap bookings.</p></div></div>
+     {requestsLoading?<p role="status">Loading your schedule…</p>:requestsError?<p role="alert">{requestsError}</p>:!upcoming.length?<div className="jt-customer-empty"><CalendarDays/><h2>No upcoming requests</h2><p>When a service request has a future date, it will appear here.</p><button type="button" onClick={()=>navigate('requests')}>View requests</button></div>:<div className="jt-customer-schedule">{upcoming.map(r=><Link href={'/track?ref='+encodeURIComponent(r.serviceId)} className="jt-customer-schedule-item" key={r.reference}><div><CalendarDays size={22}/><strong>{humanDate(r.date)}</strong></div><div><strong>{r.category.replaceAll('-',' ')}</strong><small>{r.time?r.time+' EAT':'Time to be confirmed'} · {r.location||r.area||'Location pending'}</small></div><ArrowRight size={19}/></Link>)}</div>}
+    </>}
+    {tab==='wallet'&&<div className="jt-customer-empty jt-customer-wallet"><Wallet/><h1>Wallet</h1><p>JiTap Wallet is coming soon. Your existing service requests remain available in My Requests.</p><button type="button" onClick={()=>navigate('requests')}>View requests</button></div>}
+    {tab==='profile'&&<>
+     <div className="jt-customer-view-heading"><div><span className="jt-customer-section-kicker">YOUR JITAP ACCOUNT</span><h1>My Profile</h1><p>Your customer details and account options.</p></div></div>
+     <div className="jt-customer-profile-card"><span className="jt-customer-profile-avatar">{initials||'J'}</span><div><h2>{account.fullName||'JiTap Customer'}</h2><p>Customer account</p></div></div>
+     <div className="jt-customer-profile-row"><span>Mobile number</span><strong>{account.phone}</strong></div>
+     <div className="jt-customer-profile-row"><span>Verification</span><strong>Mobile number verified</strong></div>
+     <div className="jt-customer-profile-actions"><button type="button" onClick={()=>void switchProvider()}><BriefcaseBusiness size={20}/> Switch to Provider</button><button type="button" onClick={()=>void signOut()}><LogOut size={20}/> Log out</button></div>
+     {error&&<p role="alert" className="jt-customer-error">{error}</p>}
+    </>}
    </section>}
-   <p className="jt-account-disclaimer">{account.accountType==='provider'?'A provider account does not automatically mean verification, active work allocation, or guaranteed jobs.':'Your request is confirmed as soon as an available verified provider accepts it. Their contact details will then appear in My Requests.'}</p>
-   {account.accountType==='customer'&&<button type="button" className="jt-account-signout" onClick={switchProvider}><BriefcaseBusiness size={18}/> Switch to Provider</button>}
-   {error&&<p role="alert" className="jt-auth-error">{error}</p>}
-   <button type="button" className="jt-account-signout" onClick={signOut}><LogOut size={18}/> Log out</button>
+   <nav className="jt-customer-bottom-nav" aria-label="Customer navigation">
+    {tabs.map(item=><button key={item.key} type="button" className={tab===item.key?'is-active':''} aria-current={tab===item.key?'page':undefined} onClick={()=>navigate(item.key)}>
+     <item.icon size={27} strokeWidth={2} aria-hidden="true"/><span>{item.label}</span>{item.key==='requests'&&needsAttention>0&&<i className="jt-customer-nav-alert" aria-label={needsAttention+' requests need attention'}/>}
+    </button>)}
+   </nav>
   </>:null}
- </div></main>
+ </main>;
 }
