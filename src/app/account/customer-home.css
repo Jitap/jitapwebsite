@@ -131,3 +131,51 @@ body:has(.jt-customer-app) #main{min-height:100dvh}
  .jt-customer-facts>div{padding:0 8px}
 }
 @media(prefers-reduced-motion:reduce){.jt-customer-submit,.jt-customer-popular button{transition:none}}
+
+/* Customer home refinement: compact search + actual service history, no promotional hero. */
+.jt-customer-app{background:#f5faf9;padding-bottom:calc(102px + env(safe-area-inset-bottom,0px));}
+.jt-customer-topbar{height:78px;padding:6px clamp(16px,4vw,45px);}
+.jt-customer-logo img{width:146px;height:67px;}
+.jt-customer-avatar{width:44px;height:44px;font-size:15px;border-width:2px;}
+.jt-customer-bell{width:43px;height:43px;}
+.jt-customer-bell svg{width:25px;height:25px;}
+.jt-customer-top-actions{gap:8px;}
+.jt-customer-home-panel{max-width:930px;margin:0 auto;padding:27px 22px 45px;}
+.jt-customer-home-panel .jt-customer-ask{width:100%;max-width:none;border:1px solid #d5ece6;border-radius:23px;padding:11px;gap:9px;box-shadow:0 8px 28px rgba(21,53,68,.07);}
+.jt-customer-home-panel .jt-customer-query{padding:12px 12px 5px;gap:12px;}
+.jt-customer-home-panel .jt-customer-query textarea{font-size:16px;min-height:76px;}
+.jt-customer-home-panel .jt-customer-query svg{width:23px;height:23px;}
+.jt-customer-home-panel .jt-customer-location{min-height:54px;padding:5px 14px;border-radius:13px;}
+.jt-customer-home-panel .jt-customer-location select{font-size:16px;}
+.jt-customer-home-panel .jt-customer-submit{min-height:57px;border-radius:14px;font-size:17px;gap:11px;font-weight:800;}
+.jt-customer-home-panel .jt-customer-submit svg{width:20px;height:20px;}
+.jt-customer-history{margin-top:29px;scroll-margin-top:90px;}
+.jt-customer-history-heading{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:16px;}
+.jt-customer-history-heading h1{font-size:clamp(25px,3.3vw,34px);line-height:1.15;letter-spacing:-.035em;color:#102a46;margin:4px 0 0;}
+.jt-customer-history-heading button{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;background:transparent;color:#097e59;border:0;font-weight:750;padding:8px;font-size:13px;}
+.jt-customer-home-empty{min-height:200px;gap:4px;}
+.jt-customer-home-empty h2{font-size:19px;}
+.jt-customer-home-empty p{font-size:13px;}
+.jt-customer-bottom-nav{width:min(640px,calc(100% - 18px));padding:8px;gap:3px;border-width:1px;border-radius:27px;box-shadow:0 10px 25px #144a5430;}
+.jt-customer-bottom-nav button{min-height:64px;font-size:12px;border-radius:20px;gap:4px;}
+.jt-customer-bottom-nav button svg{width:24px;height:24px;}
+@media(max-width:720px){
+ .jt-customer-topbar{height:69px;padding:4px 15px;}
+ .jt-customer-logo img{width:134px;height:59px;}
+ .jt-customer-top-actions{gap:5px;}
+ .jt-customer-avatar{width:40px;height:40px;font-size:13px;}
+ .jt-customer-bell{width:40px;height:40px;}
+ .jt-customer-bell svg{width:23px;height:23px;}
+ .jt-customer-home-panel{padding:20px 14px 42px;}
+ .jt-customer-home-panel .jt-customer-ask{border-width:1px;padding:8px;border-radius:18px;gap:7px;}
+ .jt-customer-home-panel .jt-customer-query{padding:10px 10px 2px;gap:10px;}
+ .jt-customer-home-panel .jt-customer-query textarea{font-size:15px;min-height:67px;}
+ .jt-customer-home-panel .jt-customer-location{min-height:49px;padding:4px 12px;}
+ .jt-customer-home-panel .jt-customer-location select{font-size:15px;}
+ .jt-customer-home-panel .jt-customer-submit{min-height:52px;font-size:17px;border-radius:12px;}
+ .jt-customer-history{margin-top:23px;}
+ .jt-customer-history-heading h1{font-size:25px;}
+ .jt-customer-bottom-nav{width:calc(100% - 14px);bottom:calc(8px + env(safe-area-inset-bottom,0px));padding:7px 5px;gap:0;border-radius:25px;}
+ .jt-customer-bottom-nav button{min-height:61px;font-size:10px;border-radius:19px;}
+ .jt-customer-bottom-nav button svg{width:22px;height:22px;}
+}
