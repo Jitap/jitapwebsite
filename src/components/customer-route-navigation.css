@@ -13,3 +13,11 @@ body:has(.jt-customer-route-nav) #main{padding-bottom:calc(95px + env(safe-area-
 .jt-customer-route-bottom a.is-context{background:#e6f8ef;color:#087d53;font-weight:760}
 .jt-customer-route-bottom svg{flex:none}
 @media(max-width:480px){.jt-customer-route-header{height:67px;padding:4px 13px}.jt-customer-route-header img{width:129px;height:57px}.jt-customer-route-bottom a{font-size:10px;min-height:59px}.jt-customer-route-bottom svg{width:22px;height:22px}}
+
+/* Mirror the new glass home navigation on customer request routes. */
+.jt-customer-route-header{background:#fff;border-bottom-color:#eef2fa}
+.jt-customer-route-header img{object-position:left center;width:130px;height:57px}
+.jt-customer-route-bottom{background:#fffffffa;border:1px solid #dce6f8;box-shadow:0 9px 28px #14206a2b}
+.jt-customer-route-bottom a.is-context{color:#405a96;background:transparent;font-weight:500}
+.jt-customer-route-bottom a.jt-customer-route-plus{width:57px;height:57px;min-height:0;border-radius:50%;background:linear-gradient(145deg,#3556d0,#070d60);color:white;justify-self:center;transform:translateY(-7px);box-shadow:0 6px 15px #0c157d50,inset 0 2px 3px #ffffff40}
+.jt-customer-route-bottom a.jt-customer-route-plus svg{width:30px;height:30px}
