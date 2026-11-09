@@ -99,6 +99,14 @@ export function CoordinatorDashboard(){
   let mounted=true;
   (async()=>{
    try{
+    // Keep SOC cookies on the canonical host. Preserve the callback hash
+    // so that a magic link opened on the apex still completes authentication.
+    if(window.location.hostname==='jitap.app'){
+     window.location.replace('https://www.jitap.app'+window.location.pathname+window.location.search+window.location.hash);
+     return;
+    }
+    const next=new URLSearchParams(window.location.search).get('next');
+    const goToProviderReview=()=>{if(next==='/coordinator/providers'){window.location.replace('/coordinator/providers');return true}return false};
     // Supabase may use an email magic link instead of a numeric OTP.
     // Remove the access token from the address bar immediately and exchange it
     // for JiTap's secure, HttpOnly staff session cookie.
@@ -116,7 +124,7 @@ export function CoordinatorDashboard(){
      });
      const payload=await linked.json();
      if(!mounted)return;
-     if(linked.ok){setStaff(payload.staff);await load();return}
+     if(linked.ok){setStaff(payload.staff);if(goToProviderReview())return;await load();return}
      setAuthMessage(payload.error||'This sign-in link could not be verified. Request a new email.');
     }else if(params?.has('error')){
      setAuthMessage('This sign-in link expired or was rejected. Request a new email.');
@@ -125,6 +133,7 @@ export function CoordinatorDashboard(){
     if(!mounted)return;
     if(res.ok){
      const body=await res.json();setStaff(body.staff);
+     if(goToProviderReview())return;
      await load();
     }
    }catch{if(mounted)setFeedback('Unable to connect to the coordinator service.')}
@@ -198,7 +207,7 @@ export function CoordinatorDashboard(){
  async function authenticate(action:'send'|'verify'){
   setLogging(true);setAuthMessage('');
   try{
-   const res=await fetch('/api/coordinator/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,email})});
+   const res=await fetch('/api/coordinator/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,email,next:new URLSearchParams(window.location.search).get('next')==='/coordinator/providers'?'/coordinator/providers':undefined})});
    const body=await res.json();
    if(!res.ok){setAuthMessage(body.error||'Sign-in could not be completed');return}
    if(action==='send'){setSent(true);setAuthMessage('')}
