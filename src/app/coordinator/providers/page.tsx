@@ -3,6 +3,7 @@ import {useEffect,useState} from 'react';
 import Link from 'next/link';
 import {CheckCircle2,ShieldCheck,UserRound,XCircle} from 'lucide-react';
 import './provider-reviews.css';
+import {ProviderIdentityEvidence} from '@/components/ProviderIdentityEvidence';
 type BuzzResponse={serviceId:string;provider:string;decision:string;note:string;createdAt:string;caseId:string|null;caseStatus:string;priority:string;technicalSummary:string;briefSource:'ai'|'reported'};
 type Provider={user_id:string;full_name:string;business_name:string;categories:string[];service_areas:string[];experience_years:number;skills:string;submitted_at:string;review:string;is_online:boolean;mediaKinds:string[];readyForApproval:boolean;identityStatus:string;identityUpdatedAt:string|null;identityEnvironment:string|null};
 export default function CoordinatorProviderReviews(){
@@ -99,6 +100,7 @@ export default function CoordinatorProviderReviews(){
     {p.identityEnvironment&&<small className="jt-soc-kyc-environment">{p.identityEnvironment==='sandbox'?'Sandbox test — not valid for live approval':'Live verification'}</small>}
     {p.identityUpdatedAt&&<small>Updated {new Date(p.identityUpdatedAt).toLocaleString('en-KE',{dateStyle:'medium',timeStyle:'short',timeZone:'Africa/Nairobi'})}</small>}
     </div>
+    {role==='admin'&&p.identityStatus==='Approved'&&<ProviderIdentityEvidence key={p.user_id} userId={p.user_id} identityEnvironment={p.identityEnvironment}/>}
     {!p.readyForApproval&&p.review!=='approved'&&<p className="jt-soc-verify-warning">A live Didit identity approval is required before new provider approval. Existing uploaded ID photos alone are insufficient.</p>}
     {role==='admin'&&<div className="jt-staff-review-actions"><button disabled={busy===p.user_id||p.review==='approved'||!p.readyForApproval} onClick={()=>review(p,'approved')}><CheckCircle2 size={17}/> Approve</button><button disabled={busy===p.user_id||p.review==='rejected'} onClick={()=>review(p,'rejected')}><XCircle size={17}/> Reject</button></div>}
    </article>)}
