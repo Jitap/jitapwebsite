@@ -2,14 +2,14 @@
 import {useEffect,useState} from 'react';
 import Link from 'next/link';
 import {usePathname} from 'next/navigation';
-import {Bell,CalendarDays,ClipboardList,Home,UserRound,Wallet} from 'lucide-react';
+import {Bell,ClipboardList,Home,Plus,UserRound,Wallet} from 'lucide-react';
 import './customer-route-navigation.css';
 
 type Account={accountType?:string;fullName?:string|null};
 const destinations=[
  {label:'Home',href:'/account',icon:Home},
  {label:'Requests',href:'/account?tab=requests',icon:ClipboardList},
- {label:'Calendar',href:'/account?tab=calendar',icon:CalendarDays},
+ {label:'New Request',href:'/request',icon:Plus},
  {label:'Wallet',href:'/account?tab=wallet',icon:Wallet},
  {label:'Profile',href:'/account?tab=profile',icon:UserRound}
 ];
@@ -36,12 +36,12 @@ export function CustomerRouteNavigation(){
  const initials=(account.fullName||'Customer').trim().split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]?.toUpperCase()).join('')||'J';
  return <div className="jt-customer-route-nav">
   <header className="jt-customer-route-header">
-   <Link href="/account" aria-label="Back to JiTap customer homepage"><img src="/images/jitap-logo.svg" alt="JiTap" width={136} height={62}/></Link>
+   <Link href="/account" aria-label="Back to JiTap customer homepage"><img src="/images/jitap-logo-transparent.svg" alt="JiTap" width={136} height={62}/></Link>
    <div><Link href="/account?tab=requests" aria-label="View service requests"><Bell size={24}/></Link><Link href="/account?tab=profile" className="jt-customer-route-avatar" aria-label="Customer profile">{initials}</Link></div>
   </header>
   <nav className="jt-customer-route-bottom" aria-label="Customer navigation">
-   {destinations.map(item=><Link key={item.label} href={item.href} className={item.label==='Requests'?'is-context':''}>
-    <item.icon size={23} aria-hidden="true"/><span>{item.label}</span>
+   {destinations.map(item=><Link key={item.label} href={item.href} className={item.label==='New Request'?'jt-customer-route-plus':item.label==='Requests'?'is-context':''}>
+    <item.icon size={item.label==='New Request'?30:23} aria-hidden="true"/>{item.label!=='New Request'&&<span>{item.label}</span>}
    </Link>)}
   </nav>
  </div>
