@@ -226,7 +226,7 @@ export function CoordinatorDashboard(){
     const res=await fetch('/api/coordinator/auth',{cache:'no-store'});
     if(!res.ok||!alive)return;
     const data=await res.json() as {staff?:Staff};
-    if(data.staff){setStaff(data.staff);setSent(false);await load()}
+    if(data.staff){setStaff(data.staff);setSent(false);if(new URLSearchParams(window.location.search).get('next')==='/coordinator/providers'){window.location.replace('/coordinator/providers');return}await load()}
    }catch{}
   };
   const onFocus=()=>void check();
