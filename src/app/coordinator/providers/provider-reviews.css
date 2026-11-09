@@ -63,3 +63,25 @@
 .jt-soc-didit-document strong{font-size:12px;min-height:0;color:inherit}
 .jt-soc-didit-document span{font-size:11px;line-height:1.45}
 .jt-soc-kyc-environment{border:1px solid #d4e0ec;border-radius:20px;padding:4px 8px;background:#fff;font-weight:650}
+
+/* Restricted Didit fields are deliberately outside provider-facing/public profile data. */
+.jt-soc-identity-lock{margin:14px 0;padding:17px;border:1px solid #c9dce7;background:#f8fbfe;border-radius:13px}
+.jt-soc-identity-lock-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.jt-soc-identity-lock-heading>div{display:flex;align-items:center;gap:8px;color:#143963}
+.jt-soc-identity-lock button{border:1px solid #a7bdce;border-radius:9px;background:white;color:#123b68;padding:9px 14px;font:inherit;font-weight:700;cursor:pointer}
+.jt-soc-identity-lock button:disabled{opacity:.55;cursor:wait}
+.jt-soc-identity-lock>p{font-size:12px;color:#577084;line-height:1.6;margin:9px 0}
+.jt-soc-identity-lock>small{font-size:12px;color:#855f28}
+.jt-soc-identity-private{margin-top:14px;padding-top:14px;border-top:1px solid #dbe7ee}
+.jt-soc-identity-private dl{display:grid;grid-template-columns:minmax(110px,160px) minmax(0,1fr);gap:12px;line-height:1.4}
+.jt-soc-identity-private dt{font-size:12px;color:#567080}
+.jt-soc-identity-private dd{margin:0;font-size:13px;color:#142f51;font-weight:650;overflow-wrap:anywhere}
+.jt-soc-secret-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.jt-soc-identity-lock .jt-soc-secret-line button{font-size:11px;padding:5px 9px;display:inline-flex;align-items:center;gap:5px}
+.jt-soc-identity-selfie{margin-top:14px;display:grid;gap:9px}
+.jt-soc-identity-selfie>strong{font-size:12px;color:#234863}
+.jt-soc-identity-selfie img{width:170px;height:180px;max-width:100%;border:1px solid #d6e4ed;object-fit:contain;border-radius:11px;background:#edf4f8}
+.jt-soc-identity-selfie p{font-size:12px;color:#627789}
+.jt-soc-identity-sandbox{background:#fff0d8;color:#805c20;font-size:12px;padding:10px;border-radius:8px}
+.jt-soc-identity-error{color:#a32929!important;background:#fff1ef;padding:10px;border-radius:8px}
+@media(max-width:500px){.jt-soc-identity-private dl{grid-template-columns:1fr;gap:5px}}
