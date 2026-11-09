@@ -170,3 +170,9 @@
 .coordinator-wa-failed{background:#ffebee;color:#a31e31}
 .coordinator-wa-skipped{background:#f5ebd2;color:#946315}
 .coordinator-wa-error{color:#aa3040!important}
+
+/* Staff email-link sign-in: the email contains a link, never a numeric code. */
+.coordinator-link-help{display:flex;flex-direction:column;gap:12px;padding:15px;border:1px solid #bfe9d8;border-radius:13px;background:#f0fbf6;color:#173e34;line-height:1.5}
+.coordinator-link-help strong{display:flex;align-items:center;gap:8px;color:#0b754b;font-size:14px}
+.coordinator-link-help span{font-size:13px}
+.coordinator-auth .coordinator-link-help .coordinator-secondary{background:#fff;border:1px solid #bfd6d0;color:#133865;width:100%;justify-content:center}
