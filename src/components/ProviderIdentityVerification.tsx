@@ -80,9 +80,9 @@ export function ProviderIdentityVerification({onStatusChanged}:{onStatusChanged?
      <p>Your verification was not approved. Contact JiTap Service Operations for a review or instructions on a new attempt.</p>:
      data?.enabled&&data?.configured?
      <>
-      <p>Didit will securely capture your Kenyan identification document and selfie. JiTap stores only the verification decision and reference; not your document or biometric images.</p>
+      <p>Didit securely captures your Kenyan ID and selfie. JiTap stores the verification decision and reference, not copies of the images. Authorized JiTap administrators may securely view your ID number, date of birth and verification selfie from Didit for provider vetting, with access recorded.</p>
       <label className="jt-didit-consent"><input type="checkbox" checked={consent} onChange={e=>setConsent(e.target.checked)}/>
-       <span>I consent to JiTap sharing my verification session reference with Didit and Didit processing my identity document and biometric data for identity verification. I have read JiTap's <a href="/privacy" target="_blank" rel="noopener noreferrer">privacy information</a>.</span>
+       <span>I consent to Didit processing my identity document and selfie for identity verification and to restricted JiTap administrators viewing the ID number, date of birth and verification selfie from Didit for provider vetting. I have read JiTap's <a href="/privacy" target="_blank" rel="noopener noreferrer">privacy information</a>.</span>
       </label>
       <button type="button" className="jt-provider-primary jt-didit-start" disabled={busy||(!data.verificationUrl&&!consent)}
        onClick={()=>{if(data.verificationUrl)window.location.assign(data.verificationUrl);else void start()}}>
