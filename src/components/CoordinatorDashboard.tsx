@@ -258,7 +258,7 @@ export function CoordinatorDashboard(){
    <form onSubmit={e=>{e.preventDefault();void authenticate('send')}}>
     <label>Work email<input type="email" autoComplete="email" required value={email} onChange={e=>{setEmail(e.target.value);setSent(false);setAuthMessage('')}} placeholder="you@jitap.app"/></label>
     <button type="submit" disabled={logging}>{logging?'Sending link…':'Verify'}</button>
-    {sent&&<div className="coordinator-link-help" role="status"><strong><CheckCircle2 size={18} aria-hidden="true"/> Check your email</strong><span>Open the sign-in link from JiTap to access Service Operations. No verification code is required.</span><button type="button" className="coordinator-secondary" disabled={logging} onClick={()=>void authenticate('send')}>Resend sign-in link</button></div>}
+    {sent&&<div className="coordinator-link-help" role="status"><strong><CheckCircle2 size={18} aria-hidden="true"/> Check your email</strong><span>Open the sign-in link from JiTap to access Service Operations.</span><button type="button" className="coordinator-secondary" disabled={logging} onClick={()=>void authenticate('send')}>Resend sign-in link</button></div>}
    </form>
    {authMessage&&<p role="status">{authMessage}</p>}
    {feedback&&<p role="status">{feedback}</p>}
