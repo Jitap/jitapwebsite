@@ -5,11 +5,12 @@ import Link from 'next/link';
 import {useRouter} from 'next/navigation';
 import {
  ArrowRight,Bell,BriefcaseBusiness,CalendarDays,Check,ChevronRight,
- ClipboardList,Clock3,Eye,Heart,Home,LogOut,MapPin,Phone,Plus,
+ ClipboardList,Clock3,Eye,Home,LogOut,MapPin,Phone,Plus,
  ShieldCheck,UserRound,Wallet
 } from 'lucide-react';
 import {CustomerTicketCard,type CustomerTicket} from '@/components/CustomerTicketCard';
 import './customer-home.css';
+import './glass-dashboard.css';
 
 type Account={
  authenticated:boolean;accountType:'customer'|'provider';
