@@ -73,10 +73,6 @@ export default function AccountPage(){
   try{window.localStorage.setItem('jitap:area',area)}catch{}
   router.push('/request?category='+encodeURIComponent(category)+'&area='+encodeURIComponent(area)+'&description='+encodeURIComponent(query));
  }
- function popular(query:string,category:string){
-  try{window.localStorage.setItem('jitap:area',area)}catch{}
-  router.push('/request?category='+encodeURIComponent(category)+'&area='+encodeURIComponent(area)+'&description='+encodeURIComponent(query));
- }
  async function switchProvider(){
   const r=await fetch('/api/auth/mode',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'provider'})});
   if(!r.ok){setError('Could not open provider onboarding.');return}
@@ -105,44 +101,24 @@ export default function AccountPage(){
     </div>
    </header>
    {tab==='home'?<>
-    <section className="jt-customer-hero" aria-labelledby="jt-customer-hero-title">
-     <img className="jt-customer-hero-bg" src="/images/approved/hero-coast.png" alt="" fetchPriority="high"/>
-     <div className="jt-customer-hero-shade" aria-hidden="true"/>
-     <div className="jt-customer-hero-inner">
-      <div className="jt-customer-eyebrow"><span aria-hidden="true"/> MOMBASA'S LOCAL SKILLS NETWORK</div>
-      <h1 id="jt-customer-hero-title">Every job needs<br/>the right <em>fundi.</em></h1>
-      <p className="jt-customer-intro">Tap in to local skills for repairs, cleaning, installations and everything that keeps your home running. Just tell JiTap what needs doing.</p>
-      <form className="jt-customer-ask" onSubmit={submitAsk} role="search" aria-label="Ask JiTap for a service">
-       <label className="jt-customer-query"><Sparkles size={26} aria-hidden="true"/>
-        <textarea value={description} onChange={e=>setDescription(e.target.value)} placeholder="How can I help you today - e.g. my sink is leaking" aria-label="Describe what you need" maxLength={1500} rows={2} required onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.nativeEvent.isComposing){e.preventDefault();e.currentTarget.form?.requestSubmit()}}}/>
-       </label>
-       <label className="jt-customer-location"><MapPin size={25} aria-hidden="true"/><select aria-label="Service area" value={area} onChange={e=>setArea(e.target.value)}>
-        {areas.map(value=><option key={value} value={value}>{value}</option>)}
-       </select><ChevronDown size={20} aria-hidden="true"/></label>
-       <button className="jt-customer-submit" type="submit">Ask JiTap <ArrowRight size={25} aria-hidden="true"/></button>
-      </form>
-      {error&&<p className="jt-customer-error" role="alert">{error}</p>}
-      <div className="jt-customer-facts">
-       <div><strong>300+</strong><span>Households</span></div>
-       <div><strong>{areas.length}</strong><span>request areas</span></div>
-       <div><b>ASK • MATCH • BUZZ</b><span>the JiTap way</span></div>
-      </div>
-      <div className="jt-customer-popular"><strong>Popular:</strong>
-       <button type="button" onClick={()=>popular('My tap is leaking','plumbing')}>Leaking tap</button>
-       <button type="button" onClick={()=>popular('I need a fundi wa stima','electrical')}>Fundi wa stima</button>
-       <button type="button" onClick={()=>popular('I need a Mama Fua for cleaning','cleaning')}>Mama Fua</button>
-      </div>
-      <img className="jt-customer-mascot" src="/images/approved/mascot-original.png" alt="JiTap's friendly assistant mascot"/>
-     </div>
-    </section>
-    <section className="jt-customer-below">
-     <div><span className="jt-customer-section-kicker">WELCOME BACK</span><h2>{account.fullName?'Habari, '+account.fullName.split(' ')[0]+'!':'How can JiTap help?'}</h2><p>Describe a task above or explore local services.</p></div>
-     <div className="jt-customer-quicklinks">
-      <Link href="/services"><BriefcaseBusiness size={24}/> Explore services <ArrowRight size={18}/></Link>
-      <button type="button" onClick={()=>navigate('requests')}><ClipboardList size={24}/> My Requests <ArrowRight size={18}/></button>
-     </div>
-    </section>
-   </>:<section className="jt-customer-tabview">
+    <section className="jt-customer-home-panel" aria-label="Ask JiTap and your service history">
+     <form className="jt-customer-ask" onSubmit={submitAsk} role="search" aria-label="Ask JiTap for a service">
+      <label className="jt-customer-query"><Sparkles size={24} aria-hidden="true"/>
+       <textarea value={description} onChange={e=>setDescription(e.target.value)} placeholder="How can I help you today - e.g. my sink is leaking" aria-label="Describe what you need" maxLength={1500} rows={2} required onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.nativeEvent.isComposing){e.preventDefault();e.currentTarget.form?.requestSubmit()}}}/>
+      </label>
+      <label className="jt-customer-location"><MapPin size={22} aria-hidden="true"/><select aria-label="Service area" value={area} onChange={e=>setArea(e.target.value)}>
+       {areas.map(value=><option key={value} value={value}>{value}</option>)}
+      </select><ChevronDown size={19} aria-hidden="true"/></label>
+      <button className="jt-customer-submit" type="submit">Ask JiTap <ArrowRight size={21} aria-hidden="true"/></button>
+     </form>
+     {error&&<p className="jt-customer-error" role="alert">{error}</p>}
+     <section className="jt-customer-history" aria-labelledby="jt-customer-history-title">
+      <div className="jt-customer-history-heading"><div><span className="jt-customer-section-kicker">YOUR SERVICE HISTORY</span><h1 id="jt-customer-history-title">My Requests</h1></div><button type="button" onClick={()=>navigate('requests')}>View all <ArrowRight size={16}/></button></div>
+      {requestsLoading?<p role="status">Loading your service requests…</p>:requestsError?<p role="alert">{requestsError}</p>:requests.length===0?
+       <div className="jt-customer-empty jt-customer-home-empty"><ClipboardList size={28}/><h2>No service requests yet</h2><p>Once you request a service, you can follow its progress here.</p></div>:
+       <div className="jt-requests-list">{requests.slice(0,3).map(r=><CustomerTicketCard ticket={r} key={r.reference}/>)}</div>}
+     </section>
+    </section>   </>:<section className="jt-customer-tabview">
     {tab==='requests'&&<>
      <div className="jt-customer-view-heading"><div><span className="jt-customer-section-kicker">YOUR SERVICE HISTORY</span><h1>My Requests</h1><p>Keep track of your services and provider updates.</p></div><Link href="/request" className="jt-customer-new-request">+ New request</Link></div>
      {requestsLoading?<p role="status">Loading your requests…</p>:requestsError?<p role="alert">{requestsError}</p>:requests.length===0?<div className="jt-customer-empty"><ClipboardList/><h2>No requests yet</h2><p>Your submitted service requests will appear here.</p><Link href="/request">Request a service</Link></div>:<div className="jt-requests-list">{requests.map(r=><CustomerTicketCard ticket={r} key={r.reference}/>)}</div>}
