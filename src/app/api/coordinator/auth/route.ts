@@ -9,7 +9,7 @@ export async function GET(req:NextRequest){
 }
 export async function POST(req:NextRequest){
  if(!validOrigin(req))return reply({error:'Invalid origin'},403);
- let body:{action?:string;email?:string;token?:string;accessToken?:string}={};
+ let body:{action?:string;email?:string;token?:string;accessToken?:string;next?:string}={};
  try{body=await req.json()}catch{return reply({error:'Invalid request'},400)}
  if(body.action==='logout'){
   const result=reply({ok:true});
@@ -43,7 +43,7 @@ export async function POST(req:NextRequest){
  const cfg=authConfig();
  if(body.action==='send'){
   try{
-   const res=await fetch(cfg.url+'/auth/v1/otp?redirect_to='+encodeURIComponent('https://www.jitap.app/coordinator'),{method:'POST',headers:{apikey:cfg.anon,'Content-Type':'application/json'},body:JSON.stringify({email,create_user:true}),cache:'no-store',signal:AbortSignal.timeout(10000)});
+   const res=await fetch(cfg.url+'/auth/v1/otp?redirect_to='+encodeURIComponent('https://www.jitap.app/coordinator'+(body.next==='/coordinator/providers'?'?next=%2Fcoordinator%2Fproviders':'')),{method:'POST',headers:{apikey:cfg.anon,'Content-Type':'application/json'},body:JSON.stringify({email,create_user:true}),cache:'no-store',signal:AbortSignal.timeout(10000)});
    if(res.status===429){
     console.warn('Coordinator sign-in email rate limited',{status:429});
     const seconds=Number(res.headers.get('retry-after')||'');
