@@ -198,7 +198,7 @@ export function CoordinatorDashboard(){
  async function authenticate(action:'send'|'verify'){
   setLogging(true);setAuthMessage('');
   try{
-   const res=await fetch('/api/coordinator/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,email,token:code})});
+   const res=await fetch('/api/coordinator/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,email})});
    const body=await res.json();
    if(!res.ok){setAuthMessage(body.error||'Sign-in could not be completed');return}
    if(action==='send'){setSent(true);setAuthMessage('')}
