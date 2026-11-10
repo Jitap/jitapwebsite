@@ -1,11 +1,12 @@
 import 'server-only';
 import {supabasePrivate} from '@/lib/coordinator-server';
 import {fundiListings} from '@/lib/fundis-public';
+import {customerProgressStage} from '@/lib/customer-progress';
 
 export type RequestRecord={id:string;status:string;created_at:string;payload?:Record<string,unknown>};
 type Brief={request_id:string;technical_summary:string;proposed_scope:string;source:string};
 type Case={source_id:string;status:string;updated_at:string};
-type Appointment={request_id:string;provider_user_id:string;status:string;confirmed_at:string;starts_at:string|null;ends_at:string|null};
+type Appointment={request_id:string;provider_user_id:string;status:string;confirmed_at:string;updated_at:string;starts_at:string|null;ends_at:string|null};
 type Provider={user_id:string;full_name:string;business_name:string};
 type ProviderAccount={user_id:string;phone:string};
 type Cancellation={request_id:string;status:string;reason:string;details:string;created_at:string};
@@ -38,7 +39,7 @@ export async function formatCustomerTickets(rows:RequestRecord[]){
  const [briefs,cases,appointments,cancellations]=await Promise.all([
   supabasePrivate<Brief[]>('jitap_request_service_briefs?select=request_id,technical_summary,proposed_scope,source&request_id=in.'+where),
   supabasePrivate<Case[]>('coordinator_cases?select=source_id,status,updated_at&source_kind=eq.website_request&source_id=in.'+where),
-  supabasePrivate<Appointment[]>('jitap_provider_appointments?select=request_id,provider_user_id,status,confirmed_at,starts_at,ends_at&request_id=in.'+where),
+  supabasePrivate<Appointment[]>('jitap_provider_appointments?select=request_id,provider_user_id,status,confirmed_at,updated_at,starts_at,ends_at&request_id=in.'+where),
   supabasePrivate<Cancellation[]>('jitap_job_cancellations?select=request_id,status,reason,details,created_at&request_id=in.'+where+'&order=created_at.desc')
  ]);
  const assignedIds=[...new Set(appointments.map(a=>a.provider_user_id))];
@@ -69,7 +70,16 @@ export async function formatCustomerTickets(rows:RequestRecord[]){
   const awaitingRematch=cancellation?.status==='awaiting_customer';
   const approvedRematch=cancellation?.status==='rematch_approved'&&!appointment;
   const rejectedRematch=cancellation?.status==='rematch_declined';
-  const status=awaitingRematch?'rematch_approval':approvedRematch?'rematching':rejectedRematch?'cancelled':appointment?(appointment.status==='on_my_way'?'on_my_way':appointment.status==='confirmed'?'scheduled':appointment.status):caseRow?.status||r.status;
+  const socStatus=caseRow?.status||r.status;
+  const appointmentStatus=appointment?(appointment.status==='confirmed'?'scheduled':appointment.status):'';
+  // Provider status normally wins, but a later SOC "work in progress" or
+  // "completed" update must not be hidden by a stale appointment state.
+  const socAdvanced=['in_progress','completed'].includes(socStatus)&&
+   customerProgressStage(socStatus)>customerProgressStage(appointmentStatus);
+  const status=awaitingRematch?'rematch_approval':approvedRematch?'rematching':
+   rejectedRematch?'cancelled':
+   ['cancelled','closed'].includes(socStatus)?socStatus:
+   socAdvanced?socStatus:appointmentStatus||socStatus;
   return {
    reference:r.id,serviceId:'JT-'+r.id.slice(0,8).toUpperCase(),
    category:asText(p.category,70)||'Service',
@@ -83,7 +93,7 @@ export async function formatCustomerTickets(rows:RequestRecord[]){
    status,statusLabel:labels[status]||status.replace(/_/g,' '),
    brief:asText(p.title,120)?asText(p.title,120)+(raw?' — '+customerSummary(raw):''):b?.source==='ai'?asText(b.technical_summary,700):customerSummary(raw),
    scope:b?.source==='ai'?asText(b.proposed_scope,400):'',
-   createdAt:r.created_at,updatedAt:appointment?.confirmed_at||caseRow?.updated_at||r.created_at
+   createdAt:r.created_at,updatedAt:[appointment?.updated_at,caseRow?.updated_at,r.created_at].filter((v):v is string=>!!v).sort().at(-1)||r.created_at
   };
  });
 }
