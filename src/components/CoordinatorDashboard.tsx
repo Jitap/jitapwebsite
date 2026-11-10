@@ -27,6 +27,7 @@ export function CoordinatorDashboard(){
  const [sent,setSent]=useState(false);
  const [authMessage,setAuthMessage]=useState('');
  const [logging,setLogging]=useState(false);
+ const [resendCooldown,setResendCooldown]=useState(0);
  const [cases,setCases]=useState<Case[]>([]);
  const [selected,setSelected]=useState<string|null>(null);
  const [caseTab,setCaseTab]=useState<'workflow'|'details'>('workflow');
@@ -205,16 +206,28 @@ export function CoordinatorDashboard(){
  },[staff?.email,checking]);
 
  async function authenticate(action:'send'|'verify'){
+  if(action==='send'&&resendCooldown>0)return;
   setLogging(true);setAuthMessage('');
   try{
    const res=await fetch('/api/coordinator/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,email,next:new URLSearchParams(window.location.search).get('next')==='/coordinator/providers'?'/coordinator/providers':undefined})});
    const body=await res.json();
-   if(!res.ok){setSent(false);setAuthMessage(body.error||'Sign-in could not be completed');return}
-   if(action==='send'){setSent(true);setAuthMessage('')}
+   if(!res.ok){
+    if(res.status===429&&Number(body.retryAfter)>0)setResendCooldown(Math.min(3600,Math.max(1,Number(body.retryAfter))));
+    // Preserve the successful email confirmation on cooldown errors: the
+    // previously sent magic link is still the one to use.
+    if(!(res.status===429&&body.code==='otp_cooldown'&&sent))setSent(false);
+    setAuthMessage(body.error||'Sign-in could not be completed');return;
+   }
+   if(action==='send'){setSent(true);setResendCooldown(60);setAuthMessage('')}
    else {setStaff(body.staff);setSent(false);await load()}
-  }catch{setSent(false);setAuthMessage('Could not reach the sign-in service')}
+  }catch{setAuthMessage('Could not reach the sign-in service')}
   finally{setLogging(false)}
  }
+ useEffect(()=>{
+  if(resendCooldown<=0)return;
+  const timer=window.setTimeout(()=>setResendCooldown(value=>Math.max(0,value-1)),1000);
+  return()=>window.clearTimeout(timer);
+ },[resendCooldown]);
  // Magic-link authentication happens in the email browser tab. Staff who return
  // to this original tab should see their authenticated session automatically.
  useEffect(()=>{
@@ -266,8 +279,8 @@ export function CoordinatorDashboard(){
    <p>Private staff workspace. Only approved JiTap team emails can access customer requests.</p>
    <form onSubmit={e=>{e.preventDefault();void authenticate('send')}}>
     <label>Work email<input type="email" autoComplete="email" required value={email} onChange={e=>{setEmail(e.target.value);setSent(false);setAuthMessage('')}} placeholder="you@jitap.app"/></label>
-    <button type="submit" disabled={logging}>{logging?'Sending link…':'Verify'}</button>
-    {sent&&<div className="coordinator-link-help" role="status"><strong><CheckCircle2 size={18} aria-hidden="true"/> Check your email</strong><span>Open the sign-in link from JiTap to access Service Operations.</span><button type="button" className="coordinator-secondary" disabled={logging} onClick={()=>void authenticate('send')}>Resend sign-in link</button></div>}
+    <button type="submit" disabled={logging||resendCooldown>0}>{logging?'Sending link…':resendCooldown>0?'Try again in '+resendCooldown+'s':'Verify'}</button>
+    {sent&&<div className="coordinator-link-help" role="status"><strong><CheckCircle2 size={18} aria-hidden="true"/> Check your email</strong><span>Open the latest sign-in link from JiTap to access Service Operations. You can use it without requesting another.</span><button type="button" className="coordinator-secondary" disabled={logging||resendCooldown>0} onClick={()=>void authenticate('send')}>{resendCooldown>0?'Resend available in '+resendCooldown+'s':'Resend sign-in link'}</button></div>}
    </form>
    {authMessage&&<p role="alert" className="coordinator-auth-error">{authMessage}</p>}
    {feedback&&<p role="status">{feedback}</p>}
