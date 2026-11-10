@@ -62,7 +62,6 @@ export function CustomerHomePanels({activeRequests,loading,error,reviewer,onRetr
   </section>:current?<section className="jt-glass-current" aria-labelledby="jt-glass-current-title">
    <div className="jt-glass-section-head jt-glass-current-heading">
     <h2 id="jt-glass-current-title"><Clock3 size={22}/><span>My Current Request</span>{activeCount>1&&<span className="jt-home-count" aria-label={activeCount+' active requests'}>{activeCount}</span>}</h2>
-    {activeCount>1&&<button type="button" className="jt-home-all-requests" onClick={onOpenRequests} aria-label={'View all '+activeCount+' active requests'}>View all</button>}
    </div>
    {error&&<div className="jt-home-stale-banner" role="status">Showing your last known request status. <button type="button" onClick={onRetry}>Refresh again</button></div>}
    <CustomerRequestStack tickets={activeRequests} onOpenRequests={onOpenRequests}/>
