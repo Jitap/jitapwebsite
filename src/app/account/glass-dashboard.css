@@ -171,3 +171,56 @@
  .jt-glass-bottom-nav button{font-size:9.5px}
 }
 @media(prefers-reduced-motion:reduce){.jt-glass-app *{scroll-behavior:auto}}
+
+
+/* Approved customer quick-action icons; original card proportions retained. */
+.jt-glass-quick-icon{
+ width:62px;height:62px;display:block;object-fit:contain;flex:none;
+ filter:drop-shadow(0 3px 5px rgba(7,40,64,.09));
+}
+.jt-glass-tile:focus-visible,
+.jt-glass-carousel-arrow:focus-visible,
+.jt-glass-service-tile:focus-visible{outline:3px solid #0b71c5;outline-offset:3px}
+.jt-glass-tile:hover{transform:translateY(-2px);transition:transform .17s ease}
+
+/* Swipeable category rail: native touch/trackpad scrolling and snapping. */
+.jt-glass-explore{min-width:0}
+.jt-glass-explore-controls{display:flex;align-items:center;gap:7px}
+.jt-glass-explore-controls>a{
+ display:inline-flex;align-items:center;gap:2px;
+ margin-left:5px;color:#1025d2;white-space:nowrap;font-weight:800;font-size:13px
+}
+.jt-glass-carousel-arrow{
+ display:grid;place-items:center;width:32px;height:32px;flex:none;
+ color:#142a7a;background:#fff;border:1px solid #d5e1f8;border-radius:50%;
+ box-shadow:0 2px 5px #0a245c12;cursor:pointer;
+}
+.jt-glass-carousel-arrow:disabled{opacity:.32;cursor:default}
+.jt-glass-swipe-hint{font-size:11px;white-space:nowrap;color:#657998}
+.jt-glass-services{
+ display:flex;grid-template-columns:none;align-items:stretch;gap:12px;
+ width:100%;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;
+ scroll-padding-inline:2px;overscroll-behavior-x:contain;
+ -webkit-overflow-scrolling:touch;scrollbar-width:none;
+ padding:5px 2px 14px;touch-action:pan-x pan-y;
+}
+.jt-glass-services::-webkit-scrollbar{display:none}
+.jt-glass-service-tile{
+ box-sizing:border-box;flex:0 0 clamp(138px,20%,170px);
+ scroll-snap-align:start;min-width:0;min-height:112px;
+}
+.jt-glass-service-tile strong{overflow-wrap:break-word}
+@media(max-width:580px){
+ .jt-glass-quick-icon{width:52px;height:52px}
+ .jt-glass-services{gap:9px;padding:4px 1px 13px}
+ .jt-glass-service-tile{flex:0 0 clamp(110px,31%,133px);min-height:100px}
+ .jt-glass-service-icon{font-size:28px}
+ .jt-glass-swipe-hint{display:none}
+ .jt-glass-carousel-arrow{width:28px;height:28px}
+ .jt-glass-explore-controls{gap:4px}
+ .jt-glass-explore-controls>a{font-size:12px;margin-left:2px}
+}
+@media(prefers-reduced-motion:reduce){
+ .jt-glass-tile:hover{transform:none}
+ .jt-glass-services{scroll-behavior:auto}
+}
