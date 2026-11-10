@@ -45,10 +45,22 @@ export async function POST(req:NextRequest){
   try{
    const res=await fetch(cfg.url+'/auth/v1/otp?redirect_to='+encodeURIComponent('https://www.jitap.app/coordinator'+(body.next==='/coordinator/providers'?'?next=%2Fcoordinator%2Fproviders':'')),{method:'POST',headers:{apikey:cfg.anon,'Content-Type':'application/json'},body:JSON.stringify({email,create_user:true}),cache:'no-store',signal:AbortSignal.timeout(10000)});
    if(res.status===429){
-    console.warn('Coordinator sign-in email rate limited',{status:429});
-    const seconds=Number(res.headers.get('retry-after')||'');
-    const headers={'Retry-After':String(Number.isFinite(seconds)&&seconds>0?Math.min(seconds,3600):3600)};
-    return new Response(JSON.stringify({error:'Supabase has reached its email sending limit. Please try again later or configure custom SMTP for reliable JiTap staff sign-in.',code:'email_rate_limited'}),{status:429,headers:{'Content-Type':'application/json','Cache-Control':'no-store',...headers}});
+    // Supabase uses 429 for multiple, distinct limits. A per-address OTP
+    // cooldown is NOT proof that project SMTP has exhausted its hourly quota.
+    const response=await res.json().catch(()=>({})) as {message?:string;msg?:string;error?:string;error_description?:string;code?:string};
+    const raw=[response.message,response.msg,response.error_description,response.error].filter(Boolean).join(' ');
+    const secondsRemaining=raw.match(/request this after\s+(\d+)\s+seconds?/i);
+    const perAddress=Boolean(secondsRemaining)||/security purposes|wait.*seconds/i.test(raw);
+    const retryHeader=Number(res.headers.get('retry-after')||0);
+    const seconds=secondsRemaining?Number(secondsRemaining[1]):retryHeader>0?retryHeader:perAddress?60:3600;
+    const retryAfter=Math.max(1,Math.min(seconds,3600));
+    console.warn('Coordinator sign-in OTP limited',{status:429,kind:perAddress?'otp_cooldown':'email_rate_limited',retryAfter});
+    return new Response(JSON.stringify({
+     error:perAddress?
+      'A sign-in link was requested recently. Check your inbox and wait before requesting another.':
+      'The authentication email sending limit has been reached. Please try again later or check the Supabase Auth email settings.',
+     code:perAddress?'otp_cooldown':'email_rate_limited',retryAfter
+    }),{status:429,headers:{'Content-Type':'application/json','Cache-Control':'no-store','Retry-After':String(retryAfter)}});
    }
    if(!res.ok){
     console.warn('Coordinator OTP provider error',{status:res.status});
