@@ -589,3 +589,56 @@
  .jt-glass-app .jt-swipe-card,
  .jt-glass-app .jt-swipe-card.is-exiting{transition:none!important}
 }
+
+/* Swipe stack v2: next card peeks at the RIGHT edge, not below.
+   Top card occupies 95% of the available width, while its successor
+   is offset into the exposed right-side rail. */
+.jt-glass-app .jt-swipe-stage{
+ padding:0 16px 0 0;
+ overflow:visible;
+ touch-action:pan-y;
+}
+.jt-glass-app .jt-swipe-behind{
+ inset:8px 0 8px 16px;
+ z-index:0;
+ border-radius:23px;
+ transform:translateX(6px) scale(.978);
+ transform-origin:center right;
+ display:flex;
+ justify-content:flex-end;
+ align-items:center;
+ padding:0 3px 0 0;
+ box-shadow:0 3px 12px rgba(14,49,86,.12);
+ background:linear-gradient(110deg,#f4fbf8 0%,#e7f6ed 100%);
+ border-color:#c5e5d3;
+}
+.jt-glass-app .jt-swipe-behind>span{
+ writing-mode:vertical-rl;
+ font-size:10px;
+ opacity:.7;
+ max-height:78%;
+ white-space:nowrap;
+ overflow:hidden;
+ text-overflow:ellipsis;
+ padding:0;
+}
+.jt-glass-app .jt-swipe-card{
+ width:100%;
+ z-index:1;
+ position:relative;
+ touch-action:pan-y;
+}
+.jt-glass-app .jt-swipe-widget{
+ overflow:visible;
+}
+.jt-glass-app .jt-swipe-stage:has(.jt-swipe-behind) .jt-swipe-card{
+ box-shadow:0 6px 18px rgba(10,36,92,.15);
+}
+@media(max-width:580px){
+ .jt-glass-app .jt-swipe-stage{padding:0 14px 0 0}
+ .jt-glass-app .jt-swipe-behind{
+  inset:7px 0 7px 13px;
+  transform:translateX(5px) scale(.975);
+  border-radius:21px;
+ }
+}
