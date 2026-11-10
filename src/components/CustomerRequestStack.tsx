@@ -1,6 +1,6 @@
 'use client';
 
-import {useCallback,useEffect,useMemo,useRef,useState,type PointerEvent} from 'react';
+import {useCallback,useEffect,useMemo,useRef,useState,type PointerEvent,type TouchEvent} from 'react';
 import {useRouter} from 'next/navigation';
 import Link from 'next/link';
 import {CalendarDays,Check,MapPin,Phone,UserRound} from 'lucide-react';
@@ -97,42 +97,74 @@ export function CustomerRequestStack({tickets,onOpenRequests}:{
    },32);
   },ANIMATE_MS);
  },[router]);
- const onDown=(event:PointerEvent<HTMLElement>)=>{
-  if(inFlight.current||!current||queue.length<1||event.button!==0||!event.isPrimary)return;
-  if((event.target as HTMLElement).closest('a,button,input,select,textarea'))return;
-  origin.current={x:event.clientX,y:event.clientY,pointerId:event.pointerId,axis:'pending',startAt:Date.now()};
+ const startGesture=(x:number,y:number,pointerId:number)=>{
+  if(inFlight.current||!currentRef.current)return;
+  origin.current={x,y,pointerId,axis:'pending',startAt:Date.now()};
   suppressClick.current=false;
  };
- const onMove=(event:PointerEvent<HTMLElement>)=>{
+ const moveGesture=(x:number,y:number,pointerId:number)=>{
   const gesture=origin.current;
-  if(!gesture||gesture.pointerId!==event.pointerId||inFlight.current)return;
-  const dx=event.clientX-gesture.x;
-  const dy=event.clientY-gesture.y;
+  if(!gesture||gesture.pointerId!==pointerId||inFlight.current)return false;
+  const dx=x-gesture.x;
+  const dy=y-gesture.y;
   if(gesture.axis==='pending'){
-   if(Math.max(Math.abs(dx),Math.abs(dy))<9)return;
-   if(Math.abs(dy)>=Math.abs(dx)*1.1){
+   if(Math.max(Math.abs(dx),Math.abs(dy))<7)return false;
+   if(Math.abs(dy)>Math.abs(dx)*1.05){
     gesture.axis='vertical';
-    return;
+    return false;
    }
    gesture.axis='horizontal';
    setDragging(true);
-   // Capture only after horizontal intent is established; vertical scroll stays native.
-   try{cardRef.current?.setPointerCapture(event.pointerId)}catch{}
   }
-  if(gesture.axis!=='horizontal')return;
+  if(gesture.axis!=='horizontal')return false;
   suppressClick.current=true;
   setOffset(dx);
+  return true;
  };
- const onUp=(event:PointerEvent<HTMLElement>)=>{
+ const endGesture=(x:number,pointerId:number)=>{
   const gesture=origin.current;
-  if(!gesture||gesture.pointerId!==event.pointerId)return;
+  if(!gesture||gesture.pointerId!==pointerId)return;
   origin.current=null;
   if(gesture.axis!=='horizontal')return;
   setDragging(false);
-  const dx=event.clientX-gesture.x;
+  const dx=x-gesture.x;
   if(dx<=-THRESHOLD&&queue.length>1){finish('left');return;}
   if(dx>=THRESHOLD){finish('right');return;}
   setOffset(0);
+ };
+ const onDown=(event:PointerEvent<HTMLElement>)=>{
+  // Android touch browsers may cancel pointer events for native page scrolling.
+  // Dedicated touch handlers below own touch input; pointer is mouse/pen only.
+  if(event.pointerType==='touch'||event.button!==0||!event.isPrimary)return;
+  if((event.target as HTMLElement).closest('button,input,select,textarea'))return;
+  startGesture(event.clientX,event.clientY,event.pointerId);
+ };
+ const onMove=(event:PointerEvent<HTMLElement>)=>{
+  if(event.pointerType==='touch')return;
+  if(moveGesture(event.clientX,event.clientY,event.pointerId)){
+   try{if(!event.currentTarget.hasPointerCapture(event.pointerId))event.currentTarget.setPointerCapture(event.pointerId)}catch{}
+  }
+ };
+ const onUp=(event:PointerEvent<HTMLElement>)=>{
+  if(event.pointerType==='touch')return;
+  endGesture(event.clientX,event.pointerId);
+ };
+ const onTouchStart=(event:TouchEvent<HTMLElement>)=>{
+  if(event.touches.length!==1)return;
+  if((event.target as HTMLElement).closest('button,input,select,textarea'))return;
+  const touch=event.touches[0];
+  startGesture(touch.clientX,touch.clientY,touch.identifier);
+ };
+ const onTouchMove=(event:TouchEvent<HTMLElement>)=>{
+  const touch=Array.from(event.changedTouches).find(t=>t.identifier===origin.current?.pointerId);
+  if(!touch)return;
+  // touch-action:pan-y keeps vertical scrolling native while horizontal movement
+  // updates the card; never call preventDefault for vertical gestures.
+  moveGesture(touch.clientX,touch.clientY,touch.identifier);
+ };
+ const onTouchEnd=(event:TouchEvent<HTMLElement>)=>{
+  const touch=Array.from(event.changedTouches).find(t=>t.identifier===origin.current?.pointerId);
+  if(touch)endGesture(touch.clientX,touch.identifier);
  };
  const onCancel=()=>{
   origin.current=null;
@@ -157,8 +189,12 @@ export function CustomerRequestStack({tickets,onOpenRequests}:{
     onPointerDown={onDown}
     onPointerMove={onMove}
     onPointerUp={onUp}
-    onPointerCancel={onCancel}
-    onLostPointerCapture={()=>{if(origin.current)onCancel()}}
+    onPointerCancel={event=>{if(event.pointerType!=='touch')onCancel()}}
+    onTouchStart={onTouchStart}
+    onTouchMove={onTouchMove}
+    onTouchEnd={onTouchEnd}
+    onTouchCancel={onCancel}
+    onLostPointerCapture={event=>{if(event.pointerType!=='touch'&&origin.current)onCancel()}}
     onClickCapture={event=>{if(suppressClick.current){event.stopPropagation();event.preventDefault();suppressClick.current=false;}}}
    >
     {cue&&<span className={'jt-swipe-cue '+(cue==='right'?'is-details':'is-next')} aria-hidden="true">
