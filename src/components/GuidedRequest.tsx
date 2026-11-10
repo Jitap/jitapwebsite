@@ -1,7 +1,8 @@
 'use client';
 import {useEffect,useMemo,useState,useRef} from 'react';
 import Link from 'next/link';
-import {ArrowLeft,ArrowRight,ChevronLeft,X,Sparkles,Shirt,Footprints,House,BedDouble,Layers,Droplets,Brush} from 'lucide-react';
+import {ArrowLeft,ArrowRight,ChevronDown,ChevronLeft,MapPin,X,Sparkles,Shirt,Footprints,House,BedDouble,Layers,Droplets,Brush} from 'lucide-react';
+import './ask-entry.css';
 import {areas,categories,inferService} from '@/lib/data';
 import {understandJob} from '@/lib/job-intelligence';
 import {safeIntakeQuestions,fastIntakeQuestions} from '@/lib/fast-intake';
@@ -117,6 +118,8 @@ export function GuidedRequest(){
  const [category,setCategory]=useState('other-services');
  const [area,setArea]=useState('Bamburi');
  const [description,setDescription]=useState('');
+ const [showAskEntry,setShowAskEntry]=useState(true);
+ const [askError,setAskError]=useState('');
  const [introThinking,setIntroThinking]=useState(false);
  const [stage,setStage]=useState(0);
  const [answers,setAnswers]=useState<Record<string,string>>({});
@@ -129,7 +132,7 @@ export function GuidedRequest(){
  const [showMatches,setShowMatches]=useState(false);
  const [finalDescription,setFinalDescription]=useState('');
  const [preferredProviderId,setPreferredProviderId]=useState<string|null>(null);
- useEffect(()=>{const s=new URLSearchParams(window.location.search);const c=s.get('category');const a=s.get('area');const d=s.get('description');if(c&&categories.some(x=>x.slug===c))setCategory(c);if(a&&areas.includes(a))setArea(a);else try{const stored=localStorage.getItem('jitap:area');if(stored&&areas.includes(stored))setArea(stored)}catch{}if(d){setDescription(d);setIntroThinking(true);const intent=inferService(d);if(intent&&intent!==c)setCategory(intent);else if(!intent&&c==='cleaning')setCategory('other-services');}
+ useEffect(()=>{const s=new URLSearchParams(window.location.search);const c=s.get('category');const a=s.get('area');const d=s.get('description');if(c&&categories.some(x=>x.slug===c))setCategory(c);if(a&&areas.includes(a))setArea(a);else try{const stored=localStorage.getItem('jitap:area');if(stored&&areas.includes(stored))setArea(stored)}catch{}if(d){setShowAskEntry(false);setDescription(d);setIntroThinking(true);const intent=inferService(d);if(intent&&intent!==c)setCategory(intent);else if(!intent&&c==='cleaning')setCategory('other-services');}
  if(s.get('resume')==='1'){
    try{
     const stored=sessionStorage.getItem('jitap:matched-brief');
@@ -138,7 +141,7 @@ export function GuidedRequest(){
      if(Date.now()-brief.savedAt<45*60*1000&&categories.some(x=>x.slug===brief.category)&&areas.includes(brief.area)&&brief.description.length>=12){
       setCategory(brief.category);setArea(brief.area);setDescription(brief.description);
       setFinalDescription(brief.description);setPreferredDate(brief.preferredDate||'');setPreferredTime(brief.preferredTime||'');
-      setPreferredProviderId(s.get('providerId')||null);setShowMatches(false);setReady(true);setIntroThinking(false);
+      setPreferredProviderId(s.get('providerId')||null);setShowMatches(false);setReady(true);setShowAskEntry(false);setIntroThinking(false);
      }
     }
    }catch{}
@@ -220,6 +223,43 @@ export function GuidedRequest(){
   },120);
   return ()=>{cancelled=true;clearTimeout(timer);controller.abort()};
  },[hydrated,description,category,area,ready,showMatches,stage,knownQuestions,requestKey,aiResolvedKey]);
+ function beginAsk(event:React.FormEvent<HTMLFormElement>){
+  event.preventDefault();
+  const typed=description.trim();
+  if(typed.length<8){
+   setAskError('Describe the service you need in a little more detail.');
+   return;
+  }
+  setAskError('');
+  const intent=inferService(typed);
+  if(intent&&intent!==category)setCategory(intent);
+  setAnswers({});
+  setAiQuestions(null);
+  setAiResolvedKey('');
+  setStage(0);
+  setIntroThinking(true);
+  setShowAskEntry(false);
+  try{window.localStorage.setItem('jitap:area',area)}catch{}
+ }
+ if(showAskEntry)return <section className="jt-ask-entry-page" aria-label="Ask JiTap for a service">
+  <div className="jt-ask-entry-frame">
+   <form className="jt-ask-entry-card" onSubmit={beginAsk} aria-label="Describe your service request">
+    <label className="jt-ask-entry-description">
+     <Sparkles size={26} aria-hidden="true"/>
+     <textarea value={description} onChange={e=>{setDescription(e.target.value);if(askError)setAskError('')}} placeholder="How can I help you today - e.g. my sink is leaking" aria-label="Describe the service you need" rows={2} maxLength={1500} required onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.nativeEvent.isComposing){e.preventDefault();e.currentTarget.form?.requestSubmit()}}}/>
+    </label>
+    <label className="jt-ask-entry-location">
+     <MapPin size={23} aria-hidden="true"/>
+     <select aria-label="Your service area" value={area} onChange={e=>setArea(e.target.value)}>
+      {areas.map(value=><option key={value} value={value}>{value}</option>)}
+     </select>
+     <ChevronDown size={20} aria-hidden="true"/>
+    </label>
+    <button type="submit" className="jt-ask-entry-submit">Ask JiTap <ArrowRight size={23} aria-hidden="true"/></button>
+    {askError&&<p role="alert" className="jt-ask-entry-error">{askError}</p>}
+   </form>
+  </div>
+ </section>;
  if(aiWaiting)return <main className="th-request-flow"><div className="container th-request-layout"><section className="th-questions jt-ai-intake-loading" role="status" aria-label="JiTap is preparing your service questions"><span className="jt-ai-typing-dots" aria-hidden="true"><span/><span/><span/></span></section></div></main>;
  if(category==='moving'&&!ready)return <MovingRequest/>;
  return <div className="th-request-flow">
