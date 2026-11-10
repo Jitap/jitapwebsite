@@ -256,3 +256,157 @@ body:has(.jt-auth-redesign) #main{min-height:100dvh}
  .jt-auth-redesign .jt-auth-phone-symbol{width:105px;height:105px}
 }
 @media(prefers-reduced-motion:reduce){.jt-auth-redesign .jt-auth-role-slider,.jt-auth-redesign .jt-auth-roles button{transition:none}}
+
+
+/* JiTap signature glass sign-in, Nov 2026.
+   Keep the premium navy gradient role selector; make GREEN the sole primary action.
+   Scoped overrides preserve existing login/OTP/signup and auth logic. */
+.jt-auth-page.jt-auth-redesign{
+ padding-top:clamp(16px,3.6vh,45px);
+ padding-bottom:clamp(22px,4vh,44px);
+ background:
+  radial-gradient(ellipse 40% 38% at 2% 4%,rgba(142,245,188,.35),transparent 88%),
+  radial-gradient(ellipse 44% 38% at 99% 99%,rgba(148,237,186,.37),transparent 84%),
+  radial-gradient(ellipse 70% 53% at 55% 37%,rgba(236,245,255,.7),transparent 95%),
+  linear-gradient(155deg,#f9fcff 0%,#f1f8fa 58%,#f2f9f3 100%);
+}
+.jt-auth-redesign .jt-auth-brand{
+ max-width:213px;
+ margin-bottom:clamp(11px,2.5vh,22px);
+}
+.jt-auth-redesign .jt-auth-brand img{max-height:105px}
+.jt-auth-redesign .jt-auth-panel{
+ background:linear-gradient(145deg,rgba(255,255,255,.90),rgba(255,255,255,.76) 100%)!important;
+ backdrop-filter:blur(20px) saturate(145%);
+ -webkit-backdrop-filter:blur(20px) saturate(145%);
+ border:1px solid rgba(255,255,255,.84)!important;
+ box-shadow:0 17px 46px rgba(16,39,93,.12),0 3px 11px rgba(20,60,88,.04),
+  inset 0 1px rgba(255,255,255,.98);
+ border-radius:27px!important;
+}
+.jt-auth-redesign .jt-auth-eyebrow{
+ font-size:12px;letter-spacing:.105em;color:#122460;font-weight:790;
+}
+.jt-auth-redesign .jt-auth-eyebrow svg{color:#008e39;width:19px;height:19px}
+.jt-auth-redesign .jt-auth-panel h1{
+ font-size:clamp(28px,5vw,39px);letter-spacing:-.043em;
+ margin:13px 0 8px;font-weight:810;line-height:1.12;
+}
+.jt-auth-redesign .jt-auth-subtitle{
+ font-size:clamp(13px,2.7vw,15px);line-height:1.52;
+ color:#596c86;margin:0 0 19px;
+}
+.jt-auth-redesign .jt-auth-roles{
+ background:linear-gradient(115deg,#101c70 0%,#203e87 52%,#3c6293 100%);
+ border:1px solid #7893be;height:62px;padding:5px;
+ margin:0 0 21px;
+ box-shadow:inset 0 1px 4px #031a4a4a,0 7px 17px #13265c2c;
+}
+.jt-auth-redesign .jt-auth-role-slider{
+ background:linear-gradient(160deg,#fff 0%,#f5faff 100%);
+ box-shadow:0 3px 9px #061a3e4c,0 0 0 1.8px #00bd55;
+}
+.jt-auth-redesign .jt-auth-roles button{
+ min-height:49px;
+ display:flex;gap:8px;align-items:center;justify-content:center;
+ font-size:clamp(14px,2.7vw,17px);font-weight:750;
+ text-shadow:none;
+}
+.jt-auth-redesign .jt-auth-roles button svg{
+ width:18px;height:18px;flex:none;color:inherit;stroke-width:2;
+}
+.jt-auth-redesign .jt-auth-roles button.selected{color:#0d2565}
+.jt-auth-redesign .jt-auth-roles button.selected svg{color:#048c3c}
+.jt-auth-redesign .jt-auth-roles button:not(.selected){color:#f7fbff}
+.jt-auth-redesign .jt-auth-label{font-size:14px;font-weight:755;color:#10265b}
+.jt-auth-redesign .jt-auth-phone-row{
+ border:1px solid #c7d4dd;border-radius:13px;
+ box-shadow:0 1px 2px #152e4b0d;transition:border-color .17s,box-shadow .17s;
+}
+.jt-auth-redesign .jt-auth-phone-row:focus-within{
+ border-color:#00a946;
+ box-shadow:0 0 0 3px rgba(0,189,80,.15),0 2px 7px #19492f0b;
+}
+.jt-auth-redesign .jt-auth-country{
+ background:#fbfffd;border-right-color:#dce6e2;
+}
+.jt-auth-redesign .jt-auth-consent{margin:7px 0 11px;line-height:1.55}
+.jt-auth-redesign .jt-auth-consent a{
+ color:#15568d;text-underline-offset:3px;
+}
+.jt-auth-redesign .jt-auth-submit{
+ background:linear-gradient(112deg,#007b25 0%,#008f2e 50%,#00a238 100%);
+ color:#fff;border:1px solid #00862b;border-radius:14px;
+ box-shadow:0 6px 13px rgba(0,119,40,.17),inset 0 1px rgba(255,255,255,.19);
+ min-height:56px;font-size:16px;font-weight:795;letter-spacing:-.01em;
+ transition:filter .18s,transform .18s,box-shadow .18s;
+}
+.jt-auth-redesign .jt-auth-submit:not(:disabled):hover{
+ filter:brightness(1.06);
+ box-shadow:0 8px 19px #00792e35,inset 0 1px rgba(255,255,255,.22);
+}
+.jt-auth-redesign .jt-auth-submit:not(:disabled):active{transform:translateY(1px)}
+.jt-auth-redesign .jt-auth-submit:focus-visible{
+ outline:3px solid #16ba68;outline-offset:3px;
+}
+.jt-auth-redesign .jt-auth-submit:disabled{opacity:.6;cursor:wait}
+.jt-auth-redesign .jt-auth-code-holder:focus-within .jt-auth-code-cell.active{
+ border-color:#00a844;box-shadow:0 0 0 3px #0ab34e21;
+}
+.jt-auth-redesign .jt-auth-change-number{color:#098742}
+.jt-auth-redesign .jt-auth-design-access{
+ border-top:1px solid rgba(194,215,219,.65);
+ padding-top:14px;margin-top:18px;text-align:center;
+}
+.jt-auth-redesign .jt-auth-design-toggle{
+ background:transparent;border:0;color:#456781;
+ font-size:12px;font-weight:730;text-decoration:underline;
+ text-underline-offset:4px;padding:8px 12px;cursor:pointer;
+}
+.jt-auth-redesign .jt-auth-design-toggle:hover{color:#008c3a}
+.jt-auth-redesign .jt-auth-design-form{
+ display:grid;gap:10px;margin-top:10px;
+ padding:15px;text-align:left;border-radius:15px;
+ background:rgba(244,251,249,.82);
+ border:1px solid #d3e6e0;
+}
+.jt-auth-redesign .jt-auth-design-form p{
+ font-size:12px;color:#526f7d;line-height:1.5;margin:0;
+}
+.jt-auth-redesign .jt-auth-review-input{
+ width:100%;min-height:47px;
+ border:1px solid #bad2c9;border-radius:10px;background:#fff;
+ padding:10px 12px;font-size:15px;color:#142c56;
+}
+.jt-auth-redesign .jt-auth-review-input:focus{
+ outline:2px solid #00b44c;outline-offset:1px;
+}
+.jt-auth-redesign .jt-auth-design-form .jt-auth-submit{margin-top:2px}
+@media(max-width:600px){
+ .jt-auth-page.jt-auth-redesign{
+  padding:clamp(14px,2.4vh,25px) 13px 26px;
+  align-items:center;
+ }
+ .jt-auth-redesign .jt-auth-brand{
+  max-width:181px;margin-bottom:clamp(10px,2vh,17px);
+ }
+ .jt-auth-redesign .jt-auth-panel{
+  padding:clamp(19px,4.7vw,25px)!important;
+  border-radius:24px!important;
+ }
+ .jt-auth-redesign .jt-auth-panel h1{margin-top:12px;font-size:clamp(28px,7vw,35px)}
+ .jt-auth-redesign .jt-auth-subtitle{margin-bottom:16px}
+ .jt-auth-redesign .jt-auth-roles{height:57px;margin-bottom:18px}
+ .jt-auth-redesign .jt-auth-roles button{min-height:46px;font-size:15px}
+ .jt-auth-redesign .jt-auth-phone-row{min-height:55px}
+ .jt-auth-redesign .jt-auth-submit{min-height:53px}
+ .jt-auth-redesign .jt-auth-design-access{margin-top:14px;padding-top:11px}
+}
+@media(max-width:360px){
+ .jt-auth-redesign .jt-auth-roles button{font-size:13px;gap:5px}
+ .jt-auth-redesign .jt-auth-roles button svg{width:16px;height:16px}
+}
+@media(prefers-reduced-motion:reduce){
+ .jt-auth-redesign .jt-auth-role-slider,
+ .jt-auth-redesign .jt-auth-submit{transition:none}
+}
