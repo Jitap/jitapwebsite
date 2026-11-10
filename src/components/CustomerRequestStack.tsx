@@ -232,7 +232,7 @@ export function CustomerRequestStack({tickets,onOpenRequests}:{
    </article>
   </div>
   {queue.length>1&&<div className="jt-swipe-footer">
-   <span className="jt-swipe-position" aria-live="polite">{current.serviceId} · {queue.length} active</span>
+   <span className="jt-swipe-position" aria-live="polite">{Math.max(1,tickets.findIndex(ticket=>ticket.reference===current.reference)+1)} of {queue.length} active requests</span>
    <button type="button" className="jt-swipe-next" onClick={()=>finish('left')} disabled={inFlight.current}>Next request <span aria-hidden="true">←</span></button>
   </div>}
  </div>;
