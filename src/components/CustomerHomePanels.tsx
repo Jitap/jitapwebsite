@@ -3,7 +3,7 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 import Link from 'next/link';
 import {
- ArrowRight,CalendarDays,Check,ChevronRight,ClipboardList,Clock3,MapPin,Phone,UserRound
+ CalendarDays,Check,ChevronRight,Clock3,MapPin,Phone,UserRound
 } from 'lucide-react';
 import type {CustomerTicket} from '@/components/CustomerTicketCard';
 import {customerProgressStage,customerProgressSteps} from '@/lib/customer-progress';
@@ -67,7 +67,7 @@ export function CustomerHomePanels({current,activeCount,loading,error,reviewer,o
     <span className="jt-home-skeleton-line is-wide"/><span className="jt-home-skeleton-line"/>
     <span className="jt-home-skeleton-line is-short"/><span className="jt-home-skeleton-button"/>
    </div>
-  </section>:error?<section className="jt-glass-current" aria-label="Request status unavailable">
+  </section>:error&&!current?<section className="jt-glass-current" aria-label="Request status unavailable">
    <div className="jt-glass-section-head jt-glass-current-heading"><h2><Clock3 size={25}/> My Current Request</h2></div>
    <div className="jt-glass-request-card jt-home-request-error" role="alert">
     <p>We couldn't refresh your requests. Your existing bookings haven't been changed.</p>
@@ -78,6 +78,7 @@ export function CustomerHomePanels({current,activeCount,loading,error,reviewer,o
     <h2 id="jt-glass-current-title"><Clock3 size={25}/> {activeCount>1?'My Current Requests ('+activeCount+')':'My Current Request'}</h2>
     {activeCount>1&&<button type="button" className="jt-home-all-requests" onClick={onOpenRequests}>View All Requests <ChevronRight size={17}/></button>}
    </div>
+   {error&&<div className="jt-home-stale-banner" role="status">Showing your last known request status. <button type="button" onClick={onRetry}>Refresh again</button></div>}
    <article className="jt-glass-request-card jt-home-priority-card">
     <div className="jt-glass-request-top">
      <span className="jt-glass-request-service-icon" aria-hidden="true">{matching?.icon||'🛠️'}</span>
