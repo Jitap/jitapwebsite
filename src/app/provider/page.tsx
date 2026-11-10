@@ -25,6 +25,7 @@ const empty={full_name:'',business_name:'',categories:[] as string[],service_are
 export default function ProviderDashboardPage(){
  const router=useRouter();
  const [dashboard,setDashboard]=useState<Dashboard|null>(null);
+ const [reviewMode,setReviewMode]=useState(false);
  const inProgressJobs=(dashboard?.confirmedJobs||[]).filter(job=>['confirmed','on_my_way','arrived','in_progress'].includes(job.status));
  const completedJobs=(dashboard?.confirmedJobs||[]).filter(job=>job.status==='completed');
  const [form,setForm]=useState<ProviderProfile>(empty);
@@ -45,7 +46,8 @@ export default function ProviderDashboardPage(){
   const res=await fetch('/api/provider/workspace',{cache:'no-store'});
   if(res.status===401){router.replace('/login?mode=login');return}
   if(!res.ok)throw Error('Unable to load provider account');
-  const data:Dashboard=await res.json();
+  const data:Dashboard&{reviewer?:boolean}=await res.json();
+  if(data.reviewer)setReviewMode(true);
   setDashboard(previous=>{
    if(!previous)return data;
    const byId=new Map(previous.confirmedJobs.map(job=>[job.id,job]));
@@ -94,6 +96,7 @@ export default function ProviderDashboardPage(){
   else setError('Unable to sign out. Please try again.');
  }
  async function act(payload:Record<string,unknown>){
+  if(reviewMode){setSuccess('Review mode: this is a preview and cannot change live provider information.');return null;}
   setBusy(true);setError('');setSuccess('');
   try{
    const r=await fetch('/api/provider/workspace',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
@@ -140,6 +143,7 @@ export default function ProviderDashboardPage(){
   finally{setNotificationBusyId(null)}
  }
  async function answer(o:Opportunity,choice?:'accepted'|'declined'|'needs_clarification'){
+  if(reviewMode){setSuccess('Design review only: no response sent to a real customer.');return;}
   const d=choice||decision[o.request_id];if(!d)return;
   if(d==='needs_clarification'&&(!notes[o.request_id]||notes[o.request_id].trim().length<3)){setError('Please write your question before submitting.');return}
   setBusy(true);setError('');setSuccess('');
@@ -182,6 +186,7 @@ export default function ProviderDashboardPage(){
  const firstName=(dashboard?.profile?.full_name||form.full_name||'Provider').split(' ')[0];
  const visible=!approved&&(tab==='profile'||!submitted);
  return <main className="jt-provider-app">
+  {reviewMode&&<aside role="status" style={{padding:"11px 16px",background:"#eaf3ff",color:"#123d69",fontSize:13,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:12,borderBottom:"1px solid #b9cfe9"}}><span><strong>JiTap Design Review · Provider</strong> — Sample opportunities only; no real bookings or provider changes.</span><span style={{display:"flex",gap:8}}><button type="button" onClick={()=>void switchCustomer()} style={{border:"1px solid #296bad",padding:"7px 10px",background:"white",borderRadius:8,color:"#124a86",fontWeight:700}}>Switch to Customer</button><button type="button" onClick={()=>void logout()} style={{border:"1px solid #b9cfe9",padding:"7px 10px",background:"white",borderRadius:8,color:"#124a86"}}>Exit Review</button></span></aside>}
   <div className="jt-provider-shell">
    {loading?<div className="jt-provider-loading" role="status" aria-label="Loading your JiTap provider account"><span/><span/><span/><span className="jt-provider-loading-label">Loading your account…</span></div>:<>
     {approved?<header className="jt-provider-home-header">
