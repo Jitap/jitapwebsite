@@ -17,6 +17,14 @@ export async function POST(req:NextRequest){
  let data:RecordValue;
  try{data=obj(JSON.parse(raw))}catch{return respond({error:'Malformed event'},400)}
  try{
+  // Kapso v2 phone-number events contain message, conversation and phone_number_id;
+  // event wrappers may place those fields in data or payload.
+  const candidate=obj(data.data);
+  const payload=Object.keys(candidate).length?candidate:Object.keys(obj(data.payload)).length?obj(data.payload):data;
+  const phoneId=str(payload.phone_number_id)||str(data.phone_number_id);
+  if(phoneId&&process.env.KAPSO_PHONE_NUMBER_ID&&phoneId!==process.env.KAPSO_PHONE_NUMBER_ID)
+   return respond({received:true,ignored:'different_phone_number'});
+  const event=str(data.event)||str(data.type)||str(payload.event)||str(payload.event_type);
   const statuses:{id:string;status:string;timestamp:string;error:string}[]=[];
   const inbound:{id:string;phone:string;preview:string}[]=[];
   const status=(x:RecordValue)=>{
@@ -29,13 +37,15 @@ export async function POST(req:NextRequest){
    }
   };
   const message=(x:RecordValue)=>{
-   const from=str(x.from)||str(x.wa_id)||str(x.waId);
+   const conversation=obj(payload.conversation);
+   const contact=obj(payload.contact);
+   const from=str(x.from)||str(x.wa_id)||str(x.waId)||
+    str(conversation.phone_number)||str(contact.wa_id);
    const id=str(x.id)||str(x.message_id);
-   const body=str(obj(x.text).body)||str(x.body)||str(x.content);
+   const body=str(obj(x.text).body)||str(x.body)||str(x.content)||str(obj(x.kapso).content);
    if(id&&from)inbound.push({id,phone:from,preview:body.slice(0,400)});
   };
-  // Kapso can forward Meta Graph events with statuses or provide phone-level
-  // whatsapp.message.* events. Both are accepted only after HMAC verification.
+  // Raw Meta Graph forwarding.
   for(const entry of arr(data.entry)){
    for(const change of arr(obj(entry).changes)){
     const value=obj(obj(change).value);
@@ -43,21 +53,25 @@ export async function POST(req:NextRequest){
     for(const m of arr(value.messages))message(obj(m));
    }
   }
-  const event=str(data.event)||str(data.type);
-  const payload=obj(data.data);
+  const nested=obj(payload.message);
   if(/status|delivered|read|failed|sent/.test(event)){
-   const nested=obj(payload.message);
-   status({...payload,...nested,status:str(payload.status)||str(nested.status)||
-    (event.endsWith('delivered')?'delivered':event.endsWith('read')?'read':event.endsWith('failed')?'failed':event.endsWith('sent')?'sent':''),
-    id:str(payload.message_id)||str(payload.messageId)||str(nested.id)||str(payload.id)});
+   const kapso=obj(nested.kapso);
+   const historical=arr(kapso.statuses).map(v=>obj(v));
+   const matching=historical.filter(s=>str(s.status).toLowerCase()===event.split('.').pop());
+   const latest=matching[matching.length-1]||{};
+   status({...payload,...nested,...latest,
+    status:str(latest.status)||str(kapso.status)||str(payload.status)||
+     (event.endsWith('delivered')?'delivered':event.endsWith('read')?'read':event.endsWith('failed')?'failed':event.endsWith('sent')?'sent':''),
+    id:str(nested.id)||str(payload.message_id)||str(payload.id),
+    timestamp:str(latest.timestamp)||str(nested.timestamp)||str(payload.occurred_at)});
   }
   if(event==='whatsapp.message.received'){
-   const nested=obj(payload.message);
-   message({...payload,...nested,
+   message({...nested,
     id:str(nested.id)||str(payload.message_id)||str(payload.id),
-    from:str(nested.from)||str(payload.from)||str(obj(payload.contact).wa_id),
+    from:str(nested.from)||str(payload.from)||str(obj(payload.contact).wa_id)||
+      str(obj(payload.conversation).phone_number),
     text:nested.text||payload.text,
-    body:str(nested.body)||str(payload.body)||str(payload.content)});
+    body:str(nested.body)||str(payload.body)||str(payload.content)||str(obj(nested.kapso).content)});
   }
   for(const s of statuses){
    const eventKey='status:'+s.id+':'+s.status+':'+s.timestamp;
@@ -71,6 +85,10 @@ export async function POST(req:NextRequest){
     method:'POST',body:JSON.stringify({p_message_id:m.id,p_phone:m.phone,p_preview:m.preview})
    });
   }
+  console.info('JiTap Kapso verified event processed',{event,receipt_count:statuses.length,inbound_count:inbound.length});
   return respond({received:true});
- }catch{return respond({error:'Unable to record verified webhook'},503)}
+ }catch(e){
+  console.error('JiTap Kapso verified webhook processing failure',e instanceof Error?e.message:'unknown');
+  return respond({error:'Unable to record verified webhook'},503);
+ }
 }
