@@ -459,3 +459,48 @@
  border:0;background:transparent;text-decoration:underline;
  color:#09519d;font:inherit;font-weight:750;cursor:pointer;
 }
+
+/* 2026-11 customer-home typography refinement: a single-line header,
+   unobtrusive request count, and true centered primary action. */
+.jt-glass-app .jt-glass-current-heading{
+ display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0;
+}
+.jt-glass-app .jt-glass-current-heading h2{
+ display:flex;align-items:center;gap:7px;min-width:0;
+ margin:0;font-size:clamp(17px,2.7vw,21px);line-height:1.2;
+ font-weight:780;letter-spacing:-.025em;white-space:nowrap;
+}
+.jt-glass-app .jt-glass-current-heading h2>svg{width:22px;height:22px;flex:0 0 22px}
+.jt-glass-app .jt-glass-current-heading h2>span:first-of-type{white-space:nowrap}
+.jt-glass-app .jt-home-count{
+ display:inline-flex;align-items:center;justify-content:center;
+ flex:none;min-width:22px;height:22px;padding:0 6px;
+ color:#087c36;background:#e9f9ef;border:1px solid #c6e9d0;
+ border-radius:99px;font-size:12px;font-weight:750;letter-spacing:0;
+}
+.jt-glass-app .jt-home-all-requests{
+ display:inline-flex;align-items:center;justify-content:center;
+ flex:none;margin:0;padding:9px 0 9px 6px;
+ color:#143992;font-size:13px;font-weight:710;line-height:1;
+ white-space:nowrap;text-decoration:none;
+}
+.jt-glass-app .jt-home-all-requests:hover{text-decoration:underline}
+.jt-glass-app .jt-home-view-request{
+ display:flex;align-items:center;justify-content:center;
+ text-align:center;gap:0;
+ font-size:16px;font-weight:780;letter-spacing:-.012em;
+}
+@media(max-width:580px){
+ .jt-glass-app .jt-glass-current-heading{gap:7px;margin-bottom:11px}
+ .jt-glass-app .jt-glass-current-heading h2{font-size:clamp(16px,4.35vw,19px);gap:6px;letter-spacing:-.035em}
+ .jt-glass-app .jt-glass-current-heading h2>svg{width:20px;height:20px;flex-basis:20px}
+ .jt-glass-app .jt-home-count{min-width:20px;height:20px;padding:0 5px;font-size:11px}
+ .jt-glass-app .jt-home-all-requests{font-size:12px;padding-left:2px}
+ .jt-glass-app .jt-home-view-request{font-size:15px;min-height:49px}
+}
+@media(max-width:360px){
+ .jt-glass-app .jt-glass-current-heading h2{font-size:15px;gap:4px}
+ .jt-glass-app .jt-glass-current-heading h2>svg{width:18px;height:18px;flex-basis:18px}
+ .jt-glass-app .jt-home-count{min-width:18px;height:18px;font-size:10px}
+ .jt-glass-app .jt-home-all-requests{font-size:11px}
+}
