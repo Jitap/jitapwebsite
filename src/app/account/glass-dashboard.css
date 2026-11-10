@@ -504,3 +504,88 @@
  .jt-glass-app .jt-home-count{min-width:18px;height:18px;font-size:10px}
  .jt-glass-app .jt-home-all-requests{font-size:11px}
 }
+
+/* Customer request Tinder-style stack: touch gestures are horizontal only.
+   Native page scrolling remains vertical (pan-y); all cards are read-only. */
+.jt-glass-app .jt-swipe-widget{position:relative;min-width:0}
+.jt-glass-app .jt-swipe-stage{
+ position:relative;isolation:isolate;min-width:0;
+ padding:0 0 13px;
+ touch-action:pan-y;
+}
+.jt-glass-app .jt-swipe-behind{
+ position:absolute;inset:13px 12px 0;z-index:-1;
+ background:linear-gradient(155deg,#fff,#edf6f2);
+ border:1px solid #d9e8e3;border-radius:23px;
+ box-shadow:0 8px 17px #0e315621;
+ transform:scale(.965) translateY(5px);
+ display:flex;align-items:flex-end;justify-content:center;
+ overflow:hidden;pointer-events:none;
+}
+.jt-glass-app .jt-swipe-behind>span{
+ font-size:11px;color:#71859d;font-weight:720;opacity:.6;
+ padding-bottom:4px;
+}
+.jt-glass-app .jt-swipe-card{
+ position:relative;z-index:1;will-change:transform;
+ touch-action:pan-y;
+ user-select:none;-webkit-user-select:none;
+ cursor:grab;
+ transition:transform .32s cubic-bezier(.18,.85,.26,1),
+  box-shadow .2s ease,border-color .2s ease;
+}
+.jt-glass-app .jt-swipe-card.is-dragging{
+ cursor:grabbing;transition:none;
+}
+.jt-glass-app .jt-swipe-card.is-exiting{
+ transition:transform .27s cubic-bezier(.26,.6,.5,1),opacity .27s ease;
+}
+.jt-glass-app .jt-swipe-card.no-animate{transition:none!important}
+.jt-glass-app .jt-swipe-card.swipe-right{
+ border-color:#8cdcb2;
+ box-shadow:0 9px 26px #0aa64e27,0 0 0 1px #20bd691c;
+}
+.jt-glass-app .jt-swipe-card.swipe-left{
+ border-color:#c6d4e4;
+ box-shadow:0 9px 27px #30446d20,0 0 0 1px #66799012;
+}
+.jt-glass-app .jt-swipe-cue{
+ position:absolute;z-index:3;right:13px;top:-13px;
+ display:inline-flex;justify-content:center;align-items:center;
+ max-width:170px;border-radius:999px;padding:6px 11px;
+ font-size:11px;font-weight:810;
+ color:#126936;background:#e6fff1;border:1px solid #aae1bd;
+ box-shadow:0 2px 9px #082b2318;
+ pointer-events:none;
+}
+.jt-glass-app .jt-swipe-cue.is-next{
+ right:auto;left:13px;color:#405579;background:#f2f6fb;border-color:#d5e2ec;
+}
+.jt-glass-app .jt-swipe-footer{
+ display:flex;justify-content:space-between;align-items:center;
+ gap:10px;min-height:33px;padding:0 5px;
+}
+.jt-glass-app .jt-swipe-position{
+ color:#64718d;font-size:11px;font-weight:600;white-space:nowrap
+}
+.jt-glass-app .jt-swipe-next{
+ color:#0c6e3a;border:0;background:transparent;
+ border-radius:9px;padding:8px 5px;
+ min-height:34px;font-size:12px;font-weight:760;cursor:pointer;
+ white-space:nowrap;
+}
+.jt-glass-app .jt-swipe-next:disabled{opacity:.5;cursor:default}
+.jt-glass-app .jt-swipe-next:focus-visible{
+ outline:3px solid #0eae55;outline-offset:2px;
+}
+@media(max-width:580px){
+ .jt-glass-app .jt-swipe-stage{padding-bottom:11px}
+ .jt-glass-app .jt-swipe-behind{
+  inset:12px 9px 0;border-radius:21px;
+ }
+ .jt-glass-app .jt-swipe-footer{padding:0 2px}
+}
+@media(prefers-reduced-motion:reduce){
+ .jt-glass-app .jt-swipe-card,
+ .jt-glass-app .jt-swipe-card.is-exiting{transition:none!important}
+}
