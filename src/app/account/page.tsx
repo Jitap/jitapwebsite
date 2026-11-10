@@ -59,12 +59,16 @@ export default function AccountPage(){
  const [requestsLoading,setRequestsLoading]=useState(true);
  const [requestsError,setRequestsError]=useState('');
  const [tab,setTab]=useState<Tab>('home');
+ const [activeStory,setActiveStory]=useState<'request'|'track'|'saved'>('request');
  const [showAll,setShowAll]=useState(false);
  const [savedProviders,setSavedProviders]=useState<{id:string;name:string;url:string}[]>([]);
 
  const readTab=useCallback(()=>{
   const param=new URLSearchParams(window.location.search).get('tab');
-  setTab(param&&tabs.includes(param as Tab)?param as Tab:'home');
+  const next=param&&tabs.includes(param as Tab)?param as Tab:'home';
+  setTab(next);
+  if(next==='requests')setActiveStory('track');
+  else if(next==='saved')setActiveStory('saved');
  },[]);
  useEffect(()=>{
   readTab();
@@ -121,6 +125,8 @@ export default function AccountPage(){
  }
  function navigate(next:Tab){
   setTab(next);
+  if(next==='requests')setActiveStory('track');
+  else if(next==='saved')setActiveStory('saved');
   const nextUrl=next==='home'?'/account':'/account?tab='+next;
   window.history.pushState(null,'',nextUrl);
   window.scrollTo({top:0,behavior:'smooth'});
@@ -172,19 +178,19 @@ export default function AccountPage(){
      <p>Request, track and manage your services all in one place.</p>
     </section>
     <section className="jt-glass-actions jt-story-actions" aria-label="Quick actions">
-     <Link href={account?.reviewer?'/services':'/request'} className="jt-glass-tile jt-story-action jt-story-request">
+     <Link href={account?.reviewer?'/services':'/request'} className={'jt-glass-tile jt-story-action jt-story-request'+(activeStory==='request'?' is-story-active':'')} onClick={()=>setActiveStory('request')}>
       <span className="jt-story-ring"><span className="jt-story-inner">
        <img className="jt-glass-quick-icon" src="/images/Request%20Icon%20Service.png" width={86} height={86} alt="" aria-hidden="true"/>
       </span></span>
       <strong>Request<br/>a Service</strong>
      </Link>
-     <button type="button" className="jt-glass-tile jt-story-action jt-story-track" onClick={()=>navigate('requests')}>
+     <button type="button" className={'jt-glass-tile jt-story-action jt-story-track'+(activeStory==='track'?' is-story-active':'')} onClick={()=>navigate('requests')}>
       <span className="jt-story-ring"><span className="jt-story-inner">
        <img className="jt-glass-quick-icon" src="/images/Track%20Service.png" width={86} height={86} alt="" aria-hidden="true"/>
       </span></span>
       <strong>Track<br/>Requests</strong>
      </button>
-     <button type="button" className="jt-glass-tile jt-story-action jt-story-saved" onClick={()=>navigate('saved')}>
+     <button type="button" className={'jt-glass-tile jt-story-action jt-story-saved'+(activeStory==='saved'?' is-story-active':'')} onClick={()=>navigate('saved')}>
       <span className="jt-story-ring"><span className="jt-story-inner">
        <img src="/images/Save%20Providers%20Icon.png" alt="" aria-hidden="true" className="jt-glass-quick-icon" width={86} height={86}/>
       </span></span>
