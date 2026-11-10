@@ -1,3 +1,5 @@
+import {getReviewSession} from '@/lib/jitap-review-session';
+import {reviewerAppointments} from '@/lib/jitap-review-fixtures';
 import {NextRequest,NextResponse,after} from 'next/server';
 import {z} from 'zod';
 import {getProviderSession} from '@/lib/provider-session-server';
@@ -19,6 +21,8 @@ async function myAppointment(userId:string,id:string){
  return rows[0]||null;
 }
 export async function GET(req:NextRequest){
+ const review=getReviewSession(req);
+ if(review)return review.role==='provider'?reply({appointments:reviewerAppointments,reviewer:true}):reply({error:'Provider mode required'},403);
  const session=await getProviderSession(req);
  if(!session)return reply({error:'Sign in as a provider'},401);
  try{
