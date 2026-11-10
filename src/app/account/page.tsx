@@ -9,6 +9,7 @@ import {
  ShieldCheck,UserRound,Wallet
 } from 'lucide-react';
 import {CustomerTicketCard,type CustomerTicket} from '@/components/CustomerTicketCard';
+import {customerProgressStage,customerProgressSteps} from '@/lib/customer-progress';
 import './customer-home.css';
 import './glass-dashboard.css';
 
@@ -29,14 +30,6 @@ function dateLabel(value:string){
  const d=new Date(value+'T12:00:00Z');
  if(Number.isNaN(d.getTime()))return 'Date to be confirmed';
  return d.toLocaleDateString('en-KE',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'});
-}
-function currentStage(ticket:CustomerTicket):number {
- const state=(ticket.status+' '+ticket.statusLabel+' '+ticket.providerStatus).toLowerCase();
- if(/complet|finish|done/.test(state))return 4;
- if(/in.progress|work.started|ongoing|working/.test(state))return 3;
- if(/en.route|on.the.way|travell/.test(state))return 2;
- if(/accepted|matched|assigned|confirmed/.test(state))return 1;
- return 0;
 }
 function activeTicket(ticket:CustomerTicket){
  const state=(ticket.status+' '+ticket.statusLabel).toLowerCase();
@@ -129,10 +122,10 @@ export default function AccountPage(){
  }
  const needsAttention=requests.filter(r=>!!r.rematch).length;
  const current=useMemo(()=>requests.find(r=>activeTicket(r))||null,[requests]);
- const stage=current?currentStage(current):0;
+ const stage=current?customerProgressStage(current.status):0;
  const firstName=(account?.fullName||'').trim().split(/\s+/)[0]||'there';
  const initials=(account?.fullName||'Customer').split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]?.toUpperCase()).join('')||'J';
- const steps=['Requested','Matched','En Route','In Progress','Completed'] as const;
+ const steps=customerProgressSteps;
  const displayTickets=showAll?requests:requests.slice(0,3);
  const header=(
   <header className="jt-glass-header">
