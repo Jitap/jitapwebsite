@@ -2,11 +2,9 @@
 
 import {useCallback,useEffect,useRef,useState} from 'react';
 import Link from 'next/link';
-import {
- CalendarDays,Check,ChevronRight,Clock3,MapPin,Phone,UserRound
-} from 'lucide-react';
+import {ChevronRight,Clock3} from 'lucide-react';
 import type {CustomerTicket} from '@/components/CustomerTicketCard';
-import {customerProgressStage,customerProgressSteps} from '@/lib/customer-progress';
+import {CustomerRequestStack} from '@/components/CustomerRequestStack';
 import {SERVICE_OPTIONS} from '@/lib/provider-options';
 
 const serviceIcons:Record<string,string>={
@@ -17,20 +15,8 @@ const serviceIcons:Record<string,string>={
  welding:'⚙️','other-services':'✨'
 };
 const services=SERVICE_OPTIONS.map(s=>({name:s.label,slug:s.value,icon:serviceIcons[s.value]||'🛠️'}));
-const steps=customerProgressSteps;
-
-function dateLabel(value:string){
- if(!/^\d{4}-\d{2}-\d{2}$/.test(value))return 'Date to be confirmed';
- const d=new Date(value+'T12:00:00Z');
- return d.toLocaleDateString('en-KE',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'});
-}
-function requestTime(ticket:CustomerTicket){
- return ticket.time?dateLabel(ticket.date)+' · '+ticket.time+' EAT':dateLabel(ticket.date);
-}
-
 type Props={
- current:CustomerTicket|null;
- activeCount:number;
+ activeRequests:CustomerTicket[];
  loading:boolean;
  error:string;
  reviewer:boolean;
@@ -38,7 +24,7 @@ type Props={
  onOpenRequests:()=>void;
 };
 
-export function CustomerHomePanels({current,activeCount,loading,error,reviewer,onRetry,onOpenRequests}:Props){
+export function CustomerHomePanels({activeRequests,loading,error,reviewer,onRetry,onOpenRequests}:Props){
  const rail=useRef<HTMLDivElement>(null);
  const [back,setBack]=useState(false);
  const [forward,setForward]=useState(true);
@@ -58,8 +44,8 @@ export function CustomerHomePanels({current,activeCount,loading,error,reviewer,o
   if(!rail.current)return;
   rail.current.scrollBy({left:direction*Math.max(190,rail.current.clientWidth*.75),behavior:'smooth'});
  };
- const stage=current?customerProgressStage(current.status):0;
- const matching=current?.category?services.find(s=>s.slug===current.category):undefined;
+ const current=activeRequests[0]||null;
+ const activeCount=activeRequests.length;
  return <>
   {loading?<section className="jt-glass-current" aria-label="Loading request summary">
    <div className="jt-glass-section-head jt-glass-current-heading"><h2><Clock3 size={25}/> My Current Request</h2></div>
@@ -79,39 +65,7 @@ export function CustomerHomePanels({current,activeCount,loading,error,reviewer,o
     {activeCount>1&&<button type="button" className="jt-home-all-requests" onClick={onOpenRequests} aria-label={'View all '+activeCount+' active requests'}>View all</button>}
    </div>
    {error&&<div className="jt-home-stale-banner" role="status">Showing your last known request status. <button type="button" onClick={onRetry}>Refresh again</button></div>}
-   <article className="jt-glass-request-card jt-home-priority-card">
-    <div className="jt-glass-request-top">
-     <span className="jt-glass-request-service-icon" aria-hidden="true">{matching?.icon||'🛠️'}</span>
-     <div className="jt-home-request-identity">
-      <h3>{matching?.name||current.category.replaceAll('-',' ')}</h3>
-      <span className="jt-glass-state">{current.statusLabel||'Received'}</span>
-     </div>
-     <small>{current.serviceId}</small>
-    </div>
-    <div className="jt-glass-request-details">
-     <div><UserRound size={18}/><span>{current.provider||'To be matched'}</span></div>
-     <div><CalendarDays size={18}/><span>{requestTime(current)}</span></div>
-     <div><MapPin size={18}/><span>{current.location||current.area||'Location to be confirmed'}</span></div>
-    </div>
-    <ol className={'jt-glass-progress jt-home-progress is-stage-'+stage} aria-label="Request progress">
-     {steps.map((label,index)=><li key={label} className={index<stage?'is-done':index===stage?'is-current':''} aria-current={index===stage?'step':undefined}>
-      <span className="jt-glass-step-mark">{index<stage?<Check size={14} strokeWidth={3}/>:index===stage?<span className="jt-glass-step-dot"/>:null}</span>
-      <small>{label}</small>
-     </li>)}
-    </ol>
-    {current.rematch&&<div className="jt-glass-request-alert" role="status">
-     Your provider has cancelled. Please review your rematch options.
-     <button type="button" onClick={onOpenRequests}>Review now</button>
-    </div>}
-    <div className="jt-home-request-footer">
-     <Link className="jt-home-view-request" href={'/track?ref='+encodeURIComponent(current.serviceId)}>
-      View Request
-     </Link>
-     {!!current.providerPhone&&<a className="jt-home-call-provider" href={'tel:'+current.providerPhone.replace(/[^+\d]/g,'')}>
-      <Phone size={17}/> Call Provider
-     </a>}
-    </div>
-   </article>
+   <CustomerRequestStack tickets={activeRequests} onOpenRequests={onOpenRequests}/>
   </section>:null}
   <section className="jt-glass-explore" aria-labelledby="jt-glass-explore-title">
    <div className="jt-glass-section-head">
