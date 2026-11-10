@@ -1,3 +1,5 @@
+import {getReviewSession} from '@/lib/jitap-review-session';
+import {reviewerTickets} from '@/lib/jitap-review-fixtures';
 import {NextRequest,NextResponse} from 'next/server';
 import {getCustomerIdentity} from '@/lib/customer-session-server';
 import {supabasePrivate} from '@/lib/coordinator-server';
@@ -9,6 +11,13 @@ export const dynamic='force-dynamic';
 const headers={'Cache-Control':'private, no-store','X-Robots-Tag':'noindex, nofollow'};
 type Intake={id:string;customer_user_id:string|null;status:string;payload:Record<string,unknown>;created_at:string};
 export async function GET(req:NextRequest){
+ const review=getReviewSession(req);
+ if(review){
+  if(review.role!=='customer')return NextResponse.json({error:'switch_mode'},{status:401,headers});
+  const ref=req.nextUrl.searchParams.get('ref')||'';
+  const ticket=reviewerTickets.find(t=>t.serviceId===ref);
+  return ticket?NextResponse.json({ok:true,reviewer:true,ticket},{headers}):NextResponse.json({error:'This is a sample-only review session. Choose one of the sample tickets.'},{status:404,headers});
+ }
  const identity=await getCustomerIdentity(req);
  if(identity.kind!=='customer')return NextResponse.json({error:identity.kind==='provider'?'switch_mode':'sign_in_required'},{status:401,headers});
  const ref=req.nextUrl.searchParams.get('ref')||'';
