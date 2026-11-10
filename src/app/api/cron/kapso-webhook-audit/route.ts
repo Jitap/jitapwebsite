@@ -25,7 +25,13 @@ export async function GET(req:NextRequest){
    if(detail==='health'){
      const checks=Array.isArray(data.checks)?data.checks:Object.entries(data.checks&&typeof data.checks==='object'?data.checks:{}).map(([name,value])=>({...((value&&typeof value==='object')?value as Record<string,unknown>:{}),name}));
      return NextResponse.json({ok:true,detail,keys:Object.keys(data),
-      checks:checks.map((item:unknown)=>{const x=item&&typeof item==='object'?item as Record<string,unknown>:{};return {name:x.name||x.key||x.type,status:x.status||x.state,passed:x.passed,description:typeof x.description==='string'?x.description.slice(0,160):null}}),
+      checks:checks.map((item:unknown)=>{const x=item&&typeof item==='object'?item as Record<string,unknown>:{};const d=x.details&&typeof x.details==='object'?x.details as Record<string,unknown>:{};const entities=Array.isArray(d.entities)?d.entities:[];return {name:x.name||x.key||x.type,status:x.status||x.state,passed:x.passed,overall_status:x.overall_status||d.overall_status||null,
+ error:typeof x.error==='string'?x.error.slice(0,250):null,
+ details_status:d.status||null,
+ entities:entities.slice(0,10).map((v:unknown)=>{const e=v&&typeof v==='object'?v as Record<string,unknown>:{};const errs=Array.isArray(e.errors)?e.errors:[];return {entity_type:e.entity_type||e.type,status:e.status||e.overall_status,can_send_message:e.can_send_message,
+ additional_info:typeof e.additional_info==='string'?e.additional_info.slice(0,280):e.additional_info,
+ errors:errs.slice(0,3).map((q:unknown)=>{const z=q&&typeof q==='object'?q as Record<string,unknown>:{};return {code:z.code,error_description:z.error_description,possible_solution:z.possible_solution}})};})
+ }}),
       status:data.status||data.state||null},{headers:{'Cache-Control':'no-store'}});
    }
    if(detail==='meta-logs'){
