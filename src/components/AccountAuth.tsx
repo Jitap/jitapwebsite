@@ -5,7 +5,7 @@ import {useRouter} from 'next/navigation';
 import {Smartphone,UserRound} from 'lucide-react';
 
 type Role='customer'|'provider';
-type ExistingSession={authenticated:boolean;accountType:Role;primaryAccountType?:Role};
+type ExistingSession={authenticated:boolean;accountType:Role;primaryAccountType?:Role;reviewer?:boolean};
 const trackLink=(value:string)=>/^\/track\?ref=JT-[0-9A-F]{8}$/.test(value);
 const fmtPhone=(value:string)=>{
  const digits=value.replace(/\D/g,'');
@@ -16,6 +16,8 @@ const fmtPhone=(value:string)=>{
 export function AccountAuth(){
  const router=useRouter();
  const [role,setRole]=useState<Role>('customer');
+ const [reviewOpen,setReviewOpen]=useState(false);
+ const [reviewCode,setReviewCode]=useState('');
  const [stage,setStage]=useState<'phone'|'otp'>('phone');
  const [phone,setPhone]=useState('');
  const [verifiedPhone,setVerifiedPhone]=useState('');
@@ -35,6 +37,7 @@ export function AccountAuth(){
   const q=new URLSearchParams(window.location.search);
   const next=q.get('next')||'';
   setNextUrl(next);
+  if(q.get('review')==='1')setReviewOpen(true);
   if(trackLink(next))setRole('customer');
   else if(q.get('role')==='provider')setRole('provider');
   let active=true;
@@ -121,6 +124,17 @@ export function AccountAuth(){
   setStage('phone');setCode('');setVerifiedPhone('');setError('');setNotice('');
   window.setTimeout(()=>phoneInput.current?.focus(),0);
  }
+ async function openReview(){
+  if(busy||!reviewCode.trim())return;
+  setBusy(true);setError('');setNotice('');
+  try{
+   const res=await fetch('/api/auth/review',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:reviewCode,role})});
+   const data=await res.json().catch(()=>({}));
+   if(!res.ok)throw Error(data.error||'Reviewer sign-in unsuccessful');
+   setReviewCode('');complete(data.redirect||'/account');
+  }catch(e){setError(e instanceof Error?e.message:'Could not open reviewer access')}
+  finally{setBusy(false)}
+ }
  const isOtp=stage==='otp'&&!existing;
  const selectedLabel=role==='provider'?'Provider':'Customer';
  const otpDigits=Array.from({length:6},(_,i)=>code[i]||'');
@@ -139,6 +153,15 @@ export function AccountAuth(){
       <button type="button" disabled={busy} className={role==='customer'?'selected':''} onClick={()=>void switchRole('customer')} aria-pressed={role==='customer'}>Customer</button>
       <button type="button" disabled={busy} className={role==='provider'?'selected':''} onClick={()=>void switchRole('provider')} aria-pressed={role==='provider'}>Provider</button>
      </div>
+     {!existing&&<div style={{margin:'10px 0 15px',textAlign:'center'}}>
+      <button type="button" onClick={()=>{setReviewOpen(v=>!v);setError('');setNotice('')}} disabled={busy} style={{border:0,background:'transparent',color:'#1552a1',fontWeight:700,textDecoration:'underline',cursor:'pointer'}}>Design team access</button>
+      {reviewOpen&&<form onSubmit={e=>{e.preventDefault();void openReview()}} style={{marginTop:12,padding:14,background:'#f5f9ff',border:'1px solid #d8e6f4',borderRadius:13,textAlign:'left'}}>
+       <label htmlFor="jt-review-code" className="jt-auth-label">Reviewer access code</label>
+       <input id="jt-review-code" type="password" autoComplete="off" value={reviewCode} onChange={e=>setReviewCode(e.target.value)} required placeholder="Enter your design review code" style={{width:'100%',border:'1px solid #afc6df',borderRadius:9,padding:'12px',margin:'7px 0'}}/>
+       <p style={{fontSize:12,color:'#47617c',margin:'6px 0 12px'}}>Choose Customer or Provider above. Preview uses example data; real requests and bookings are not changed.</p>
+       <button className="jt-auth-submit" disabled={busy||!reviewCode.trim()} type="submit">{busy?'Opening…':'Open '+(role==='provider'?'Provider':'Customer')+' Review'}</button>
+      </form>}
+     </div>}
      <form className="jt-auth-form" onSubmit={e=>void submit(e)}>
       {!existing&&<>
        <label className="jt-auth-label" htmlFor="jt-auth-phone">Mobile number</label>
