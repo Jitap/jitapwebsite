@@ -931,3 +931,31 @@
  .jt-how-artwork-frame{min-height:224px}
  .jt-how-uploaded-art{width:min(100%,260px);max-height:218px}
 }
+
+/* Request intake uses the same JiTap green as the customer dashboard.
+   Scoped to the request flow; provider and general website buttons are unchanged. */
+.th-request-flow .th-next:not(:disabled){
+ background:linear-gradient(105deg,#007b26,#009f30);
+ border:1px solid #00832a;color:#fff;
+ box-shadow:0 3px 9px rgba(0,104,37,.14);
+}
+.th-request-flow .th-next{
+ min-width:128px;min-height:46px;
+ display:inline-flex;justify-content:center;align-items:center;
+ text-align:center;font-size:15px;font-weight:770;
+ transition:background-color .15s ease,box-shadow .15s ease;
+}
+.th-request-flow .th-next:not(:disabled):hover{background:#006e23}
+.th-request-flow .th-next:focus-visible{outline:3px solid #28ce6e;outline-offset:3px}
+.th-request-flow .th-next:disabled{
+ background:#e0e5e9;border:1px solid #d5dce2;
+ color:#7d8994;box-shadow:none;cursor:not-allowed
+}
+.th-request-flow .form-actions .button:not(.secondary),
+.th-request-flow button[type="submit"].button:not(.secondary){
+ background:#008d2c;border-color:#008d2c;color:#fff!important;
+}
+.th-request-flow .form-actions .button:not(.secondary):hover,
+.th-request-flow button[type="submit"].button:not(.secondary):hover{
+ background:#006e23;border-color:#006e23;
+}
