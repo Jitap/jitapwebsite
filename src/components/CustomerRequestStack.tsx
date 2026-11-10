@@ -14,7 +14,7 @@ const categoryIcons:Record<string,string>={
  'solar-security':'📹','appliance-repair':'🔧','computer-phone-repair':'💻',
  roofing:'🏠','pest-control':'🐜',welding:'⚙️','other-services':'✨'
 };
-const categoryLabels=new Map(SERVICE_OPTIONS.map(v=>[v.value,v.label]));
+const categoryLabels=new Map<string,string>(SERVICE_OPTIONS.map(v=>[v.value,v.label]));
 const THRESHOLD=100;
 const ANIMATE_MS=270;
 type Exit='left'|'right'|null;
@@ -45,12 +45,21 @@ export function CustomerRequestStack({tickets,onOpenRequests}:{
  const suppressClick=useRef(false);
  const cardRef=useRef<HTMLElement|null>(null);
  const inFlight=useRef(false);
+ const restored=useRef(false);
  const currentRef=useRef<CustomerTicket|null>(tickets[0]||null);
 
  useEffect(()=>{
   const ids=tickets.map(t=>t.reference);
   setOrder(previous=>{
-   const stillHere=previous.filter(id=>ids.includes(id));
+   let last=previous;
+   if(!restored.current){
+    restored.current=true;
+    try{
+     const saved=JSON.parse(sessionStorage.getItem('jitap:active-request-stack')||'[]') as unknown;
+     if(Array.isArray(saved)&&saved.every(v=>typeof v==='string'))last=saved;
+    }catch{}
+   }
+   const stillHere=last.filter(id=>ids.includes(id));
    const newcomers=ids.filter(id=>!stillHere.includes(id));
    return [...newcomers,...stillHere];
   });
@@ -76,7 +85,11 @@ export function CustomerRequestStack({tickets,onOpenRequests}:{
     return;
    }
    setAnimationDisabled(true);
-   setOrder(old=>old.length>1?[...old.slice(1),old[0]]:old);
+   setOrder(old=>{
+    const result=old.length>1?[...old.slice(1),old[0]]:old;
+    try{sessionStorage.setItem('jitap:active-request-stack',JSON.stringify(result))}catch{}
+    return result;
+   });
    setOffset(0);setExit(null);inFlight.current=false;
    timer.current=setTimeout(()=>{
     setAnimationDisabled(false);
