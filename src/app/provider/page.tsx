@@ -26,6 +26,7 @@ export default function ProviderDashboardPage(){
  const router=useRouter();
  const [dashboard,setDashboard]=useState<Dashboard|null>(null);
  const [reviewMode,setReviewMode]=useState(false);
+ const [reviewOnline,setReviewOnline]=useState(true);
  const inProgressJobs=(dashboard?.confirmedJobs||[]).filter(job=>['confirmed','on_my_way','arrived','in_progress'].includes(job.status));
  const completedJobs=(dashboard?.confirmedJobs||[]).filter(job=>job.status==='completed');
  const [form,setForm]=useState<ProviderProfile>(empty);
@@ -96,7 +97,7 @@ export default function ProviderDashboardPage(){
   else setError('Unable to sign out. Please try again.');
  }
  async function act(payload:Record<string,unknown>){
-  if(reviewMode){setSuccess('Review mode: this is a preview and cannot change live provider information.');return null;}
+  if(reviewMode){if(payload.action==='availability'){setReviewOnline(payload.online===true);setSuccess(payload.online===true?'Demo: provider is now online.':'Demo: provider is now offline.');return {online:payload.online===true};}setSuccess('Review mode: no production changes were made.');return null;}
   setBusy(true);setError('');setSuccess('');
   try{
    const r=await fetch('/api/provider/workspace',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
@@ -143,7 +144,13 @@ export default function ProviderDashboardPage(){
   finally{setNotificationBusyId(null)}
  }
  async function answer(o:Opportunity,choice?:'accepted'|'declined'|'needs_clarification'){
-  if(reviewMode){setSuccess('Design review only: no response sent to a real customer.');return;}
+  if(reviewMode){
+   const action=choice||decision[o.request_id];
+   if(action==='declined'){setDismissedIds(old=>old.includes(o.request_id)?old:[...old,o.request_id]);setSuccess('Demo: request declined and removed from live opportunities.');}
+   else if(action==='accepted'){setDismissedIds(old=>old.includes(o.request_id)?old:[...old,o.request_id]);setSuccess('Demo: accepted. No real booking, notification, or customer record was created.');}
+   else setSuccess('Demo: question sent to SOC (simulated). No real message was sent.');
+   return;
+  }
   const d=choice||decision[o.request_id];if(!d)return;
   if(d==='needs_clarification'&&(!notes[o.request_id]||notes[o.request_id].trim().length<3)){setError('Please write your question before submitting.');return}
   setBusy(true);setError('');setSuccess('');
@@ -171,7 +178,7 @@ export default function ProviderDashboardPage(){
  }
  const approved=dashboard?.reviewStatus==='approved';
  const submitted=!!dashboard?.profile?.submitted_at;
- const online=!!dashboard?.profile?.is_online;
+ const online=reviewMode?reviewOnline:!!dashboard?.profile?.is_online;
  // Use the same filtered list for the badge, notifications and visible cards.
  // Keep locally handled IDs excluded across periodic refreshes, so a declined
  // request cannot briefly reappear while the server updates.
@@ -192,7 +199,7 @@ export default function ProviderDashboardPage(){
     {approved?<header className="jt-provider-home-header">
       <a href="/provider" aria-label="JiTap provider home"><img src="/images/jitap-logo.svg" alt="JiTap" width={104} height={60}/></a>
       <div className="jt-provider-home-header-right"><button type="button" className="jt-provider-notification-trigger" onClick={()=>setNotificationsOpen(v=>!v)} aria-expanded={notificationsOpen} aria-controls="jt-provider-notification-panel" aria-label={unreadCount+' unread notifications'}><Bell size={25}/>{unreadCount>0&&<span className="jt-provider-unread-count">{unreadCount>99?'99+':unreadCount}</span>}</button>
-      <button type="button" className="jt-provider-home-avatar" onClick={()=>router.push('/provider/profile')} aria-label="Open your provider profile">{dashboard?.uploadedMedia?.some(m=>m.kind==='profile_photo')?<img src={'/api/provider/media?kind=profile_photo&v='+encodeURIComponent(dashboard.uploadedMedia.find(m=>m.kind==='profile_photo')?.uploadedAt||'')} alt="Provider profile"/>:<UserRound size={24}/>}</button><div className="jt-provider-header-online" aria-label="Provider availability">
+      <button type="button" className="jt-provider-home-avatar" onClick={()=>reviewMode?setTab('profile'):router.push('/provider/profile')} aria-label="Open your provider profile">{dashboard?.uploadedMedia?.some(m=>m.kind==='profile_photo')?<img src={'/api/provider/media?kind=profile_photo&v='+encodeURIComponent(dashboard.uploadedMedia.find(m=>m.kind==='profile_photo')?.uploadedAt||'')} alt="Provider profile"/>:<UserRound size={24}/>}</button><div className="jt-provider-header-online" aria-label="Provider availability">
         <span className={online?'is-online':'is-offline'}><span className="jt-provider-live-dot"/>{online?'Online':'Offline'}</span>
         <button className={'jt-provider-toggle '+(online?'active':'')} type="button" role="switch" aria-label="Available for requests" aria-checked={online} disabled={busy} onClick={()=>void act({action:'availability',online:!online})}><span/></button>
       </div></div>
