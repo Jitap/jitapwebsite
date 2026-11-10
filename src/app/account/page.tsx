@@ -15,7 +15,7 @@ import './glass-dashboard.css';
 
 type Account={
  authenticated:boolean;accountType:'customer'|'provider';
- primaryAccountType?:'customer'|'provider';phone:string;fullName?:string|null
+ primaryAccountType?:'customer'|'provider';phone:string;fullName?:string|null;reviewer?:boolean
 };
 type Tab='home'|'requests'|'saved'|'wallet'|'profile';
 const tabs:Tab[]=['home','requests','saved','wallet','profile'];
@@ -141,6 +141,7 @@ export default function AccountPage(){
   </header>
  );
  return <main className="jt-customer-app jt-glass-app">
+  {account?.reviewer&&<aside role="status" style={{position:'relative',zIndex:15,padding:'11px 16px',background:'#eaf3ff',color:'#123d69',fontSize:13,borderBottom:'1px solid #b9cfe9',display:'flex',justifyContent:'space-between',alignItems:'center',gap:12,flexWrap:'wrap'}}><span><strong>JiTap Design Review · Customer</strong> — Sample tickets. Production actions are disabled.</span><button type="button" style={{border:'1px solid #296bad',padding:'7px 10px',background:'white',borderRadius:8,color:'#124a86',fontWeight:700}} onClick={()=>void switchProvider()}>Switch to Provider</button></aside>}
   {loading?<div className="jt-customer-loading" role="status">Opening JiTap…</div>:account?.accountType==='customer'?<>
    {header}
    {tab==='home'?<div className="jt-glass-content">
@@ -149,7 +150,7 @@ export default function AccountPage(){
      <p>Request, track and manage your services all in one place.</p>
     </section>
     <section className="jt-glass-actions" aria-label="Quick actions">
-     <Link href="/request" className="jt-glass-tile jt-glass-tile-request">
+     <Link href={account?.reviewer?'/services':'/request'} className="jt-glass-tile jt-glass-tile-request">
       <span className="jt-glass-action-icon"><Home size={35}/><Plus className="jt-glass-action-plus" size={20}/></span>
       <strong>Request<br/>a Service</strong>
      </Link>
@@ -222,7 +223,7 @@ export default function AccountPage(){
    <nav className="jt-glass-bottom-nav" aria-label="Customer navigation">
     <button type="button" className={tab==='home'?'is-active':''} onClick={()=>navigate('home')} aria-current={tab==='home'?'page':undefined}><Home size={25}/><span>Home</span></button>
     <button type="button" className={tab==='requests'?'is-active':''} onClick={()=>navigate('requests')} aria-current={tab==='requests'?'page':undefined}><ClipboardList size={25}/><span>Requests</span>{needsAttention>0&&<i className="jt-glass-nav-dot"/>}</button>
-    <Link href="/request" aria-label="Request a Service" className="jt-glass-central-plus"><Plus size={33}/></Link>
+    <Link href={account?.reviewer?'/services':'/request'} aria-label="Request a Service" className="jt-glass-central-plus"><Plus size={33}/></Link>
     <button type="button" className={tab==='wallet'?'is-active':''} onClick={()=>navigate('wallet')} aria-current={tab==='wallet'?'page':undefined}><Wallet size={25}/><span>Wallet</span></button>
     <button type="button" className={tab==='profile'?'is-active':''} onClick={()=>navigate('profile')} aria-current={tab==='profile'?'page':undefined}><UserRound size={25}/><span>Profile</span></button>
    </nav>
