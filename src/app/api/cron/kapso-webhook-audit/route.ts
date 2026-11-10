@@ -14,18 +14,24 @@ export async function GET(req:NextRequest){
   return NextResponse.json({error:'Kapso configuration incomplete'},{status:503});
  try{
   const detail=req.nextUrl.searchParams.get('detail');
-  if(detail==='health'||detail==='deliveries'){
+  if(detail==='health'||detail==='deliveries'||detail==='meta-logs'){
    const url=detail==='health'
     ?'https://api.kapso.ai/platform/v1/whatsapp/phone_numbers/'+id+'/health'
+    :detail==='meta-logs'?'https://api.kapso.ai/platform/v1/log_search?period=24h&source=whatsapp_webhook_event&limit=15'
     :'https://api.kapso.ai/platform/v1/webhook_deliveries?period=24h&webhook_id=9c361acc-1576-4749-be99-e62c28c072c5&limit=20';
    const response=await fetch(url,{headers:{'X-API-Key':key,'Accept':'application/json'},cache:'no-store',redirect:'error',signal:AbortSignal.timeout(15000)});
    if(!response.ok)return NextResponse.json({ok:false,detail,status:response.status},{status:502});
    const data=await response.json() as Record<string,unknown>;
    if(detail==='health'){
-     const checks=Array.isArray(data.checks)?data.checks:[];
+     const checks=Array.isArray(data.checks)?data.checks:Object.entries(data.checks&&typeof data.checks==='object'?data.checks:{}).map(([name,value])=>({...((value&&typeof value==='object')?value as Record<string,unknown>:{}),name}));
      return NextResponse.json({ok:true,detail,keys:Object.keys(data),
       checks:checks.map((item:unknown)=>{const x=item&&typeof item==='object'?item as Record<string,unknown>:{};return {name:x.name||x.key||x.type,status:x.status||x.state,passed:x.passed,description:typeof x.description==='string'?x.description.slice(0,160):null}}),
       status:data.status||data.state||null},{headers:{'Cache-Control':'no-store'}});
+   }
+   if(detail==='meta-logs'){
+     const hits=Array.isArray(data.data)?data.data:Array.isArray(data.logs)?data.logs:[];
+     const logs=hits.slice(0,15).map((raw:unknown)=>{const x=raw&&typeof raw==='object'?raw as Record<string,unknown>:{};return {timestamp:x.created_at||x.timestamp,source:x.source,event_type:x.event_type||x.event,status:x.status||x.http_status,keys:Object.keys(x).slice(0,16)}});
+     return NextResponse.json({ok:true,detail,keys:Object.keys(data),count:hits.length,logs});
    }
    const entries=Array.isArray(data)?data:Array.isArray(data.webhook_deliveries)?data.webhook_deliveries:Array.isArray(data.data)?data.data:[];
    const deliveries=entries.slice(0,20).map((item:unknown)=>{const x=item&&typeof item==='object'?item as Record<string,unknown>:{};return {id:x.id,status:x.status,attempts:x.attempt_count||x.attempts,http_status:x.http_status||x.response_status||x.status_code,
