@@ -225,85 +225,88 @@
  .jt-glass-services{scroll-behavior:auto}
 }
 
-/*
- * Customer story actions — circular rings instead of rectangular cards.
- * The source PNGs have opaque white squares; multiply blending into an
- * always-white circular interior removes the apparent white tile without
- * distorting the supplied brand artwork.
- */
+/* Compact Instagram-style quick actions, with a static JiTap green story ring.
+   Reuse uploaded icons, blending away their white PNG backgrounds. */
 .jt-glass-app .jt-story-actions{
- display:grid;
- grid-template-columns:repeat(3,minmax(0,1fr));
- gap:clamp(5px,2vw,22px);
- align-items:start;
- margin:23px 0 26px;
+ display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+ align-items:start;gap:8px;margin:12px 0 19px;
 }
 .jt-glass-app .jt-story-action,
 .jt-glass-app .jt-story-action:first-child{
- min-width:0;min-height:0;padding:0;
- border:0;border-radius:0;background:transparent;
- box-shadow:none;
- display:flex;align-items:center;justify-content:flex-start;
- flex-direction:column;gap:9px;
- color:var(--jt-navy);font:inherit;text-align:center;
- cursor:pointer;transform:none;
+ display:flex;align-items:center;justify-content:flex-start;flex-direction:column;
+ min-height:0;min-width:0;gap:7px;padding:0;
+ border:0;border-radius:0;box-shadow:none;background:transparent;
+ font:inherit;color:var(--jt-navy);text-align:center;cursor:pointer;
+ transform:none;
 }
-.jt-glass-app .jt-story-action:hover{transform:none}
 .jt-story-ring{
- --jt-story-size:clamp(96px,16vw,158px);
- width:var(--jt-story-size);
- height:var(--jt-story-size);
- max-width:100%;aspect-ratio:1;
- border-radius:50%;
- position:relative;isolation:isolate;
- display:grid;place-items:center;flex:none;
- background:#dce5eb;
- transition:transform .2s ease;
+ --jt-story-size:88px;
+ display:grid;place-items:center;position:relative;isolation:isolate;
+ width:var(--jt-story-size);height:var(--jt-story-size);max-width:100%;
+ aspect-ratio:1;flex:none;border-radius:50%;
+ background:linear-gradient(125deg,#00bf51 4%,#03d66a 35%,#9be6c7 69%,#13b948 97%);
+ box-shadow:0 1px 3px rgba(5,55,45,.10);
+ transition:transform .16s ease;
 }
 .jt-story-ring::before{
- content:"";
- position:absolute;inset:0;border-radius:50%;z-index:0;
- background:conic-gradient(from 0deg,#05cd53 0deg 62deg,#dce5eb 63deg 310deg,#ccece0 360deg);
- animation:jt-story-arc-orbit 6.5s linear infinite;
+ content:"";position:absolute;inset:0;border-radius:50%;z-index:0;
+ background:linear-gradient(125deg,#00c64f 0%,#0ad367 28%,#a5e9ca 57%,#07ae46 83%,#00d55a 100%);
+ animation:none!important;transform:none!important;
 }
-.jt-story-track .jt-story-ring::before{animation-delay:-2.16s}
-.jt-story-saved .jt-story-ring::before{animation-delay:-4.32s}
 .jt-story-inner{
- position:absolute;inset:clamp(5px,0.85vw,8px);
- z-index:1;border-radius:50%;background:#fff;
- display:grid;place-items:center;overflow:hidden;
+ position:absolute;inset:3px;border-radius:50%;z-index:1;
+ display:grid;place-items:center;overflow:hidden;background:white;
 }
 .jt-glass-app .jt-story-inner .jt-glass-quick-icon{
- display:block;
- width:67%;height:67%;
- object-fit:contain;
- mix-blend-mode:multiply;
- filter:contrast(1.09);
+ display:block;width:67%;height:67%;object-fit:contain;
+ mix-blend-mode:multiply;filter:contrast(1.12);
  border:0;border-radius:0;background:transparent;
 }
 .jt-glass-app .jt-story-action strong,
 .jt-glass-app .jt-story-action:first-child strong{
- color:var(--jt-navy);
- font-weight:820;
- font-size:clamp(13px,2.4vw,19px);
- line-height:1.13;
+ color:var(--jt-navy);font-size:13px;line-height:1.12;
+ font-weight:790;letter-spacing:-.012em;
 }
-.jt-story-action:focus-visible{outline:3px solid #0b71c5;outline-offset:5px;border-radius:14px}
-.jt-story-action:hover .jt-story-ring{transform:scale(1.04)}
-.jt-story-action:active .jt-story-ring{transform:scale(.97)}
-@keyframes jt-story-arc-orbit{to{transform:rotate(360deg)}}
+.jt-story-action:hover .jt-story-ring{transform:scale(1.035)}
+.jt-story-action:active .jt-story-ring{transform:scale(.96)}
+.jt-story-action:focus-visible{outline:3px solid #076bac;outline-offset:4px;border-radius:12px}
+
+/* Increase above-the-fold visibility of My Current Request on a phone. */
+.jt-glass-app .jt-glass-welcome{margin-bottom:10px}
+.jt-glass-app .jt-glass-explore{margin-bottom:13px}
+.jt-glass-app .jt-glass-explore .jt-glass-section-head{margin-bottom:7px}
+.jt-glass-app .jt-glass-explore-controls{gap:5px}
+.jt-glass-app .jt-glass-carousel-arrow{
+ width:29px;height:29px;box-shadow:0 1px 4px #0a245c10;
+}
+.jt-glass-app .jt-glass-services{gap:9px;padding:3px 1px 8px}
+.jt-glass-app .jt-glass-service-tile{
+ min-height:92px;flex-basis:clamp(122px,18%,148px);
+ border-radius:17px;padding:7px 5px;gap:3px;
+}
+.jt-glass-app .jt-glass-service-icon{font-size:28px;min-height:35px}
+.jt-glass-app .jt-glass-service-tile strong{font-size:12px;line-height:1.12}
+
 @media(max-width:580px){
- .jt-glass-app .jt-story-actions{gap:6px;margin-top:20px;margin-bottom:24px}
- .jt-story-ring{--jt-story-size:clamp(88px,28.2vw,130px)}
- .jt-story-inner{inset:5px}
- .jt-glass-app .jt-story-inner .jt-glass-quick-icon{width:69%;height:69%}
+ .jt-glass-app .jt-glass-content{padding-top:13px}
+ .jt-glass-app .jt-glass-welcome{margin-bottom:7px}
+ .jt-glass-app .jt-story-actions{gap:5px;margin:9px 0 15px}
+ .jt-story-ring{--jt-story-size:75px}
+ .jt-story-inner{inset:3px}
+ .jt-glass-app .jt-story-inner .jt-glass-quick-icon{width:66%;height:66%}
  .jt-glass-app .jt-story-action strong,
- .jt-glass-app .jt-story-action:first-child strong{font-size:clamp(12px,3.7vw,16px);line-height:1.12}
+ .jt-glass-app .jt-story-action:first-child strong{font-size:12px;line-height:1.11}
+ .jt-glass-app .jt-glass-explore{margin-bottom:10px}
+ .jt-glass-app .jt-glass-explore .jt-glass-section-head{margin-bottom:6px}
+ .jt-glass-app .jt-glass-explore-controls{gap:3px}
+ .jt-glass-app .jt-glass-carousel-arrow{width:27px;height:27px}
+ .jt-glass-app .jt-glass-services{gap:8px;padding:2px 1px 7px}
+ .jt-glass-app .jt-glass-service-tile{
+  flex-basis:clamp(99px,30%,125px);min-height:83px;
+  border-radius:15px;padding:6px 3px;
+ }
+ .jt-glass-app .jt-glass-service-icon{font-size:24px;min-height:30px}
+ .jt-glass-app .jt-glass-service-tile strong{font-size:11px;line-height:1.12}
 }
-@media(max-width:350px){
- .jt-story-ring{--jt-story-size:clamp(78px,27vw,96px)}
-}
-@media(prefers-reduced-motion:reduce){
- .jt-story-ring::before{animation:none}
- .jt-story-ring{transition:none}
-}
+@media(max-width:360px){.jt-story-ring{--jt-story-size:69px}}
+@media(prefers-reduced-motion:reduce){.jt-story-ring{transition:none}}
