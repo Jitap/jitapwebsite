@@ -121,7 +121,6 @@ export default function AccountPage(){
  }
  const needsAttention=requests.filter(r=>!!r.rematch).length;
  const activeRequests=useMemo(()=>prioritizeActiveRequests(requests),[requests]);
- const current=activeRequests[0]||null;
  const firstName=(account?.fullName||'').trim().split(/\s+/)[0]||'there';
  const initials=(account?.fullName||'Customer').split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]?.toUpperCase()).join('')||'J';
  const displayTickets=showAll?requests:requests.slice(0,3);
@@ -168,8 +167,7 @@ export default function AccountPage(){
      </button>
     </section>
     <CustomerHomePanels
-     current={current}
-     activeCount={activeRequests.length}
+     activeRequests={activeRequests}
      loading={requestsLoading}
      error={requestsError}
      reviewer={!!account.reviewer}
