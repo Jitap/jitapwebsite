@@ -2,7 +2,7 @@
 import {useCallback,useEffect,useRef,useState,type FormEvent,type KeyboardEvent} from 'react';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
-import {Smartphone,UserRound} from 'lucide-react';
+import {Smartphone,UserRound,BriefcaseBusiness} from 'lucide-react';
 
 type Role='customer'|'provider';
 type ExistingSession={authenticated:boolean;accountType:Role;primaryAccountType?:Role;reviewer?:boolean};
@@ -150,18 +150,9 @@ export function AccountAuth(){
      <p className="jt-auth-subtitle">One mobile number, one account. Choose how you want to use JiTap.</p>
      <div className="jt-auth-roles" role="group" aria-label="Choose your JiTap role">
       <div className={'jt-auth-role-slider '+(role==='provider'?'to-provider':'to-customer')} aria-hidden="true"/>
-      <button type="button" disabled={busy} className={role==='customer'?'selected':''} onClick={()=>void switchRole('customer')} aria-pressed={role==='customer'}>Customer</button>
-      <button type="button" disabled={busy} className={role==='provider'?'selected':''} onClick={()=>void switchRole('provider')} aria-pressed={role==='provider'}>Provider</button>
+      <button type="button" disabled={busy} className={role==='customer'?'selected':''} onClick={()=>void switchRole('customer')} aria-pressed={role==='customer'}><UserRound size={19} aria-hidden="true"/>Customer</button>
+      <button type="button" disabled={busy} className={role==='provider'?'selected':''} onClick={()=>void switchRole('provider')} aria-pressed={role==='provider'}><BriefcaseBusiness size={19} aria-hidden="true"/>Provider</button>
      </div>
-     {!existing&&<div style={{margin:'10px 0 15px',textAlign:'center'}}>
-      <button type="button" onClick={()=>{setReviewOpen(v=>!v);setError('');setNotice('')}} disabled={busy} style={{border:0,background:'transparent',color:'#1552a1',fontWeight:700,textDecoration:'underline',cursor:'pointer'}}>Design team access</button>
-      {reviewOpen&&<form onSubmit={e=>{e.preventDefault();void openReview()}} style={{marginTop:12,padding:14,background:'#f5f9ff',border:'1px solid #d8e6f4',borderRadius:13,textAlign:'left'}}>
-       <label htmlFor="jt-review-code" className="jt-auth-label">Reviewer access code</label>
-       <input id="jt-review-code" type="password" autoComplete="off" value={reviewCode} onChange={e=>setReviewCode(e.target.value)} required placeholder="Enter your design review code" style={{width:'100%',border:'1px solid #afc6df',borderRadius:9,padding:'12px',margin:'7px 0'}}/>
-       <p style={{fontSize:12,color:'#47617c',margin:'6px 0 12px'}}>Choose Customer or Provider above. Preview uses example data; real requests and bookings are not changed.</p>
-       <button className="jt-auth-submit" disabled={busy||!reviewCode.trim()} type="submit">{busy?'Opening…':'Open '+(role==='provider'?'Provider':'Customer')+' Review'}</button>
-      </form>}
-     </div>}
      <form className="jt-auth-form" onSubmit={e=>void submit(e)}>
       {!existing&&<>
        <label className="jt-auth-label" htmlFor="jt-auth-phone">Mobile number</label>
@@ -182,6 +173,16 @@ export function AccountAuth(){
        {busy?'Please wait…':sessionChecking?'Checking session…':existing?'Continue as '+selectedLabel:'Continue'}
       </button>
      </form>
+     {!existing&&<div className="jt-auth-design-access">
+      <button type="button" className="jt-auth-design-toggle" aria-expanded={reviewOpen} aria-controls="jt-auth-design-panel" onClick={()=>{setReviewOpen(v=>!v);setError('');setNotice('')}} disabled={busy}>Design team access</button>
+      {reviewOpen&&<form id="jt-auth-design-panel" className="jt-auth-design-form" onSubmit={e=>{e.preventDefault();void openReview()}}>
+       <label htmlFor="jt-review-code" className="jt-auth-label">Reviewer access code</label>
+       <input id="jt-review-code" className="jt-auth-review-input" type="password" autoComplete="off" value={reviewCode} onChange={e=>setReviewCode(e.target.value)} required placeholder="Enter your design review code"/>
+       <p>Choose Customer or Provider above. Preview uses example data; real requests and bookings are not changed.</p>
+       {error&&<p className="jt-auth-error" role="alert">{error}</p>}
+       <button className="jt-auth-submit" disabled={busy||!reviewCode.trim()} type="submit">{busy?'Opening…':'Open '+(role==='provider'?'Provider':'Customer')+' Review'}</button>
+      </form>}
+     </div>}
     </>:<>
      <div className="jt-auth-phone-symbol" aria-hidden="true"><span><Smartphone size={37} strokeWidth={2.2}/></span></div>
      <h1 id="jt-auth-heading">Verify Your Mobile Number</h1>
