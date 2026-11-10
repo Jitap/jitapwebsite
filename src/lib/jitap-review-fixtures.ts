@@ -13,7 +13,19 @@ export const reviewerTickets=[
   area:'Nyali',provider:'Awaiting provider match',providerPhone:'',
   providerStatus:'Awaiting response',rematch:null,status:'requested',statusLabel:'Requested',
   brief:'Demo: one wall socket is not working.',scope:'Check the socket and electrical wiring.',
-  createdAt:stamp,updatedAt:stamp}
+  createdAt:stamp,updatedAt:'2026-11-10T15:20:00.000Z'},
+ {reference:'00000000-0000-4000-8000-000000000003',serviceId:'JT-00000003',
+  category:'cleaning',date:'2026-11-15',time:'09:00',location:'Mtwapa, Kilifi',
+  area:'Mtwapa',provider:'To be matched',providerPhone:'',
+  providerStatus:'Matching',rematch:null,status:'matching',statusLabel:'Matching',
+  brief:'Demo: home cleaning for a two-bedroom apartment.',scope:'Clean rooms and kitchen.',
+  createdAt:stamp,updatedAt:'2026-11-10T14:10:00.000Z'},
+ {reference:'00000000-0000-4000-8000-000000000004',serviceId:'JT-00000004',
+  category:'moving',date:'2026-11-16',time:'13:30',location:'Tudor, Mombasa',
+  area:'Tudor',provider:'Sample moving company',providerPhone:'',
+  providerStatus:'Confirmed',rematch:null,status:'scheduled',statusLabel:'Booking confirmed',
+  brief:'Demo: move household items from Tudor to Nyali.',scope:'Pack and move items.',
+  createdAt:stamp,updatedAt:'2026-11-10T13:00:00.000Z'}
 ];
 export const reviewerProviderDashboard={
  profile:{
