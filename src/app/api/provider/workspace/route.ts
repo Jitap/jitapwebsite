@@ -1,3 +1,5 @@
+import {getReviewSession} from '@/lib/jitap-review-session';
+import {reviewerProviderDashboard} from '@/lib/jitap-review-fixtures';
 import {NextRequest,NextResponse,after} from 'next/server';
 import {z} from 'zod';
 import {getProviderSession} from '@/lib/provider-session-server';
@@ -53,6 +55,8 @@ function responseWithSession(data:unknown,session:NonNullable<Awaited<ReturnType
  return response;
 }
 export async function GET(req:NextRequest){
+ const review=getReviewSession(req);
+ if(review)return review.role==='provider'?NextResponse.json({...reviewerProviderDashboard,reviewer:true},{headers:noStore}):error('Provider mode required',403);
  const session=await identity(req);
  if(!session)return error('Sign in with your provider account.',401);
  try{
@@ -143,6 +147,7 @@ export async function GET(req:NextRequest){
  }catch{return error('Unable to load your provider dashboard.',503)}
 }
 export async function POST(req:NextRequest){
+ if(getReviewSession(req))return error('Review mode: no live provider actions are allowed. Switch modes to review the customer experience.',403);
  if(!sameOrigin(req))return error('Invalid origin',403);
  if(Number(req.headers.get('content-length')||0)>6500)return error('Payload too large',413);
  const session=await identity(req);if(!session)return error('Sign in with your provider account.',401);
