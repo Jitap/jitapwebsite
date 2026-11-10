@@ -1,3 +1,4 @@
+import {getReviewSession,setReviewSession} from '@/lib/jitap-review-session';
 import {NextRequest,NextResponse} from 'next/server';
 import {getProviderSession} from '@/lib/provider-session-server';
 import {getCustomerIdentity} from '@/lib/customer-session-server';
@@ -12,6 +13,11 @@ export async function POST(req:NextRequest){
  const data=await req.json().catch(()=>null) as {mode?:unknown}|null;
  const mode=data?.mode;
  if(mode!=='customer'&&mode!=='provider')return error('Choose customer or provider mode',422);
+ if(getReviewSession(req)){
+  const response=NextResponse.json({ok:true,reviewer:true,mode,redirect:mode==='provider'?'/provider':'/account'},{headers});
+  setReviewSession(response,mode);
+  return response;
+ }
  const provider=await getProviderSession(req);
  const customer=provider?null:await getCustomerIdentity(req);
  const session=provider||(customer?.kind==='customer'?customer.identity:null);
