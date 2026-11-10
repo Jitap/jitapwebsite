@@ -224,3 +224,86 @@
  .jt-glass-tile:hover{transform:none}
  .jt-glass-services{scroll-behavior:auto}
 }
+
+/*
+ * Customer story actions — circular rings instead of rectangular cards.
+ * The source PNGs have opaque white squares; multiply blending into an
+ * always-white circular interior removes the apparent white tile without
+ * distorting the supplied brand artwork.
+ */
+.jt-glass-app .jt-story-actions{
+ display:grid;
+ grid-template-columns:repeat(3,minmax(0,1fr));
+ gap:clamp(5px,2vw,22px);
+ align-items:start;
+ margin:23px 0 26px;
+}
+.jt-glass-app .jt-story-action,
+.jt-glass-app .jt-story-action:first-child{
+ min-width:0;min-height:0;padding:0;
+ border:0;border-radius:0;background:transparent;
+ box-shadow:none;
+ display:flex;align-items:center;justify-content:flex-start;
+ flex-direction:column;gap:9px;
+ color:var(--jt-navy);font:inherit;text-align:center;
+ cursor:pointer;transform:none;
+}
+.jt-glass-app .jt-story-action:hover{transform:none}
+.jt-story-ring{
+ --jt-story-size:clamp(96px,16vw,158px);
+ width:var(--jt-story-size);
+ height:var(--jt-story-size);
+ max-width:100%;aspect-ratio:1;
+ border-radius:50%;
+ position:relative;isolation:isolate;
+ display:grid;place-items:center;flex:none;
+ background:#dce5eb;
+ transition:transform .2s ease;
+}
+.jt-story-ring::before{
+ content:"";
+ position:absolute;inset:0;border-radius:50%;z-index:0;
+ background:conic-gradient(from 0deg,#05cd53 0deg 62deg,#dce5eb 63deg 310deg,#ccece0 360deg);
+ animation:jt-story-arc-orbit 6.5s linear infinite;
+}
+.jt-story-track .jt-story-ring::before{animation-delay:-2.16s}
+.jt-story-saved .jt-story-ring::before{animation-delay:-4.32s}
+.jt-story-inner{
+ position:absolute;inset:clamp(5px,0.85vw,8px);
+ z-index:1;border-radius:50%;background:#fff;
+ display:grid;place-items:center;overflow:hidden;
+}
+.jt-glass-app .jt-story-inner .jt-glass-quick-icon{
+ display:block;
+ width:67%;height:67%;
+ object-fit:contain;
+ mix-blend-mode:multiply;
+ filter:contrast(1.09);
+ border:0;border-radius:0;background:transparent;
+}
+.jt-glass-app .jt-story-action strong,
+.jt-glass-app .jt-story-action:first-child strong{
+ color:var(--jt-navy);
+ font-weight:820;
+ font-size:clamp(13px,2.4vw,19px);
+ line-height:1.13;
+}
+.jt-story-action:focus-visible{outline:3px solid #0b71c5;outline-offset:5px;border-radius:14px}
+.jt-story-action:hover .jt-story-ring{transform:scale(1.04)}
+.jt-story-action:active .jt-story-ring{transform:scale(.97)}
+@keyframes jt-story-arc-orbit{to{transform:rotate(360deg)}}
+@media(max-width:580px){
+ .jt-glass-app .jt-story-actions{gap:6px;margin-top:20px;margin-bottom:24px}
+ .jt-story-ring{--jt-story-size:clamp(88px,28.2vw,130px)}
+ .jt-story-inner{inset:5px}
+ .jt-glass-app .jt-story-inner .jt-glass-quick-icon{width:69%;height:69%}
+ .jt-glass-app .jt-story-action strong,
+ .jt-glass-app .jt-story-action:first-child strong{font-size:clamp(12px,3.7vw,16px);line-height:1.12}
+}
+@media(max-width:350px){
+ .jt-story-ring{--jt-story-size:clamp(78px,27vw,96px)}
+}
+@media(prefers-reduced-motion:reduce){
+ .jt-story-ring::before{animation:none}
+ .jt-story-ring{transition:none}
+}
