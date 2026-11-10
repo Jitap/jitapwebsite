@@ -75,8 +75,8 @@ export function CustomerHomePanels({current,activeCount,loading,error,reviewer,o
    </div>
   </section>:current?<section className="jt-glass-current" aria-labelledby="jt-glass-current-title">
    <div className="jt-glass-section-head jt-glass-current-heading">
-    <h2 id="jt-glass-current-title"><Clock3 size={25}/> {activeCount>1?'My Current Requests ('+activeCount+')':'My Current Request'}</h2>
-    {activeCount>1&&<button type="button" className="jt-home-all-requests" onClick={onOpenRequests}>View All Requests <ChevronRight size={17}/></button>}
+    <h2 id="jt-glass-current-title"><Clock3 size={22}/><span>My Current Request</span>{activeCount>1&&<span className="jt-home-count" aria-label={activeCount+' active requests'}>{activeCount}</span>}</h2>
+    {activeCount>1&&<button type="button" className="jt-home-all-requests" onClick={onOpenRequests} aria-label={'View all '+activeCount+' active requests'}>View all</button>}
    </div>
    {error&&<div className="jt-home-stale-banner" role="status">Showing your last known request status. <button type="button" onClick={onRetry}>Refresh again</button></div>}
    <article className="jt-glass-request-card jt-home-priority-card">
@@ -105,7 +105,7 @@ export function CustomerHomePanels({current,activeCount,loading,error,reviewer,o
     </div>}
     <div className="jt-home-request-footer">
      <Link className="jt-home-view-request" href={'/track?ref='+encodeURIComponent(current.serviceId)}>
-      View Request <ChevronRight size={23}/>
+      View Request
      </Link>
      {!!current.providerPhone&&<a className="jt-home-call-provider" href={'tel:'+current.providerPhone.replace(/[^+\d]/g,'')}>
       <Phone size={17}/> Call Provider
