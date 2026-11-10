@@ -14,10 +14,12 @@ export async function GET(req:NextRequest){
   return NextResponse.json({error:'Kapso configuration incomplete'},{status:503});
  try{
   const detail=req.nextUrl.searchParams.get('detail');
-  if(detail==='health'||detail==='deliveries'||detail==='meta-logs'){
+  if(detail==='health'||detail==='deliveries'||detail==='meta-logs'||detail==='inbound-messages'||detail==='inbound-logs'){
    const url=detail==='health'
     ?'https://api.kapso.ai/platform/v1/whatsapp/phone_numbers/'+id+'/health'
     :detail==='meta-logs'?'https://api.kapso.ai/platform/v1/log_search?period=24h&source=whatsapp_webhook_event&limit=15'
+    :detail==='inbound-logs'?'https://api.kapso.ai/platform/v1/log_search?period=7d&source=whatsapp_webhook_event&limit=30'
+    :detail==='inbound-messages'?'https://api.kapso.ai/platform/v1/whatsapp/messages?direction=inbound&phone_number_id='+id+'&limit=25'
     :'https://api.kapso.ai/platform/v1/webhook_deliveries?period=24h&webhook_id=9c361acc-1576-4749-be99-e62c28c072c5&limit=20';
    const response=await fetch(url,{headers:{'X-API-Key':key,'Accept':'application/json'},cache:'no-store',redirect:'error',signal:AbortSignal.timeout(15000)});
    if(!response.ok)return NextResponse.json({ok:false,detail,status:response.status},{status:502});
@@ -34,7 +36,12 @@ export async function GET(req:NextRequest){
  }}),
       status:data.status||data.state||null},{headers:{'Cache-Control':'no-store'}});
    }
-   if(detail==='meta-logs'){
+   if(detail==='inbound-messages'){
+     const hits=Array.isArray(data.data)?data.data:Array.isArray(data.messages)?data.messages:Array.isArray(data)?data:[];
+     return NextResponse.json({ok:true,detail,keys:Object.keys(data),count:hits.length,
+       items:hits.slice(0,25).map((raw:unknown)=>{const m=raw&&typeof raw==='object'?raw as Record<string,unknown>:{};const k=m.kapso&&typeof m.kapso==='object'?m.kapso as Record<string,unknown>:{};return {id:m.id,direction:k.direction||m.direction,created_at:m.created_at,timestamp:m.timestamp,phone_number_id:m.phone_number_id,type:m.type,status:k.status||m.status};})});
+   }
+   if(detail==='meta-logs'||detail==='inbound-logs'){
      const hits=Array.isArray(data.data)?data.data:Array.isArray(data.logs)?data.logs:[];
      const logs=hits.slice(0,15).map((raw:unknown)=>{const x=raw&&typeof raw==='object'?raw as Record<string,unknown>:{};return {timestamp:x.created_at||x.timestamp,source:x.source,event_type:x.event_type||x.event,status:x.status||x.http_status,keys:Object.keys(x).slice(0,16)}});
      return NextResponse.json({ok:true,detail,keys:Object.keys(data),count:hits.length,logs});
