@@ -1,8 +1,11 @@
+import {getReviewSession,clearReviewSession} from '@/lib/jitap-review-session';
 import {NextResponse,type NextRequest} from 'next/server';
 import {accountQuery,clearAuthCookies,goTrue,sameOrigin,setAuthCookies} from '@/lib/jitap-auth';
 export const runtime='nodejs';
 const noStore={'Cache-Control':'private, no-store'};
 export async function GET(req:NextRequest){
+ const reviewer=getReviewSession(req);
+ if(reviewer)return NextResponse.json({authenticated:true,reviewer:true,accountType:reviewer.role,primaryAccountType:'provider',phone:'Not required',fullName:'Sena · Design Reviewer'},{headers:noStore});
  let access=req.cookies.get('jt_access')?.value||'';
  const refresh=req.cookies.get('jt_refresh')?.value||'';
  if(!access&&!refresh)return NextResponse.json({authenticated:false},{status:401,headers:noStore});
@@ -28,6 +31,9 @@ export async function GET(req:NextRequest){
 }
 export async function DELETE(req:NextRequest){
  if(!sameOrigin(req))return NextResponse.json({error:'Invalid origin'},{status:403});
+ if(getReviewSession(req)){
+  const response=NextResponse.json({signedOut:true},{headers:noStore});clearReviewSession(response);clearAuthCookies(response);return response;
+ }
  const access=req.cookies.get('jt_access')?.value;
  if(access)await goTrue('logout',undefined,access,'POST');
  const response=NextResponse.json({signedOut:true},{headers:noStore});
