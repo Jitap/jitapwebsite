@@ -1,6 +1,6 @@
 'use client';
 
-import {useCallback,useEffect,useMemo,useState} from 'react';
+import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
 import {
@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import {CustomerTicketCard,type CustomerTicket} from '@/components/CustomerTicketCard';
 import {customerProgressStage,customerProgressSteps} from '@/lib/customer-progress';
+import {SERVICE_OPTIONS} from '@/lib/provider-options';
 import './customer-home.css';
 import './glass-dashboard.css';
 
@@ -19,12 +20,15 @@ type Account={
 };
 type Tab='home'|'requests'|'saved'|'wallet'|'profile';
 const tabs:Tab[]=['home','requests','saved','wallet','profile'];
-const services=[
- {name:'Plumbing',slug:'plumbing',icon:'🚰'},
- {name:'Electrical',slug:'electrical',icon:'⚡'},
- {name:'Cleaning',slug:'cleaning',icon:'🧹'},
- {name:'Handyman',slug:'general-repairs',icon:'🛠️'}
-];
+const serviceIcons:Record<string,string>={
+ 'plumbing':'🚰','electrical':'⚡','cleaning':'🧹','moving':'🚚','carpentry':'🪚',
+ 'general-repairs':'🛠️','painting':'🎨','masonry':'🧱','tiling':'🧩',
+ 'solar-security':'📹','appliance-repair':'🔧','computer-phone-repair':'💻',
+ 'roofing':'🏠','pest-control':'🐜','welding':'⚙️','other-services':'✨'
+};
+const services=SERVICE_OPTIONS.map(service=>({
+ name:service.label,slug:service.value,icon:serviceIcons[service.value]||'🛠️'
+}));
 function dateLabel(value:string){
  if(!/^\d{4}-\d{2}-\d{2}$/.test(value))return 'Date to be confirmed';
  const d=new Date(value+'T12:00:00Z');
@@ -45,6 +49,9 @@ function timeLabel(ticket:CustomerTicket){
 
 export default function AccountPage(){
  const router=useRouter();
+ const serviceCarouselRef=useRef<HTMLDivElement>(null);
+ const [canScrollBack,setCanScrollBack]=useState(false);
+ const [canScrollForward,setCanScrollForward]=useState(true);
  const [account,setAccount]=useState<Account|null>(null);
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState('');
@@ -97,6 +104,21 @@ export default function AccountPage(){
    }
   }catch{}
  },[account?.accountType,account?.phone]);
+ const refreshCarousel=useCallback(()=>{
+  const el=serviceCarouselRef.current;if(!el)return;
+  setCanScrollBack(el.scrollLeft>4);
+  setCanScrollForward(el.scrollLeft+el.clientWidth<el.scrollWidth-4);
+ },[]);
+ useEffect(()=>{
+  if(tab!=='home'||loading)return;
+  refreshCarousel();
+  const onResize=()=>refreshCarousel();window.addEventListener('resize',onResize);
+  return()=>window.removeEventListener('resize',onResize);
+ },[tab,loading,refreshCarousel]);
+ function scrollServices(direction:-1|1){
+  const el=serviceCarouselRef.current;if(!el)return;
+  el.scrollBy({left:direction*Math.max(190,el.clientWidth*0.76),behavior:'smooth'});
+ }
  function navigate(next:Tab){
   setTab(next);
   const nextUrl=next==='home'?'/account':'/account?tab='+next;
@@ -151,23 +173,30 @@ export default function AccountPage(){
     </section>
     <section className="jt-glass-actions" aria-label="Quick actions">
      <Link href={account?.reviewer?'/services':'/request'} className="jt-glass-tile jt-glass-tile-request">
-      <span className="jt-glass-action-icon"><Home size={35}/><Plus className="jt-glass-action-plus" size={20}/></span>
+      <img className="jt-glass-quick-icon" src="/images/Request%20Icon%20Service.png" width={60} height={60} alt="" aria-hidden="true"/>
       <strong>Request<br/>a Service</strong>
      </Link>
      <button type="button" className="jt-glass-tile" onClick={()=>navigate('requests')}>
-      <span className="jt-glass-action-icon jt-glass-track-icon"><MapPin size={39} fill="#f04e53" stroke="#182579" strokeWidth={1.8}/></span>
+      <img className="jt-glass-quick-icon" src="/images/Track%20Service.png" width={60} height={60} alt="" aria-hidden="true"/>
       <strong>Track<br/>Requests</strong>
      </button>
      <button type="button" className="jt-glass-tile" onClick={()=>navigate('saved')}>
-      <img src="/images/197bfed06ab38ebd786c364ec8869d2e.jpg" alt="" className="jt-glass-save-icon"/>
+      <img src="/images/Save%20Providers%20Icon.png" alt="" aria-hidden="true" className="jt-glass-quick-icon" width={60} height={60}/>
       <strong>Saved<br/>Providers</strong>
      </button>
     </section>
     <section className="jt-glass-explore" aria-labelledby="jt-glass-explore-title">
-     <div className="jt-glass-section-head"><h2 id="jt-glass-explore-title">Explore Services</h2><Link href="/services">View All <ChevronRight size={21}/></Link></div>
-     <div className="jt-glass-services">{services.map(service=><Link key={service.slug} href={'/request?category='+encodeURIComponent(service.slug)} className="jt-glass-service-tile">
-      <span className="jt-glass-service-icon" aria-hidden="true">{service.icon}</span><strong>{service.name}</strong>
-     </Link>)}</div>
+     <div className="jt-glass-section-head"><h2 id="jt-glass-explore-title">Explore Services</h2><div className="jt-glass-explore-controls">
+       <span className="jt-glass-swipe-hint">Swipe to explore</span>
+       <button type="button" className="jt-glass-carousel-arrow" onClick={()=>scrollServices(-1)} disabled={!canScrollBack} aria-label="Previous services"><ChevronRight size={19} style={{transform:'rotate(180deg)'}}/></button>
+       <button type="button" className="jt-glass-carousel-arrow" onClick={()=>scrollServices(1)} disabled={!canScrollForward} aria-label="Next services"><ChevronRight size={19}/></button>
+       <Link href="/services">View All <ChevronRight size={19}/></Link>
+      </div></div>
+     <div className="jt-glass-services" ref={serviceCarouselRef} onScroll={refreshCarousel} role="region" aria-label="Service categories, swipe horizontally">
+      {services.map(service=><Link key={service.slug} href={account?.reviewer?'/services':'/request?category='+encodeURIComponent(service.slug)} className="jt-glass-service-tile">
+       <span className="jt-glass-service-icon" aria-hidden="true">{service.icon}</span><strong>{service.name}</strong>
+      </Link>)}
+     </div>
     </section>
     <section className="jt-glass-current" aria-labelledby="jt-glass-current-title">
      <div className="jt-glass-section-head jt-glass-current-heading"><h2 id="jt-glass-current-title"><Clock3 size={25}/> My Current Request</h2></div>
