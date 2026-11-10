@@ -209,10 +209,10 @@ export function CoordinatorDashboard(){
   try{
    const res=await fetch('/api/coordinator/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,email,next:new URLSearchParams(window.location.search).get('next')==='/coordinator/providers'?'/coordinator/providers':undefined})});
    const body=await res.json();
-   if(!res.ok){setAuthMessage(body.error||'Sign-in could not be completed');return}
+   if(!res.ok){setSent(false);setAuthMessage(body.error||'Sign-in could not be completed');return}
    if(action==='send'){setSent(true);setAuthMessage('')}
    else {setStaff(body.staff);setSent(false);await load()}
-  }catch{setAuthMessage('Could not reach the sign-in service')}
+  }catch{setSent(false);setAuthMessage('Could not reach the sign-in service')}
   finally{setLogging(false)}
  }
  // Magic-link authentication happens in the email browser tab. Staff who return
@@ -269,7 +269,7 @@ export function CoordinatorDashboard(){
     <button type="submit" disabled={logging}>{logging?'Sending link…':'Verify'}</button>
     {sent&&<div className="coordinator-link-help" role="status"><strong><CheckCircle2 size={18} aria-hidden="true"/> Check your email</strong><span>Open the sign-in link from JiTap to access Service Operations.</span><button type="button" className="coordinator-secondary" disabled={logging} onClick={()=>void authenticate('send')}>Resend sign-in link</button></div>}
    </form>
-   {authMessage&&<p role="status">{authMessage}</p>}
+   {authMessage&&<p role="alert" className="coordinator-auth-error">{authMessage}</p>}
    {feedback&&<p role="status">{feedback}</p>}
   </div></section>;
  return <section className="coordinator-root">
