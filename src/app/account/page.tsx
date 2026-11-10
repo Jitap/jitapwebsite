@@ -171,17 +171,23 @@ export default function AccountPage(){
      <h1>Hello, <span>{firstName}</span></h1>
      <p>Request, track and manage your services all in one place.</p>
     </section>
-    <section className="jt-glass-actions" aria-label="Quick actions">
-     <Link href={account?.reviewer?'/services':'/request'} className="jt-glass-tile jt-glass-tile-request">
-      <img className="jt-glass-quick-icon" src="/images/Request%20Icon%20Service.png" width={60} height={60} alt="" aria-hidden="true"/>
+    <section className="jt-glass-actions jt-story-actions" aria-label="Quick actions">
+     <Link href={account?.reviewer?'/services':'/request'} className="jt-glass-tile jt-story-action jt-story-request">
+      <span className="jt-story-ring"><span className="jt-story-inner">
+       <img className="jt-glass-quick-icon" src="/images/Request%20Icon%20Service.png" width={86} height={86} alt="" aria-hidden="true"/>
+      </span></span>
       <strong>Request<br/>a Service</strong>
      </Link>
-     <button type="button" className="jt-glass-tile" onClick={()=>navigate('requests')}>
-      <img className="jt-glass-quick-icon" src="/images/Track%20Service.png" width={60} height={60} alt="" aria-hidden="true"/>
+     <button type="button" className="jt-glass-tile jt-story-action jt-story-track" onClick={()=>navigate('requests')}>
+      <span className="jt-story-ring"><span className="jt-story-inner">
+       <img className="jt-glass-quick-icon" src="/images/Track%20Service.png" width={86} height={86} alt="" aria-hidden="true"/>
+      </span></span>
       <strong>Track<br/>Requests</strong>
      </button>
-     <button type="button" className="jt-glass-tile" onClick={()=>navigate('saved')}>
-      <img src="/images/Save%20Providers%20Icon.png" alt="" aria-hidden="true" className="jt-glass-quick-icon" width={60} height={60}/>
+     <button type="button" className="jt-glass-tile jt-story-action jt-story-saved" onClick={()=>navigate('saved')}>
+      <span className="jt-story-ring"><span className="jt-story-inner">
+       <img src="/images/Save%20Providers%20Icon.png" alt="" aria-hidden="true" className="jt-glass-quick-icon" width={86} height={86}/>
+      </span></span>
       <strong>Saved<br/>Providers</strong>
      </button>
     </section>
