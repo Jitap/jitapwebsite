@@ -24,15 +24,29 @@ export async function POST(req:NextRequest){
   const phoneId=str(payload.phone_number_id)||str(data.phone_number_id);
   if(phoneId&&process.env.KAPSO_PHONE_NUMBER_ID&&phoneId!==process.env.KAPSO_PHONE_NUMBER_ID)
    return respond({received:true,ignored:'different_phone_number'});
-  const event=str(data.event)||str(data.type)||str(payload.event)||str(payload.event_type);
-  console.info('JiTap Kapso envelope fields',{
-   top:Object.keys(data).slice(0,20),
-   data:Object.keys(obj(data.data)).slice(0,20),
-   payload:Object.keys(payload).slice(0,20),
-   message:Object.keys(obj(payload.message)).slice(0,20),
-   eventType:typeof data.event,
-   typeType:typeof data.type
-  });
+  const currentMessage=obj(payload.message);
+  const currentKapso=obj(currentMessage.kapso);
+  const direction=str(currentKapso.direction).toLowerCase();
+  const currentStatus=str(currentKapso.status).toLowerCase();
+  const inferred=direction==='inbound'?'whatsapp.message.received':
+   direction==='outbound'&&['sent','delivered','read','failed'].includes(currentStatus)
+    ?'whatsapp.message.'+currentStatus:'';
+  const event=str(data.event)||str(data.type)||str(payload.event)||str(payload.event_type)||inferred;
+  if(data.test===true||payload.test===true){
+   // Authenticated Kapso test payload; prove signed webhook reached Supabase without
+   // creating a real customer message, opening an SOC case, or changing a booking.
+   const id=str(currentMessage.id)||'synthetic-unknown';
+   const stamp=str(data.test_timestamp)||str(payload.test_timestamp)||'unknown';
+   await supabasePrivate('jitap_kapso_webhook_events',{
+    method:'POST',body:JSON.stringify({
+     event_key:('kapso-test:'+id+':'+stamp).slice(0,240),
+     provider_message_id:id.slice(0,240),
+     event_type:'test'
+    })
+   });
+   console.info('JiTap Kapso signed synthetic webhook recorded',{event});
+   return respond({received:true,test:true});
+  }
   const statuses:{id:string;status:string;timestamp:string;error:string}[]=[];
   const inbound:{id:string;phone:string;preview:string}[]=[];
   const status=(x:RecordValue)=>{
