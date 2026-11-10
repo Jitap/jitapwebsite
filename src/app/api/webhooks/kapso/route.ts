@@ -25,6 +25,14 @@ export async function POST(req:NextRequest){
   if(phoneId&&process.env.KAPSO_PHONE_NUMBER_ID&&phoneId!==process.env.KAPSO_PHONE_NUMBER_ID)
    return respond({received:true,ignored:'different_phone_number'});
   const event=str(data.event)||str(data.type)||str(payload.event)||str(payload.event_type);
+  console.info('JiTap Kapso envelope fields',{
+   top:Object.keys(data).slice(0,20),
+   data:Object.keys(obj(data.data)).slice(0,20),
+   payload:Object.keys(payload).slice(0,20),
+   message:Object.keys(obj(payload.message)).slice(0,20),
+   eventType:typeof data.event,
+   typeType:typeof data.type
+  });
   const statuses:{id:string;status:string;timestamp:string;error:string}[]=[];
   const inbound:{id:string;phone:string;preview:string}[]=[];
   const status=(x:RecordValue)=>{
