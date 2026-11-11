@@ -17,8 +17,20 @@ try {
  const placeholder=await page.locator('.jt-chat-input-label textarea').boundingBox();
  const send=await page.locator('.jt-chat-send').boundingBox();
  assert.ok(placeholder&&send&&placeholder.x+placeholder.width<=send.x+2,'Input must not overlap button');
+ const navigationToggle=page.getByRole('button',{name:'Show navigation'});
+ assert.equal(await navigationToggle.getAttribute('aria-expanded'),'false','Navigation should start collapsed');
+ await navigationToggle.click();
+ const hideNavigation=page.getByRole('button',{name:'Hide navigation'});
+ assert.equal(await hideNavigation.getAttribute('aria-expanded'),'true','Arrow expands customer navigation');
+ const quickNavigation=page.getByRole('navigation',{name:'Customer navigation'});
+ for(const name of ['Home','Requests','Wallet','Profile'])assert.equal(await quickNavigation.getByRole('link',{name}).count(),1);
+ const expandedComposer=await page.locator('.jt-chat-composer').boundingBox();
+ const expandedNav=await page.locator('.jt-request-nav-links').boundingBox();
+ assert.ok(expandedComposer&&expandedNav&&expandedComposer.y+expandedComposer.height<=expandedNav.y+3,'Expanded navigation must not cover Ask JiTap input');
+ await hideNavigation.click();
+ assert.equal(await page.getByRole('button',{name:'Show navigation'}).getAttribute('aria-expanded'),'false');
  await page.getByRole('button',{name:'Open JiTap menu'}).click();
- for(const name of ['Saved Providers','My Network','My Request'])assert.equal(await page.getByRole('navigation',{name:'JiTap request menu'}).getByRole('link',{name}).count(),1);
+ for(const name of ['Home','Saved Providers','My Network','My Request'])assert.equal(await page.getByRole('navigation',{name:'JiTap request menu'}).getByRole('link',{name}).count(),1);
  await page.getByRole('button',{name:'Open JiTap menu'}).click();
  const photoRequests=[];
  page.on('request',request=>{if(request.url().includes('/api/ai/service-photo'))photoRequests.push(request.url())});
@@ -66,6 +78,16 @@ try {
  const submitColor=await page.locator('.jt-request-submit-green').evaluate(el=>getComputedStyle(el).backgroundImage);
  assert.ok(submitColor.includes('gradient'),'Submit Request must use JiTap emerald glass gradient');
 
+ const walletResponse=await page.goto(base+'/account?tab=wallet',{waitUntil:'domcontentloaded'});
+ assert.equal(walletResponse?.status(),200);
+ // Account content is authenticated; the CSS rule itself must remain green.
+ const walletStyle=await page.evaluate(()=>{
+  const style=document.createElement('button');
+  style.className='jt-wallet-view-requests';
+  const host=document.createElement('div');host.className='jt-glass-empty';host.appendChild(style);document.body.appendChild(host);
+  const result=getComputedStyle(style).backgroundImage;host.remove();return result;
+ });
+ assert.ok(walletStyle.includes('gradient'),'Wallet View Requests button should use emerald gradient');
  console.log('PASS JiTap mobile chat, intake, date/time, sonar and matching route');
  await page.screenshot({path:'/tmp/jitap-request-mobile-smoke.png'});
 } finally {await browser.close()}
