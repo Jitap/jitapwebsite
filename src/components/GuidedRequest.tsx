@@ -1,7 +1,7 @@
 'use client';
 import {useEffect,useMemo,useState,useRef} from 'react';
 import Link from 'next/link';
-import {ArrowLeft,ArrowRight,ChevronDown,ChevronLeft,MapPin,X,Sparkles,Menu,Plus,ImagePlus,Bookmark,Network,SquarePlus,Shirt,Footprints,House,BedDouble,Layers,Droplets,Brush} from 'lucide-react';
+import {ArrowLeft,ArrowRight,ChevronDown,ChevronUp,ChevronLeft,MapPin,X,Sparkles,Menu,Plus,ImagePlus,Bookmark,Network,SquarePlus,Home,ClipboardList,Wallet,UserRound,Shirt,Footprints,House,BedDouble,Layers,Droplets,Brush} from 'lucide-react';
 import './ask-entry.css';
 import {areas,categories,inferService} from '@/lib/data';
 import {understandJob} from '@/lib/job-intelligence';
@@ -124,6 +124,7 @@ export function GuidedRequest(){
  const [chatIntake,setChatIntake]=useState(false);
  const [askError,setAskError]=useState('');
  const [askMenuOpen,setAskMenuOpen]=useState(false);
+ const [requestNavOpen,setRequestNavOpen]=useState(false);
  const [chatViewportHeight,setChatViewportHeight]=useState<number|null>(null);
  useEffect(()=>{
   if(!showAskEntry)return;
@@ -273,6 +274,7 @@ export function GuidedRequest(){
    <div className="jt-chat-menu-wrap">
     <button type="button" className="jt-chat-menu-trigger" aria-expanded={askMenuOpen} aria-label="Open JiTap menu" onClick={()=>setAskMenuOpen(v=>!v)}>{askMenuOpen?<X size={28}/>:<Menu size={28}/>}</button>
     {askMenuOpen&&<nav className="jt-chat-menu" aria-label="JiTap request menu">
+     <Link href="/account" onClick={()=>setAskMenuOpen(false)}><Home size={22}/> Home</Link>
      <Link href="/account?tab=saved" onClick={()=>setAskMenuOpen(false)}><Bookmark size={22}/> Saved Providers</Link>
      <Link href="/account?tab=network" onClick={()=>setAskMenuOpen(false)}><Network size={22}/> My Network</Link>
      <Link href="/account?tab=requests" onClick={()=>setAskMenuOpen(false)}><SquarePlus size={22}/> My Request</Link>
@@ -313,6 +315,20 @@ export function GuidedRequest(){
     {askError&&<p role="alert" className="jt-ask-entry-error">{askError}</p>}
    </form>
   </div>}
+  <div className={'jt-request-nav-reveal'+(requestNavOpen?' is-open':'')}>
+   <button type="button" className="jt-request-nav-toggle" aria-expanded={requestNavOpen} aria-controls="jt-request-quick-nav" aria-label={requestNavOpen?'Hide navigation':'Show navigation'} onClick={()=>{setRequestNavOpen(open=>!open);setAskMenuOpen(false)}}>
+    {requestNavOpen?<ChevronDown size={19} aria-hidden="true"/>:<ChevronUp size={19} aria-hidden="true"/>}
+   </button>
+   <div className="jt-request-nav-panel" id="jt-request-quick-nav" inert={!requestNavOpen}>
+    <nav className="jt-request-nav-links" aria-label="Customer navigation">
+     <Link href="/account"><Home size={21} aria-hidden="true"/><span>Home</span></Link>
+     <Link href="/account?tab=requests"><ClipboardList size={21} aria-hidden="true"/><span>Requests</span></Link>
+     <Link href="/request" className="jt-request-nav-primary" aria-label="New request" onClick={()=>{setRequestNavOpen(false);setChatIntake(false);setDescription('');setAnswers({});setStage(0);setAskPhotos([]);void saveDraftPhotos([]).catch(()=>{})}}><Plus size={26} aria-hidden="true"/></Link>
+     <Link href="/account?tab=wallet"><Wallet size={21} aria-hidden="true"/><span>Wallet</span></Link>
+     <Link href="/account?tab=profile"><UserRound size={21} aria-hidden="true"/><span>Profile</span></Link>
+    </nav>
+   </div>
+  </div>
  </section>;
  if(aiWaiting)return <main className="th-request-flow"><div className="container th-request-layout"><section className="th-questions jt-ai-intake-loading" role="status" aria-label="Understanding your request..."><span className="jt-ai-typing-dots" aria-hidden="true"><span/><span/><span/></span></section></div></main>;
  if(category==='moving'&&!ready)return <MovingRequest/>;
