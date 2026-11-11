@@ -81,3 +81,13 @@ body:has(.jt-match-page) #main{padding:0!important}
 .jt-chat-datetime .jt-time-chip{min-height:52px;font-size:15px}
 .jt-chat-datetime .jt-time-chip:disabled{opacity:.4;cursor:not-allowed}
 @media(max-width:420px){.jt-chat-datetime .jt-date-options{gap:3px}.jt-chat-datetime .jt-date-chip strong{font-size:15px}.jt-chat-datetime .jt-date-chip small{font-size:9px}.jt-chat-datetime .jt-date-chip{padding:9px 1px}}
+
+/* Intake is a readable, independently scrolling conversation—no fixed photo tray. */
+.jt-chat-conversation{overscroll-behavior:contain;scroll-padding-top:16px;scrollbar-gutter:stable}
+.jt-chat-transcript{padding-top:18px;padding-bottom:30px;gap:14px}
+.jt-chat-question{scroll-margin-top:12px;overflow:visible;box-shadow:0 8px 25px #0a6a3b0d}
+.jt-chat-question h2{font-size:clamp(18px,4.5vw,22px);line-height:1.35;overflow-wrap:anywhere}
+.jt-chat-customer-bubble{font-size:14px}
+.jt-chat-message-photos{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.jt-chat-message-photos img{width:65px;height:65px;border-radius:12px;object-fit:cover;border:1px solid #a6d7b8}
+@media(max-width:480px){.jt-chat-transcript{padding:12px 14px 26px}.jt-chat-question{padding:16px 14px}.jt-chat-choices{flex-direction:column}.jt-chat-choices>button{width:100%;max-width:100%}}
