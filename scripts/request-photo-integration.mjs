@@ -9,6 +9,12 @@ assert.equal(response.status,201,'A synthetic QA request must be saved before ph
 assert.match(data.reference,/^[a-f0-9-]{36}$/i);
 assert.ok(typeof data.photoUploadToken==='string'&&data.photoUploadToken.length>50,'Request needs a scoped upload token');
 const bytes=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9ePqAAAAAASUVORK5CYII=','base64');
+const visionForm=new FormData();visionForm.append('photo',new Blob([bytes],{type:'image/png'}),'jitap-synthetic-qa.png');
+const analyzed=await fetch(origin+'/api/ai/service-photo',{method:'POST',headers:{Origin:origin},body:visionForm,signal:AbortSignal.timeout(18000)});
+const analysis=await analyzed.json();
+assert.equal(analyzed.status,200,'AI photo analysis endpoint should respond: '+JSON.stringify({status:analyzed.status,error:analysis.error}));
+assert.ok(typeof analysis.observation==='string'&&analysis.observation.length>2,'AI must produce an observation');
+console.log('PASS photo AI analysis returned an observation (non-diagnostic)');
 const body=new FormData();body.append('file',new Blob([bytes],{type:'image/png'}),'jitap-synthetic-qa.png');
 const upload=await fetch(origin+'/api/request/photos',{method:'POST',headers:{Origin:origin,'x-jitap-request-id':data.reference,'x-jitap-photo-token':data.photoUploadToken},body,signal:AbortSignal.timeout(25000)});
 const uploaded=await upload.json();
