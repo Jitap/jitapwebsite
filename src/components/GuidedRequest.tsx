@@ -10,6 +10,7 @@ import {track} from '@/lib/analytics';
 import {IntakeForm} from '@/components/Interactive';
 import {MatchedFundis} from '@/components/FundiDirectory';
 import {MovingRequest} from '@/components/MovingRequest';
+import {saveDraftPhotos} from '@/lib/request-photo-store';
 
 type Question={id:string;title:string;hint?:string;options:{value:string;label:string;hint?:string}[]};
 const mamaFuaServices=[
@@ -133,6 +134,8 @@ export function GuidedRequest(){
   return()=>{viewport?.removeEventListener('resize',sync);window.removeEventListener('resize',sync)};
  },[showAskEntry]);
  const [askPhotos,setAskPhotos]=useState<{file:File;preview:string}[]>([]);
+ const [photoStatus,setPhotoStatus]=useState('');
+ const [processingPhotos,setProcessingPhotos]=useState(false);
  const askPhotosRef=useRef<HTMLInputElement|null>(null);
  const chatScrollRef=useRef<HTMLDivElement|null>(null);
  useEffect(()=>()=>{askPhotos.forEach(photo=>URL.revokeObjectURL(photo.preview))},[askPhotos]);
@@ -240,23 +243,36 @@ export function GuidedRequest(){
   },120);
   return ()=>{cancelled=true;clearTimeout(timer);controller.abort()};
  },[hydrated,description,category,area,ready,showMatches,stage,knownQuestions,requestKey,aiResolvedKey]);
- function beginAsk(event:React.FormEvent<HTMLFormElement>){
+ async function beginAsk(event:React.FormEvent<HTMLFormElement>){
   event.preventDefault();
   const typed=description.trim();
-  if(typed.length<8){
-   setAskError('Describe the service you need in a little more detail.');
-   return;
-  }
+  if(typed.length<8){setAskError('Describe the service you need in a little more detail.');return}
+  if(processingPhotos)return;
   setAskError('');
+  let full=typed;
+  if(askPhotos.length){
+   setProcessingPhotos(true);
+   setPhotoStatus('Saving photos and checking their service details...');
+   try{
+    await saveDraftPhotos(askPhotos.map(p=>p.file));
+    const checks=await Promise.allSettled(askPhotos.slice(0,2).map(async p=>{
+     const body=new FormData();body.append('photo',p.file);
+     const res=await fetch('/api/ai/service-photo',{method:'POST',body});
+     const data=await res.json();
+     if(!res.ok)throw Error(data.error||'Image analysis unavailable');
+     return String(data.observation||'');
+    }));
+    const observations=checks.filter((v):v is PromiseFulfilledResult<string>=>v.status==='fulfilled').map(v=>v.value).filter(v=>v&&!v.includes('No clear service details visible'));
+    if(observations.length)full=(typed+'\nPhoto observations (AI, not a confirmed diagnosis): '+observations.join('; ')).slice(0,1500);
+    setPhotoStatus(checks.some(v=>v.status==='rejected')?'Photos saved for upload; some could not be analyzed.':'Photos analyzed and queued for secure upload with your request.');
+   }catch(error){setAskError(error instanceof Error?error.message:'Unable to save photos. Try again.');setProcessingPhotos(false);return}
+   finally{setProcessingPhotos(false)}
+  }else{try{await saveDraftPhotos([])}catch{}}
+  setDescription(full);
   const intent=inferService(typed);
   if(intent&&intent!==category)setCategory(intent);
-  setAnswers({});
-  setAiQuestions(null);
-  setAiResolvedKey('');
-  setStage(0);
-  setIntroThinking(true);
-  setChatIntake(intent!=='moving');
-  setShowAskEntry(intent!=='moving');
+  setAnswers({});setAiQuestions(null);setAiResolvedKey('');setStage(0);setIntroThinking(true);
+  setChatIntake(intent!=='moving');setShowAskEntry(intent!=='moving');
   try{window.localStorage.setItem('jitap:area',area)}catch{}
  }
  if(showAskEntry)return <section className="jt-ask-entry-page" style={chatViewportHeight?{height:chatViewportHeight+'px'}:undefined} aria-label="Ask JiTap for a service">
@@ -279,11 +295,13 @@ export function GuidedRequest(){
         <h2>{question.title}</h2>
         {question.hint&&<p>{question.hint}</p>}
         <label className="jt-chat-service-area">Your area <select value={area} onChange={e=>setArea(e.target.value)}>{areas.map(a=><option key={a} value={a}>{a}</option>)}</select></label>
-        {onTime?<div className="jt-chat-datetime">
-          <label>Preferred date <input type="date" min={clock.date} max={furthestDate(clock.date)} value={preferredDate} onChange={e=>{setPreferredDate(e.target.value);setPreferredTime('');setClock(nairobiNow())}}/></label>
-          <div className="jt-chat-date-buttons">{days.slice(0,4).map((day,i)=><button type="button" key={day.value} className={preferredDate===day.value?'selected':''} onClick={()=>{setPreferredDate(day.value);setPreferredTime('');setClock(nairobiNow())}}>{i===0?'Today':i===1?'Tomorrow':day.day+' '+day.number}</button>)}</div>
-          <label>Preferred time (EAT) <select value={preferredTime} disabled={!validDate} onChange={e=>{setPreferredTime(e.target.value);setClock(nairobiNow())}}><option value="">Select time</option>{preferredTimes.map(([v,text])=><option key={v} value={v} disabled={preferredDate===clock.date&&Number(v.slice(0,2))*60+Number(v.slice(3,5))<=clock.minutes}>{text}</option>)}</select></label>
-          <p>Requested times are subject to provider confirmation.</p>
+        {onTime?<div className="jt-time-picker jt-chat-datetime">
+          <h3>Preferred date</h3>
+          <div className="jt-date-options" role="group" aria-label="Preferred service date">{days.map((day,i)=><button type="button" key={day.value} className={'jt-date-chip'+(preferredDate===day.value?' selected':'')} aria-pressed={preferredDate===day.value} onClick={()=>{setPreferredDate(day.value);setPreferredTime('');setClock(nairobiNow())}}><small>{i===0?'Today':i===1?'Tomorrow':day.day}</small><strong>{day.number}</strong><small>{day.month}</small></button>)}</div>
+          <label className="jt-later-date" htmlFor="jt-chat-preferred-date">Or choose another date <input id="jt-chat-preferred-date" type="date" min={clock.date} max={furthestDate(clock.date)} value={preferredDate} onChange={e=>{setPreferredDate(e.target.value);setPreferredTime('');setClock(nairobiNow())}}/></label>
+          <h3>Preferred time <small>East Africa Time (EAT)</small></h3>
+          <div className="jt-chat-time-grid" role="group" aria-label="Preferred service time">{preferredTimes.map(([value,text])=>{const past=preferredDate===clock.date&&Number(value.slice(0,2))*60+Number(value.slice(3,5))<=clock.minutes;return <button type="button" key={value} className={'jt-time-chip'+(preferredTime===value?' selected':'')} aria-pressed={preferredTime===value} disabled={!validDate||past} onClick={()=>{setPreferredTime(value);setClock(nairobiNow())}}>{text}</button>})}</div>
+          <p>These are preferred times, not confirmed provider availability.</p>
         </div>:onMamaFua?<div className="jt-chat-choices">{mamaFuaServices.map(service=>{const selected=selectedCleaning.includes(service.value);return <div key={service.value} className="jt-chat-clean-row"><button type="button" className={selected?'selected':''} onClick={()=>setAnswers(old=>{const selectedList=(old.cleanServices||'').split(' | ').filter(Boolean);return {...old,cleanServices:(selected?selectedList.filter(x=>x!==service.value):[...selectedList,service.value]).join(' | ')}})}>{selected?'✓ ':''}{service.label} · {money(service.price)}</button>{selected&&<select aria-label={'Quantity for '+service.label} value={cleaningQuantities[service.value]||1} onChange={e=>setCleaningQuantities(old=>({...old,[service.value]:Number(e.target.value)}))}>{Array.from({length:10},(_,i)=><option key={i+1} value={i+1}>{i+1}</option>)}</select>}</div>})}<strong>Reference estimate: {money(cleaningTotal)}</strong></div>:<div className="jt-chat-choices">{question.options.map(option=><button type="button" className={answer===option.value?'selected':''} aria-pressed={answer===option.value} key={option.value} onClick={()=>setAnswers(old=>({...old,[question.id]:option.value}))}>{option.label}</button>)}</div>}
         <div className="jt-chat-question-actions">{stage>0&&<button type="button" onClick={()=>setStage(x=>x-1)}>Back</button>}{!onTime&&!onMamaFua&&<button type="button" onClick={skip}>Skip</button>}<button type="button" className="jt-chat-continue" disabled={onTime?!validDate||!validTime:onMamaFua?!selectedCleaning.length:!answer} onClick={next}>{onTime?'Find providers':'Continue'}</button></div>
       </section>}
@@ -296,10 +314,10 @@ export function GuidedRequest(){
      <input ref={askPhotosRef} className="jt-chat-file-input" type="file" accept="image/jpeg,image/png,image/webp" multiple aria-label="Add service photos" onChange={e=>{const files=Array.from(e.currentTarget.files||[]).filter(f=>f.type.startsWith('image/')&&f.size<=5*1024*1024);setAskPhotos(old=>[...old,...files.slice(0,Math.max(0,4-old.length)).map(file=>({file,preview:URL.createObjectURL(file)}))].slice(0,4));e.currentTarget.value=''}}/>
      <button type="button" className="jt-chat-add-photo" aria-label="Add photos to service brief" title="Add photos" onClick={()=>askPhotosRef.current?.click()}><Plus size={28}/></button>
      <label className="jt-chat-input-label"><textarea aria-label="Describe the service you need" rows={1} value={chatIntake?"":description} disabled={chatIntake} onChange={e=>{if(chatIntake)return;setDescription(e.target.value);if(askError)setAskError('');e.target.style.height='auto';e.target.style.height=Math.min(e.target.scrollHeight,144)+'px'}} placeholder="How can I help you..." maxLength={1500} required onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.nativeEvent.isComposing){e.preventDefault();e.currentTarget.form?.requestSubmit()}}}/></label>
-     <button type="submit" className="jt-chat-send" disabled={!description.trim()||chatIntake}>Ask JiTap</button>
+     <button type="submit" className="jt-chat-send" disabled={!description.trim()||chatIntake||processingPhotos}>{processingPhotos?"Checking photos...":"Ask JiTap"}</button>
     </div>
-    {askPhotos.length>0&&<p className="jt-chat-photo-note">{askPhotos.length} photo{askPhotos.length===1?'':'s'} selected (preview only; not yet uploaded).</p>}
-    {askError&&<p role="alert" className="jt-ask-entry-error">{askError}</p>}
+    {askPhotos.length>0&&<p className="jt-chat-photo-note">{askPhotos.length} photo{askPhotos.length===1?'':'s'} selected — will upload with request.</p>}
+    {photoStatus&&<p role="status" className="jt-chat-photo-note">{photoStatus}</p>}{askError&&<p role="alert" className="jt-ask-entry-error">{askError}</p>}
    </form>
   </div>
  </section>;
