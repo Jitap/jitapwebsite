@@ -20,10 +20,21 @@ try {
  await page.getByRole('button',{name:'Open JiTap menu'}).click();
  for(const name of ['Saved Providers','My Network','My Request'])assert.equal(await page.getByRole('navigation',{name:'JiTap request menu'}).getByRole('link',{name}).count(),1);
  await page.getByRole('button',{name:'Open JiTap menu'}).click();
+ const photoRequests=[];
+ page.on('request',request=>{if(request.url().includes('/api/ai/service-photo'))photoRequests.push(request.url())});
+ const photoPng=await page.screenshot();
+ await page.locator('.jt-chat-file-input').setInputFiles({name:'service.png',mimeType:'image/png',buffer:photoPng});
+ await page.locator('.jt-chat-photo').first().waitFor();
  await page.locator('.jt-chat-input-label textarea').fill('My kitchen tap is leaking and I need a plumber');
  await page.getByRole('button',{name:'Ask JiTap'}).click();
  await page.locator('.jt-chat-question').waitFor({timeout:20000});
  assert.equal(await page.locator('.jt-chat-customer-bubble').count(),1,'Customer request must remain in the chat');
+ assert.equal(photoRequests.length,0,'Photo analysis must not interrupt customer intake');
+ assert.equal(await page.locator('.jt-chat-composer').count(),0,'Photo preview/composer must not obscure intake questions');
+ assert.equal(await page.locator('.jt-chat-message-photos img').count(),1,'Photo appears compactly in the conversation');
+ const intakeScroll=await page.locator('.jt-chat-conversation').evaluate(el=>el.scrollTop);
+ assert.ok(intakeScroll<20,'Intake must start at top, not clipped below the fold');
+
  for(let i=0;i<6;i++){
   if(await page.locator('.jt-chat-datetime').count())break;
   await page.locator('.jt-chat-choices button').first().click();
@@ -45,6 +56,16 @@ try {
  const ring=await page.locator('.jt-sonar-ring').first().evaluate(el=>getComputedStyle(el).animationName);
  assert.equal(ring,'jt-sonar-expand');
  await page.getByRole('heading',{name:'Providers for your service'}).waitFor({timeout:10000});
+ const continueMatch=page.locator('.jt-matches-quote button').first();
+ if(await continueMatch.count())await continueMatch.click();
+ else await page.getByRole('button',{name:'Send service request'}).click();
+ await page.getByRole('heading',{name:'Where is the service needed?'}).waitFor({timeout:5000});
+ assert.equal(await page.locator('.jt-request-schedule-confirmation').count(),0,'Do not ask to confirm date and time again');
+ assert.equal(await page.locator('.jt-verified-contact').count(),0,'Location-only form does not need a verification banner');
+ assert.equal(await page.locator('.jt-request-submit-green svg').count(),0,'Submit Request button must not have a right arrow');
+ const submitColor=await page.locator('.jt-request-submit-green').evaluate(el=>getComputedStyle(el).backgroundImage);
+ assert.ok(submitColor.includes('gradient'),'Submit Request must use JiTap emerald glass gradient');
+
  console.log('PASS JiTap mobile chat, intake, date/time, sonar and matching route');
  await page.screenshot({path:'/tmp/jitap-request-mobile-smoke.png'});
 } finally {await browser.close()}

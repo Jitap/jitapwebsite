@@ -135,7 +135,6 @@ export function GuidedRequest(){
   return()=>{viewport?.removeEventListener('resize',sync);window.removeEventListener('resize',sync)};
  },[showAskEntry]);
  const [askPhotos,setAskPhotos]=useState<{file:File;preview:string}[]>([]);
- const [photoStatus,setPhotoStatus]=useState('');
  const [processingPhotos,setProcessingPhotos]=useState(false);
  const askPhotosRef=useRef<HTMLInputElement|null>(null);
  const photoPreviewsRef=useRef<Set<string>>(new Set());
@@ -198,7 +197,9 @@ export function GuidedRequest(){
  const stageNames:string[]=category==='cleaning'?['Need','Time','Total','Contact']:[...questions.map((q,i)=>q.id==='timing'?'Time':q.id==='screenSize'?'TV size':q.id==='wallType'?'Wall':q.id==='bracket'?'Bracket':q.id==='frequency'?'Frequency':q.id==='size'?'Space':q.id==='cleanType'?'Type':i===0?'Need':'Details'),'Matches','Contact'];
  const aiRequestKey=requestKey;
  const aiWaiting=(!hydrated||introThinking)&&description.trim().length>=8&&!ready&&!showMatches&&stage===0;
- useEffect(()=>{if(chatIntake)chatScrollRef.current?.scrollTo({top:chatScrollRef.current.scrollHeight,behavior:'smooth'})},[chatIntake,stage,aiWaiting]);
+ useEffect(()=>{
+  if(chatIntake)chatScrollRef.current?.scrollTo({top:0,behavior:'instant'});
+ },[chatIntake,stage,aiWaiting]);
  useEffect(()=>{
   if(!introThinking)return;
   // Familiar requests get a brief typing transition; unfamiliar jobs get time
@@ -251,26 +252,16 @@ export function GuidedRequest(){
   if(typed.length<8){setAskError('Describe the service you need in a little more detail.');return}
   if(processingPhotos)return;
   setAskError('');
-  let full=typed;
   if(askPhotos.length){
    setProcessingPhotos(true);
-   setPhotoStatus('Saving photos and checking their service details...');
    try{
     await saveDraftPhotos(askPhotos.map(p=>p.file));
-    const checks=await Promise.allSettled(askPhotos.slice(0,4).map(async p=>{
-     const body=new FormData();body.append('photo',p.file);
-     const res=await fetch('/api/ai/service-photo',{method:'POST',body});
-     const data=await res.json();
-     if(!res.ok)throw Error(data.error||'Image analysis unavailable');
-     return String(data.observation||'');
-    }));
-    const observations=checks.filter((v):v is PromiseFulfilledResult<string>=>v.status==='fulfilled').map(v=>v.value).filter(v=>v&&!v.includes('No clear service details visible'));
-    if(observations.length)full=(typed+'\nPhoto observations (AI, not a confirmed diagnosis): '+observations.join('; ')).slice(0,1500);
-    setPhotoStatus(checks.some(v=>v.status==='rejected')?'Photos saved for upload; some could not be analyzed.':'Photos analyzed and queued for secure upload with your request.');
-   }catch(error){setAskError(error instanceof Error?error.message:'Unable to save photos. Try again.');setProcessingPhotos(false);return}
-   finally{setProcessingPhotos(false)}
+   }catch(error){
+    setAskError(error instanceof Error?error.message:'Unable to save your photos. Please try again.');
+    setProcessingPhotos(false);return;
+   }
+   setProcessingPhotos(false);
   }else{try{await saveDraftPhotos([])}catch{}}
-  setDescription(full);
   const intent=inferService(typed);
   if(intent&&intent!==category)setCategory(intent);
   setAnswers({});setAiQuestions(null);setAiResolvedKey('');setStage(0);setIntroThinking(true);
@@ -290,7 +281,7 @@ export function GuidedRequest(){
   </header>
   <div className="jt-chat-conversation" ref={chatScrollRef} onClick={()=>askMenuOpen&&setAskMenuOpen(false)}>
     {chatIntake&&<div className="jt-chat-transcript" aria-live="polite">
-      <div className="jt-chat-customer-bubble">{description}</div>
+      <div className="jt-chat-customer-bubble">{description}{askPhotos.length>0&&<div className="jt-chat-message-photos" aria-label="Attached service photos">{askPhotos.map((photo,index)=><img key={photo.preview} src={photo.preview} alt={'Attached service photo '+(index+1)}/>)}</div>}</div>
       {aiWaiting?<div className="jt-chat-ai-bubble" role="status"><span className="jt-chat-loading-dots">● ● ●</span> JiTap is preparing your questions...</div>:question&&<section className="jt-chat-question" aria-label="JiTap service intake">
         <div className="jt-chat-ai-label"><Sparkles size={18}/> JiTap · {label}</div>
         <div className="jt-chat-question-progress">Question {stage+1} of {questions.length}</div>
@@ -309,19 +300,19 @@ export function GuidedRequest(){
       </section>}
     </div>}
   </div>
-  <div className="jt-chat-composer-dock">
+  {!chatIntake&&<div className="jt-chat-composer-dock">
    <form className="jt-chat-composer" onSubmit={beginAsk} aria-label="Describe your service request">
     {askPhotos.length>0&&<div className="jt-chat-photo-previews" aria-label="Selected images">{askPhotos.map((photo,i)=><div className="jt-chat-photo" key={photo.preview}><img src={photo.preview} alt={'Selected service photo '+(i+1)}/><button type="button" aria-label={'Remove photo '+(i+1)} onClick={()=>{URL.revokeObjectURL(photo.preview);photoPreviewsRef.current.delete(photo.preview);setAskPhotos(items=>items.filter(x=>x!==photo))}}><X size={15}/></button></div>)}</div>}
     <div className="jt-chat-input-row">
      <input ref={askPhotosRef} className="jt-chat-file-input" type="file" accept="image/jpeg,image/png,image/webp" multiple aria-label="Add service photos" onChange={async e=>{const files=Array.from(e.currentTarget.files||[]);e.currentTarget.value='';setAskError('');try{const prepared=await Promise.all(files.slice(0,4-askPhotos.length).map(prepareServicePhoto));setAskPhotos(old=>[...old,...prepared.map(file=>{const preview=URL.createObjectURL(file);photoPreviewsRef.current.add(preview);return {file,preview}})].slice(0,4))}catch(error){setAskError(error instanceof Error?error.message:'Unable to prepare this photo.')}}}/>
      <button type="button" className="jt-chat-add-photo" aria-label="Add photos to service brief" title="Add photos" onClick={()=>askPhotosRef.current?.click()}><Plus size={28}/></button>
      <label className="jt-chat-input-label"><textarea aria-label="Describe the service you need" rows={1} value={chatIntake?"":description} disabled={chatIntake} onChange={e=>{if(chatIntake)return;setDescription(e.target.value);if(askError)setAskError('');e.target.style.height='auto';e.target.style.height=Math.min(e.target.scrollHeight,144)+'px'}} placeholder="How can I help you..." maxLength={1500} required onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.nativeEvent.isComposing){e.preventDefault();e.currentTarget.form?.requestSubmit()}}}/></label>
-     <button type="submit" className="jt-chat-send" disabled={!description.trim()||chatIntake||processingPhotos}>{processingPhotos?"Checking photos...":"Ask JiTap"}</button>
+     <button type="submit" className="jt-chat-send" disabled={!description.trim()||chatIntake||processingPhotos}>{processingPhotos?"Adding photos...":"Ask JiTap"}</button>
     </div>
     {askPhotos.length>0&&<p className="jt-chat-photo-note">{askPhotos.length} photo{askPhotos.length===1?'':'s'} selected — will upload with request.</p>}
-    {photoStatus&&<p role="status" className="jt-chat-photo-note">{photoStatus}</p>}{askError&&<p role="alert" className="jt-ask-entry-error">{askError}</p>}
+    {askError&&<p role="alert" className="jt-ask-entry-error">{askError}</p>}
    </form>
-  </div>
+  </div>}
  </section>;
  if(aiWaiting)return <main className="th-request-flow"><div className="container th-request-layout"><section className="th-questions jt-ai-intake-loading" role="status" aria-label="JiTap is preparing your service questions"><span className="jt-ai-typing-dots" aria-hidden="true"><span/><span/><span/></span></section></div></main>;
  if(category==='moving'&&!ready)return <MovingRequest/>;

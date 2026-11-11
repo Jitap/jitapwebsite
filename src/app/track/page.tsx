@@ -4,6 +4,7 @@ import Link from 'next/link';
 import {useRouter} from 'next/navigation';
 import {ArrowRight,ClipboardCheck,ShieldCheck,LogIn} from 'lucide-react';
 import {CustomerTicketCard,type CustomerTicket} from '@/components/CustomerTicketCard';
+import './tracking-green.css';
 type Ticket=CustomerTicket;
 const progressLabels:Record<string,string>={
  new:'Received — JiTap is reviewing your request',
@@ -55,17 +56,17 @@ export default function TrackTicketPage(){
   }catch(e){setError(e instanceof Error?e.message:'Mode change failed');setSwitching(false)}
  }
  const title=ticket?.category?.replace(/-/g,' ')||'Service request';
- return <main className="jt-account-page"><div className="container jt-account-shell" style={{maxWidth:720,paddingTop:35,paddingBottom:80}}>
+ return <main className="jt-account-page jt-tracking-page"><div className="jt-tracking-brand"><Link href="/account" aria-label="Back to JiTap home"><img src="/images/jitap-logo-transparent.svg" alt="JiTap" width={110} height={52}/></Link></div><div className="container jt-account-shell" style={{maxWidth:720,paddingTop:35,paddingBottom:80}}>
   <div className="jt-account-head"><span><ClipboardCheck size={27}/></span><div><p>JITAP SERVICE TRACKING</p><h1>Your service request</h1><p>Private progress updates for your verified mobile number.</p></div></div>
   {loading?<div className="jt-account-summary" role="status">Checking your verified account and Service ID…</div>:providerMode?
    <div className="jt-account-summary"><h2>Switch to customer mode</h2><p>You are signed in as a provider. You can track your own request without affecting your provider account.</p>
-    <button className="button" disabled={switching} onClick={switchCustomer}>{switching?'Switching…':'Switch to Customer'} <ArrowRight size={17}/></button></div>:
+    <button className="button jt-tracking-action" disabled={switching} onClick={switchCustomer}>{switching?'Switching…':'Switch to Customer'}</button></div>:
    ticket?<div className="jt-account-summary">
     <span style={{display:'flex',alignItems:'center',gap:9,color:'#06844b',fontWeight:800}}><ShieldCheck size={20}/> Phone ownership verified</span>
     <CustomerTicketCard ticket={ticket} detail/>
     <p style={{fontSize:13,color:'#64748b'}}>Accepting your request confirms your provider. When confirmed, their phone number appears in your service details.</p>
-    <Link href="/account#my-requests" className="button">View My Requests <ArrowRight size={17}/></Link>
+    <Link href="/account#my-requests" className="button jt-tracking-action">View My Requests</Link>
    </div>:<div className="jt-account-summary" role="alert"><p>{error}</p><p>If this is your first visit, sign up using the same phone number that received your JiTap SMS.</p>
-    <Link className="button" href={'/login?next='+encodeURIComponent('/track?ref='+ref)}>Sign up or log in <LogIn size={17}/></Link></div>}
+    <Link className="button jt-tracking-action" href={'/login?next='+encodeURIComponent('/track?ref='+ref)}>Sign up or log in</Link></div>}
  </div></main>;
 }

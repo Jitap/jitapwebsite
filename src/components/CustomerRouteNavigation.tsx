@@ -15,7 +15,7 @@ const destinations=[
 ];
 export function CustomerRouteNavigation(){
  const pathname=usePathname();
- const onCustomerRoute=pathname==='/request'||pathname.startsWith('/request/')||pathname==='/track'||pathname==='/services'||pathname.startsWith('/services/')||pathname==='/fundis'||pathname.startsWith('/fundis/');
+ const onCustomerRoute=pathname==='/request'||pathname.startsWith('/request/')||pathname==='/services'||pathname.startsWith('/services/')||pathname==='/fundis'||pathname.startsWith('/fundis/');
  const [account,setAccount]=useState<Account|null>(null);
  useEffect(()=>{
   if(!onCustomerRoute){setAccount(null);return}

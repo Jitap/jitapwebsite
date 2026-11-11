@@ -21,3 +21,26 @@
 .jt-match-page .jt-request-submit-green,.jt-match-page .jt-compact-intake .row-buttons button[type="submit"]{background:linear-gradient(110deg,#008a3e,#10b981)!important;border-color:#008a3e!important;color:#fff!important;box-shadow:0 6px 16px #008a3e25}
 .jt-photo-upload-status{margin-top:12px;font-size:14px;line-height:1.5}
 .jt-match-page .jt-photo-upload-status{color:#165a37}
+
+/* Location-only confirmation: homepage-inspired emerald glass action. */
+.jt-match-page .jt-compact-intake{background:rgba(255,255,255,.89);backdrop-filter:blur(16px);border:1px solid #deeee4;border-radius:25px;box-shadow:0 16px 38px #0a6e3320}
+.jt-match-page .jt-compact-intake .jt-contact-location{margin-top:0}
+.jt-match-page .jt-compact-intake .jt-contact-location h3{color:#142f25;font-weight:800;font-size:21px;letter-spacing:-.3px}
+.jt-match-page .jt-compact-intake .jt-contact-location input,
+.jt-match-page .jt-compact-intake .jt-contact-location textarea{border-radius:16px;border:1px solid #d8e8df;background:rgba(255,255,255,.9);font-size:15px}
+.jt-match-page .jt-compact-intake .jt-location-private{background:#f1f8f4;color:#547369;border-radius:15px}
+.jt-match-page .jt-compact-intake .row-buttons{display:flex;justify-content:center;margin-top:18px}
+.jt-match-page .jt-compact-intake .row-buttons .jt-request-submit-green{
+ display:inline-flex;align-items:center;justify-content:center;min-height:54px;min-width:min(280px,100%);
+ padding:14px 32px;border:1px solid #4bd78f!important;border-radius:20px!important;
+ background:linear-gradient(115deg,rgba(0,138,62,.98),rgba(16,185,129,.97))!important;
+ color:#fff!important;font-size:16px;font-weight:800;letter-spacing:.1px;
+ box-shadow:0 9px 24px #008a3e38,inset 0 1px 1px #ffffff6b!important;
+ backdrop-filter:blur(14px);transition:transform .16s ease,box-shadow .16s ease;
+}
+.jt-match-page .jt-compact-intake .row-buttons .jt-request-submit-green:hover{transform:translateY(-1px);box-shadow:0 11px 28px #008a3e44,inset 0 1px 1px #ffffff78!important}
+.jt-match-page .jt-compact-intake .row-buttons .jt-request-submit-green:disabled{opacity:.74;transform:none}
+
+.jt-match-page .jt-matches .td-outline-button{border:1px solid #37ba77;color:#008a3e;background:#f0fbf4;border-radius:14px;box-shadow:0 4px 12px #008a3e10}
+.jt-match-page .jt-matches .td-outline-button:hover{background:#e2f7eb;color:#006f35}
+.jt-match-location-only{margin-top:18px}
