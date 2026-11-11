@@ -642,3 +642,18 @@
   border-radius:21px;
  }
 }
+
+/* My Network replaces the old saved-provider quick action, retaining the
+   approved circular story treatment and compact dashboard hierarchy. */
+.jt-glass-app .jt-story-network-icon svg{
+ width:46px;height:46px;flex:none;color:#064f50;
+ filter:drop-shadow(0 2px 1px #0d305316);
+}
+.jt-glass-app .jt-glass-network-page{
+ max-width:770px;margin-inline:auto;
+ padding-bottom:calc(150px + env(safe-area-inset-bottom,0px));
+}
+@media(max-width:580px){
+ .jt-glass-app .jt-story-network-icon svg{width:39px;height:39px}
+ .jt-glass-app .jt-glass-network-page{padding-top:17px}
+}
