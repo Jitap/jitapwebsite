@@ -4,7 +4,7 @@ import Link from 'next/link';
 import {BadgeCheck,Check,ContactRound,Gift,Link2,PhoneOff,Plus,Share2,ShieldCheck,UserRoundCheck,UsersRound,X} from 'lucide-react';
 import './network-panel.css';
 
-type Connection={providerId?:string;customerId?:string;name?:string;status:string;businessName?:string|null;categories?:string[];area?:string|null};
+type Connection={providerId?:string;customerId?:string;name?:string;status:string;businessName?:string|null;categories?:string[];area?:string|null;serviceAreas?:string[];experienceYears?:number|null;skills?:string|null;saved?:boolean};
 type Invitation={id:string;status:string;discountPercent:number;discountCapKes:number};
 type State={ok:boolean;role:'customer'|'provider';discoverable?:boolean;connections:Connection[];invites?:Invitation[];reviewer?:boolean};
 type Match={providerId:string;matched:boolean;label:string};
@@ -25,6 +25,7 @@ export function NetworkPanel({mode,reviewer=false,saved=[]}:{mode:'customer'|'pr
  const [label,setLabel]=useState('');
  const [matches,setMatches]=useState<Match[]>([]);
  const [supportsPicker,setSupportsPicker]=useState(false);
+ const [expanded,setExpanded]=useState<string|null>(null);
  const requestLock=useRef(false);
  const load=useCallback(async()=>{
   const res=await fetch('/api/network',{cache:'no-store',credentials:'same-origin'});
@@ -130,12 +131,28 @@ export function NetworkPanel({mode,reviewer=false,saved=[]}:{mode:'customer'|'pr
    <div className="jt-network-card">
     <div className="jt-network-card-heading"><UsersRound size={22}/><h2>My Connections</h2></div>
     {!state?.connections?.length?<p>No connections yet. Connect with a fundi you already know to build your network.</p>:
-    state.connections.map(c=><div key={c.providerId} className="jt-network-person">
-     <span className="jt-network-avatar">{c.status==='accepted'?<BadgeCheck size={21}/>:<UsersRound size={21}/>}</span>
-     <div><strong>{c.status==='accepted'?(c.businessName||'Connected fundi'):'Connection requested'}</strong>
-      <small>{c.status==='accepted'?[(c.categories||[]).join(', '),c.area].filter(Boolean).join(' · '):'Awaiting provider approval · Private profile'}</small>
+    state.connections.map(c=><div key={c.providerId} className="jt-network-connection">
+     <div className="jt-network-person">
+      <span className="jt-network-avatar">{c.status==='accepted'?<BadgeCheck size={21}/>:<UsersRound size={21}/>}</span>
+      <div><strong>{c.status==='accepted'?(c.businessName||'Connected fundi'):'Connection requested'}</strong>
+       <small>{c.status==='accepted'?[(c.categories||[]).join(', '),c.area].filter(Boolean).join(' · '):'Awaiting provider approval · Private profile'}</small>
+      </div>
+      <span className={'jt-network-state '+(c.status==='accepted'?'accepted':'')}>{c.status==='accepted'?'Connected':'Pending'}</span>
      </div>
-     <span className={'jt-network-state '+(c.status==='accepted'?'accepted':'')}>{c.status==='accepted'?'Connected':'Pending'}</span>
+     {c.status==='accepted'&&c.providerId&&<>
+      <div className="jt-network-connection-actions">
+       <button type="button" onClick={()=>setExpanded(old=>old===c.providerId?null:c.providerId!)}>{expanded===c.providerId?'Hide profile':'View profile'}</button>
+       <button type="button" disabled={busy||reviewer} onClick={()=>void mutate('save',{providerId:c.providerId,saved:!c.saved})}>{c.saved?'✓ Saved':'+ Save fundi'}</button>
+      </div>
+      {expanded===c.providerId&&<div className="jt-network-profile">
+       <strong>{c.businessName||'JiTap service provider'}</strong>
+       <div><span>Services</span><p>{(c.categories||[]).join(', ')||'Not specified'}</p></div>
+       <div><span>Service areas</span><p>{(c.serviceAreas||[]).join(', ')||c.area||'Not specified'}</p></div>
+       <div><span>Experience</span><p>{c.experienceYears!=null?c.experienceYears+' years':'Not specified'}</p></div>
+       <div><span>About this fundi</span><p>{c.skills||'No description provided'}</p></div>
+       <div className="jt-network-privacy"><ShieldCheck size={16}/> Contact numbers are shared only after a service request is matched, never through a network connection.</div>
+      </div>}
+     </>}
     </div>)}
    </div>
    {!!saved.length&&<div className="jt-network-card">
