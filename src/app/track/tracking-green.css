@@ -1,0 +1,15 @@
+/* Tracking is a focused request view, not the old customer app shell. */
+body:has(.jt-tracking-page)>.header,
+body:has(.jt-tracking-page)>.footer,
+body:has(.jt-tracking-page) .jt-customer-route-nav{display:none!important}
+body:has(.jt-tracking-page) #main{background:#f5faf7!important;padding:0!important;min-height:100dvh}
+.jt-tracking-page{min-height:100dvh;background:radial-gradient(circle at 0% 0%,#e9f9ef 0%,#f7fbf8 45%,#fff 100%);color:#173629}
+.jt-tracking-brand{height:70px;display:flex;align-items:center;padding:8px clamp(18px,5vw,42px);background:rgba(255,255,255,.84);border-bottom:1px solid #e2eee7;backdrop-filter:blur(14px)}
+.jt-tracking-brand a{display:flex;align-items:center}.jt-tracking-brand img{width:105px;height:50px;object-fit:contain}
+.jt-tracking-page .jt-account-shell{padding-top:30px!important;padding-bottom:46px!important}
+.jt-tracking-page .jt-account-head p:first-child{color:#008a3e}
+.jt-tracking-page .jt-account-head>span{background:#e4f8ed;color:#008a3e}
+.jt-tracking-page .jt-account-summary{border:1px solid #e0ebe5;border-radius:24px;background:#ffffffee;box-shadow:0 14px 30px #093b2610}
+.jt-tracking-page .button,.jt-tracking-page .jt-tracking-action{background:linear-gradient(115deg,#008a3e,#10b981)!important;border:1px solid #45ce8a!important;color:#fff!important;border-radius:18px!important;box-shadow:0 8px 20px #008a3e24,inset 0 1px 0 #ffffff62!important;backdrop-filter:blur(12px);font-weight:750;text-decoration:none}
+.jt-tracking-page .button:hover{filter:brightness(1.04)}
+@media(max-width:480px){.jt-tracking-brand{height:62px}.jt-tracking-page .jt-account-shell{padding:24px 16px 32px!important}}
