@@ -1,36 +1,33 @@
-/* Minimal mobile-first Ask JiTap conversation entry. 100dvh follows the visible viewport. */
+/* JiTap /request — approved Minimal JiTap Menu and Glowing Ask Bar visual */
 body:has(.jt-ask-entry-page)>.header,
 body:has(.jt-ask-entry-page)>.footer{display:none!important}
-body:has(.jt-ask-entry-page) #main{padding:0!important;min-height:0!important}
-.jt-ask-entry-page{height:100dvh;min-height:0;display:flex;flex-direction:column;background:#fff;color:#142a42;overflow:hidden;position:relative}
-.jt-chat-topbar{height:70px;min-height:70px;display:flex;align-items:center;justify-content:space-between;padding:8px 18px;background:#fff;border-bottom:1px solid #edf1f1;z-index:5}
-.jt-chat-home{display:flex;align-items:center;width:98px}.jt-chat-home img{width:98px;height:48px;object-fit:contain}
-.jt-chat-title{font-size:16px;font-weight:750}
-.jt-chat-menu-wrap{position:relative;width:98px;display:flex;justify-content:flex-end}
-.jt-chat-menu-trigger{width:43px;height:43px;display:grid;place-items:center;border:0;border-radius:50%;background:#f2f6f6;color:#073f4c}
-.jt-chat-menu{position:absolute;right:0;top:50px;display:flex;flex-direction:column;width:212px;padding:8px;border:1px solid #dce9e6;border-radius:16px;background:#fff;box-shadow:0 14px 36px #0d344422;z-index:15}
-.jt-chat-menu a{padding:13px 14px;border-radius:10px;font-size:14px;font-weight:650}.jt-chat-menu a:hover{background:#eff9f4}
-.jt-chat-conversation{flex:1;min-height:0;overflow-y:auto}
-.jt-chat-composer-dock{flex:none;width:100%;padding:12px max(14px,env(safe-area-inset-left)) calc(14px + env(safe-area-inset-bottom,0px));background:#fff}
-.jt-chat-composer{max-width:720px;margin:0 auto;border:1px solid #dce6e5;border-radius:25px;background:white;padding:9px 12px 8px;box-shadow:0 5px 22px #073f4c10}
-.jt-chat-input-row{display:flex;align-items:flex-end;gap:9px;min-height:44px}
+body:has(.jt-ask-entry-page) #main{padding:0!important;min-height:0!important;background:#fff!important}
+.jt-ask-entry-page{display:flex;flex-direction:column;height:100dvh;min-height:0;width:100%;overflow:hidden;background:white;color:#091324}
+.jt-chat-topbar{height:92px;min-height:92px;padding:24px clamp(15px,4vw,40px);display:flex;align-items:flex-start;background:#fff;z-index:5}
+.jt-chat-menu-wrap{position:relative}
+.jt-chat-menu-trigger{border:0;border-radius:8px;background:transparent;color:#071324;width:44px;height:44px;display:grid;place-items:center}
+.jt-chat-menu-trigger:hover{background:#f2f8f4}
+.jt-chat-menu{position:absolute;left:0;top:56px;width:min(308px,calc(100vw - 30px));display:flex;flex-direction:column;border:1px solid #dbe2f0;border-radius:19px;background:white;overflow:hidden;box-shadow:0 16px 34px #17235921;z-index:20}
+.jt-chat-menu a{display:flex;align-items:center;gap:20px;min-height:66px;padding:15px 22px;font-size:18px;font-weight:520;white-space:nowrap;color:#071324}
+.jt-chat-menu a+a{border-top:1px solid #e1e6ef}
+.jt-chat-menu a:hover{background:#f6faf8}
+.jt-chat-conversation{flex:1;min-height:0;overflow:auto}
+.jt-chat-composer-dock{flex:none;width:100%;background:#fff;padding:10px clamp(13px,3.5vw,32px) calc(20px + env(safe-area-inset-bottom,0px))}
+.jt-chat-composer{max-width:920px;position:relative;margin:0 auto;border-radius:25px;padding:3px;background:linear-gradient(110deg,#55c769 0%,#15b664 33%,#b5f36b 76%,#73df59 100%);box-shadow:0 9px 20px #40b86630,0 0 24px #73e09e23}
+.jt-chat-composer:focus-within{box-shadow:0 10px 25px #3dca6650,0 0 28px #73e09e44}
+.jt-chat-input-row{display:flex;align-items:center;min-height:60px;gap:9px;border-radius:22px;background:#fff;padding:7px 8px}
 .jt-chat-file-input{display:none}
-.jt-chat-add-photo{height:42px;width:42px;display:grid;place-items:center;border:0;border-radius:50%;background:#f0f7f4;color:#074e48;flex:none}
-.jt-chat-input-label{flex:1;min-width:0;display:flex;align-items:center}
-.jt-chat-input-label textarea{width:100%;height:42px;min-height:42px;max-height:144px;overflow-y:auto;resize:none;outline:none;border:0;background:transparent;padding:10px 0;color:#1b3540;font:inherit;font-size:16px;line-height:22px}
-.jt-chat-input-label textarea::placeholder{color:#819098}
-.jt-chat-send{width:42px;height:42px;display:grid;place-items:center;flex:none;border:0;border-radius:50%;background:#008c62;color:#fff}
-.jt-chat-send:disabled{opacity:.42;cursor:not-allowed}
-.jt-chat-composer-meta{display:flex;align-items:center;gap:10px;padding:7px 4px 1px;color:#42666b;font-size:12px}
-.jt-chat-area{display:inline-flex;align-items:center;gap:4px;max-width:50%;color:#0b746b}
-.jt-chat-area select{max-width:140px;border:0;outline:0;appearance:none;background:transparent;color:#0b746b;font-size:12px;font-weight:650;cursor:pointer}
-.jt-chat-send-label{margin-left:auto;font-weight:750;color:#008c62}
-.jt-chat-photo-count{display:inline-flex;align-items:center;gap:4px}
-.jt-chat-photo-previews{display:flex;gap:8px;overflow-x:auto;padding:3px 0 9px}
-.jt-chat-photo{position:relative;flex:none;width:66px;height:66px;border-radius:12px;overflow:hidden;background:#edf5f4}
+.jt-chat-add-photo{display:grid;place-items:center;flex:none;width:48px;height:48px;border:0;border-radius:14px;color:#079c4e;background:#e6f8ed}
+.jt-chat-input-label{flex:1;min-width:0;display:flex;align-items:center;border-left:1px solid #e2e7ef;padding-left:12px}
+.jt-chat-input-label textarea{border:0;outline:none;width:100%;min-width:0;height:42px;min-height:42px;max-height:144px;resize:none;overflow-y:auto;background:transparent;color:#132b38;padding:10px 0;font:inherit;font-size:17px;line-height:22px}
+.jt-chat-input-label textarea::placeholder{color:#788198;opacity:1}
+.jt-chat-send{flex:none;min-height:48px;border:0;border-radius:15px;padding:0 18px;background:linear-gradient(110deg,#06a851,#079d4d);color:#fff;font:inherit;font-size:16px;font-weight:750;white-space:nowrap;box-shadow:0 4px 12px #0099502b}
+.jt-chat-send:disabled{opacity:1;background:linear-gradient(110deg,#0cab56,#09a451);cursor:default}
+.jt-chat-photo-previews{display:flex;gap:9px;overflow-x:auto;padding:6px 8px 9px;background:white;border-radius:23px 23px 0 0}
+.jt-chat-photo{width:65px;height:65px;position:relative;flex:none;overflow:hidden;border-radius:11px;background:#eff5f1}
 .jt-chat-photo img{width:100%;height:100%;object-fit:cover}
-.jt-chat-photo button{position:absolute;right:2px;top:2px;width:23px;height:23px;border:0;border-radius:50%;display:grid;place-items:center;background:#fff;color:#244}
-.jt-chat-photo-note{margin:5px 4px;color:#9a6419;font-size:11px}
-.jt-ask-entry-error{font-size:12px;color:#a42935;margin:6px 4px 0}
-@media(max-width:480px){.jt-chat-topbar{height:62px;min-height:62px;padding:6px 15px}.jt-chat-composer-dock{padding:8px 12px calc(9px + env(safe-area-inset-bottom,0px))}}
-@media(prefers-reduced-motion:reduce){.jt-chat-composer *{scroll-behavior:auto}}
+.jt-chat-photo button{position:absolute;top:2px;right:2px;border:0;border-radius:50%;width:22px;height:22px;display:grid;place-items:center;background:white}
+.jt-chat-photo-note{font-size:11px;color:#9e681d;background:white;margin:0;padding:3px 12px 8px;border-radius:0 0 21px 21px}
+.jt-ask-entry-error{color:#a12333;font-size:12px;background:white;margin:0;padding:4px 12px 10px;border-radius:0 0 21px 21px}
+@media(max-width:450px){.jt-chat-topbar{height:80px;min-height:80px;padding:18px 15px}.jt-chat-menu a{font-size:16px;min-height:60px}.jt-chat-composer-dock{padding:9px 13px calc(15px + env(safe-area-inset-bottom,0px))}.jt-chat-input-row{gap:7px;padding:6px;min-height:62px}.jt-chat-add-photo{width:42px;height:44px}.jt-chat-input-label{padding-left:9px}.jt-chat-input-label textarea{font-size:16px}.jt-chat-send{font-size:15px;padding:0 13px;min-height:44px}}
+@media(prefers-reduced-motion:reduce){.jt-chat-composer{transition:none}}
