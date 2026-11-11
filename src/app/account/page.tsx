@@ -184,7 +184,7 @@ export default function AccountPage(){
       {!showAll&&requests.length>3&&<button type="button" className="jt-glass-show-all" onClick={()=>setShowAll(true)}>View all {requests.length} requests <ChevronRight size={16}/></button>}</div>}
    </section>:tab==='network'?<section className="jt-glass-subpage jt-glass-network-page">
     <NetworkPanel mode="customer" reviewer={!!account.reviewer} saved={savedProviders}/>
-   </section>:tab==='wallet'?<section className="jt-glass-subpage"><div className="jt-glass-empty"><Wallet size={37}/><h1>Wallet</h1><p>JiTap Wallet is coming soon. Manage your current jobs in Requests.</p><button type="button" onClick={()=>navigate('requests')}>View Requests</button></div></section>:
+   </section>:tab==='wallet'?<section className="jt-glass-subpage"><div className="jt-glass-empty"><Wallet size={37}/><h1>Wallet</h1><p>JiTap Wallet is coming soon. Manage your current jobs in Requests.</p><button type="button" className="jt-wallet-view-requests" onClick={()=>navigate('requests')}>View Requests</button></div></section>:
    <section className="jt-glass-subpage">
     <h1>My Profile</h1>
     <div className="jt-glass-profile"><span className="jt-glass-avatar jt-glass-avatar-big">{initials}</span><div><h2>{account.fullName||'JiTap Customer'}</h2><p>Customer account</p></div></div>

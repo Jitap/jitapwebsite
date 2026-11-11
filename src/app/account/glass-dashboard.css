@@ -657,3 +657,19 @@
  .jt-glass-app .jt-story-network-icon svg{width:39px;height:39px}
  .jt-glass-app .jt-glass-network-page{padding-top:17px}
 }
+
+/* Wallet actions use the same JiTap emerald CTA as the request journey. */
+.jt-glass-empty>button.jt-wallet-view-requests{
+ background:linear-gradient(115deg,#008a3e,#10b981);
+ color:#fff;
+ border:1px solid #43cb83;
+ border-radius:16px;
+ padding:13px 25px;
+ font-size:14px;
+ font-weight:800;
+ box-shadow:0 8px 18px #008a3e29,inset 0 1px 0 #ffffff69;
+ transition:filter .18s ease,transform .18s ease;
+}
+.jt-glass-empty>button.jt-wallet-view-requests:hover{filter:brightness(1.04);transform:translateY(-1px)}
+.jt-glass-empty>button.jt-wallet-view-requests:focus-visible{outline:2px solid #008a3e;outline-offset:3px}
+@media(prefers-reduced-motion:reduce){.jt-glass-empty>button.jt-wallet-view-requests{transition:none}}
