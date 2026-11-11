@@ -134,6 +134,7 @@ export function GuidedRequest(){
  },[showAskEntry]);
  const [askPhotos,setAskPhotos]=useState<{file:File;preview:string}[]>([]);
  const askPhotosRef=useRef<HTMLInputElement|null>(null);
+ const chatScrollRef=useRef<HTMLDivElement|null>(null);
  useEffect(()=>()=>{askPhotos.forEach(photo=>URL.revokeObjectURL(photo.preview))},[askPhotos]);
  const [introThinking,setIntroThinking]=useState(false);
  const [stage,setStage]=useState(0);
@@ -192,6 +193,7 @@ export function GuidedRequest(){
  const stageNames:string[]=category==='cleaning'?['Need','Time','Total','Contact']:[...questions.map((q,i)=>q.id==='timing'?'Time':q.id==='screenSize'?'TV size':q.id==='wallType'?'Wall':q.id==='bracket'?'Bracket':q.id==='frequency'?'Frequency':q.id==='size'?'Space':q.id==='cleanType'?'Type':i===0?'Need':'Details'),'Matches','Contact'];
  const aiRequestKey=requestKey;
  const aiWaiting=(!hydrated||introThinking)&&description.trim().length>=8&&!ready&&!showMatches&&stage===0;
+ useEffect(()=>{if(chatIntake)chatScrollRef.current?.scrollTo({top:chatScrollRef.current.scrollHeight,behavior:'smooth'})},[chatIntake,stage,aiWaiting]);
  useEffect(()=>{
   if(!introThinking)return;
   // Familiar requests get a brief typing transition; unfamiliar jobs get time
@@ -253,8 +255,8 @@ export function GuidedRequest(){
   setAiResolvedKey('');
   setStage(0);
   setIntroThinking(true);
-  setChatIntake(true);
-  setShowAskEntry(true);
+  setChatIntake(intent!=='moving');
+  setShowAskEntry(intent!=='moving');
   try{window.localStorage.setItem('jitap:area',area)}catch{}
  }
  if(showAskEntry)return <section className="jt-ask-entry-page" style={chatViewportHeight?{height:chatViewportHeight+'px'}:undefined} aria-label="Ask JiTap for a service">
@@ -268,7 +270,7 @@ export function GuidedRequest(){
     </nav>}
    </div>
   </header>
-  <div className="jt-chat-conversation" onClick={()=>askMenuOpen&&setAskMenuOpen(false)}>
+  <div className="jt-chat-conversation" ref={chatScrollRef} onClick={()=>askMenuOpen&&setAskMenuOpen(false)}>
     {chatIntake&&<div className="jt-chat-transcript" aria-live="polite">
       <div className="jt-chat-customer-bubble">{description}</div>
       {aiWaiting?<div className="jt-chat-ai-bubble" role="status"><span className="jt-chat-loading-dots">● ● ●</span> JiTap is preparing your questions...</div>:question&&<section className="jt-chat-question" aria-label="JiTap service intake">
@@ -276,6 +278,7 @@ export function GuidedRequest(){
         <div className="jt-chat-question-progress">Question {stage+1} of {questions.length}</div>
         <h2>{question.title}</h2>
         {question.hint&&<p>{question.hint}</p>}
+        <label className="jt-chat-service-area">Your area <select value={area} onChange={e=>setArea(e.target.value)}>{areas.map(a=><option key={a} value={a}>{a}</option>)}</select></label>
         {onTime?<div className="jt-chat-datetime">
           <label>Preferred date <input type="date" min={clock.date} max={furthestDate(clock.date)} value={preferredDate} onChange={e=>{setPreferredDate(e.target.value);setPreferredTime('');setClock(nairobiNow())}}/></label>
           <div className="jt-chat-date-buttons">{days.slice(0,4).map((day,i)=><button type="button" key={day.value} className={preferredDate===day.value?'selected':''} onClick={()=>{setPreferredDate(day.value);setPreferredTime('');setClock(nairobiNow())}}>{i===0?'Today':i===1?'Tomorrow':day.day+' '+day.number}</button>)}</div>
