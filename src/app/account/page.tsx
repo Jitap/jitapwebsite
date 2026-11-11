@@ -6,11 +6,12 @@ import {useRouter} from 'next/navigation';
 import {
  ArrowRight,Bell,BriefcaseBusiness,CalendarDays,Check,ChevronRight,
  ClipboardList,Clock3,Eye,Home,LogOut,MapPin,Phone,Plus,
- ShieldCheck,UserRound,Wallet
+ ShieldCheck,UserRound,UsersRound,Wallet
 } from 'lucide-react';
 import {CustomerTicketCard,type CustomerTicket} from '@/components/CustomerTicketCard';
 import {prioritizeActiveRequests} from '@/lib/customer-home-priority';
 import {CustomerHomePanels} from '@/components/CustomerHomePanels';
+import {NetworkPanel} from '@/components/NetworkPanel';
 import './customer-home.css';
 import './glass-dashboard.css';
 
@@ -18,8 +19,8 @@ type Account={
  authenticated:boolean;accountType:'customer'|'provider';
  primaryAccountType?:'customer'|'provider';phone:string;fullName?:string|null;reviewer?:boolean
 };
-type Tab='home'|'requests'|'saved'|'wallet'|'profile';
-const tabs:Tab[]=['home','requests','saved','wallet','profile'];
+type Tab='home'|'requests'|'network'|'wallet'|'profile';
+const tabs:Tab[]=['home','requests','network','wallet','profile'];
 export default function AccountPage(){
  const router=useRouter();
  const [account,setAccount]=useState<Account|null>(null);
@@ -29,16 +30,16 @@ export default function AccountPage(){
  const [requestsLoading,setRequestsLoading]=useState(true);
  const [requestsError,setRequestsError]=useState('');
  const [tab,setTab]=useState<Tab>('home');
- const [activeStory,setActiveStory]=useState<'request'|'track'|'saved'>('request');
+ const [activeStory,setActiveStory]=useState<'request'|'track'|'network'>('request');
  const [showAll,setShowAll]=useState(false);
  const [savedProviders,setSavedProviders]=useState<{id:string;name:string;url:string}[]>([]);
 
  const readTab=useCallback(()=>{
   const param=new URLSearchParams(window.location.search).get('tab');
-  const next=param&&tabs.includes(param as Tab)?param as Tab:'home';
+  const next=param==='saved'?'network':param&&tabs.includes(param as Tab)?param as Tab:'home';
   setTab(next);
   if(next==='requests')setActiveStory('track');
-  else if(next==='saved')setActiveStory('saved');
+  else if(next==='network')setActiveStory('network');
  },[]);
  useEffect(()=>{
   readTab();
@@ -159,11 +160,11 @@ export default function AccountPage(){
       </span></span>
       <strong>Track<br/>Requests</strong>
      </button>
-     <button type="button" className={'jt-glass-tile jt-story-action jt-story-saved'+(activeStory==='saved'?' is-story-active':'')} onClick={()=>navigate('saved')}>
-      <span className="jt-story-ring"><span className="jt-story-inner">
-       <img src="/images/Save%20Providers%20Icon.png" alt="" aria-hidden="true" className="jt-glass-quick-icon" width={86} height={86}/>
+     <button type="button" className={'jt-glass-tile jt-story-action jt-story-saved'+(activeStory==='network'?' is-story-active':'')} onClick={()=>navigate('network')}>
+      <span className="jt-story-ring"><span className="jt-story-inner jt-story-network-icon">
+       <UsersRound size={44} strokeWidth={1.9} aria-hidden="true"/>
       </span></span>
-      <strong>Saved<br/>Providers</strong>
+      <strong>My<br/>Network</strong>
      </button>
     </section>
     <CustomerHomePanels
@@ -181,10 +182,8 @@ export default function AccountPage(){
      requests.length===0?<div className="jt-glass-empty"><ClipboardList size={33}/><h2>No requests yet</h2><p>Your requests will appear here when you submit them.</p><Link href={account.reviewer?'/services':'/request'}>Request a Service</Link></div>:
      <div className="jt-requests-list">{displayTickets.map(r=><CustomerTicketCard key={r.reference} ticket={r}/>)}
       {!showAll&&requests.length>3&&<button type="button" className="jt-glass-show-all" onClick={()=>setShowAll(true)}>View all {requests.length} requests <ChevronRight size={16}/></button>}</div>}
-   </section>:tab==='saved'?<section className="jt-glass-subpage">
-    <div className="jt-glass-section-head"><h1>Saved Providers</h1><Link href="/fundis">Find Providers <ChevronRight size={18}/></Link></div>
-    {savedProviders.length?<div className="jt-glass-saved-list">{savedProviders.map(p=><Link href={p.url} key={p.id}><img src="/images/197bfed06ab38ebd786c364ec8869d2e.jpg" alt=""/><strong>{p.name}</strong><ChevronRight size={20}/></Link>)}</div>:
-     <div className="jt-glass-empty"><img src="/images/197bfed06ab38ebd786c364ec8869d2e.jpg" alt="" width={42} height={42}/><h2>No saved providers yet</h2><p>Explore local fundis and return to providers you trust.</p><Link href="/fundis">Explore Providers</Link></div>}
+   </section>:tab==='network'?<section className="jt-glass-subpage jt-glass-network-page">
+    <NetworkPanel mode="customer" reviewer={!!account.reviewer} saved={savedProviders}/>
    </section>:tab==='wallet'?<section className="jt-glass-subpage"><div className="jt-glass-empty"><Wallet size={37}/><h1>Wallet</h1><p>JiTap Wallet is coming soon. Manage your current jobs in Requests.</p><button type="button" onClick={()=>navigate('requests')}>View Requests</button></div></section>:
    <section className="jt-glass-subpage">
     <h1>My Profile</h1>
