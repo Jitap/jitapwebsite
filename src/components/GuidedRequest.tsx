@@ -282,7 +282,7 @@ export function GuidedRequest(){
   <div className="jt-chat-conversation" ref={chatScrollRef} onClick={()=>askMenuOpen&&setAskMenuOpen(false)}>
     {chatIntake&&<div className="jt-chat-transcript" aria-live="polite">
       <div className="jt-chat-customer-bubble">{description}{askPhotos.length>0&&<div className="jt-chat-message-photos" aria-label="Attached service photos">{askPhotos.map((photo,index)=><img key={photo.preview} src={photo.preview} alt={'Attached service photo '+(index+1)}/>)}</div>}</div>
-      {aiWaiting?<div className="jt-chat-ai-bubble" role="status"><span className="jt-chat-loading-dots">● ● ●</span> JiTap is preparing your questions...</div>:question&&<section className="jt-chat-question" aria-label="JiTap service intake">
+      {aiWaiting?<div className="jt-chat-ai-bubble" role="status"><Sparkles size={18} aria-hidden="true"/> <span>Understanding your request...</span><span className="jt-chat-loading-dots" aria-hidden="true"><span/><span/><span/></span></div>:question&&<section className="jt-chat-question" aria-label="JiTap service intake">
         <div className="jt-chat-ai-label"><Sparkles size={18}/> JiTap · {label}</div>
         <div className="jt-chat-question-progress">Question {stage+1} of {questions.length}</div>
         <h2>{question.title}</h2>
@@ -314,7 +314,7 @@ export function GuidedRequest(){
    </form>
   </div>}
  </section>;
- if(aiWaiting)return <main className="th-request-flow"><div className="container th-request-layout"><section className="th-questions jt-ai-intake-loading" role="status" aria-label="JiTap is preparing your service questions"><span className="jt-ai-typing-dots" aria-hidden="true"><span/><span/><span/></span></section></div></main>;
+ if(aiWaiting)return <main className="th-request-flow"><div className="container th-request-layout"><section className="th-questions jt-ai-intake-loading" role="status" aria-label="Understanding your request..."><span className="jt-ai-typing-dots" aria-hidden="true"><span/><span/><span/></span></section></div></main>;
  if(category==='moving'&&!ready)return <MovingRequest/>;
  return <div className="th-request-flow">
   <div className="container th-request-layout">
