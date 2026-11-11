@@ -38,8 +38,13 @@ export function AccountAuth(){
   const next=q.get('next')||'';
   setNextUrl(next);
   if(q.get('review')==='1')setReviewOpen(true);
+  const invite=q.get('invite');
+  if(invite&&/^[0-9a-f-]{36}$/i.test(invite)){
+   try{sessionStorage.setItem('jitap:network-invite',invite)}catch{}
+   setRole('provider');
+  }
   if(trackLink(next))setRole('customer');
-  else if(q.get('role')==='provider')setRole('provider');
+  else if(invite||q.get('role')==='provider')setRole('provider');
   let active=true;
   fetch('/api/auth/session',{cache:'no-store',credentials:'same-origin'})
    .then(async r=>r.ok?r.json():null)
