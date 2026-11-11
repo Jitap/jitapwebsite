@@ -119,6 +119,7 @@ export function GuidedRequest(){
  const [area,setArea]=useState('Bamburi');
  const [description,setDescription]=useState('');
  const [showAskEntry,setShowAskEntry]=useState(true);
+ const [chatIntake,setChatIntake]=useState(false);
  const [askError,setAskError]=useState('');
  const [askMenuOpen,setAskMenuOpen]=useState(false);
  const [chatViewportHeight,setChatViewportHeight]=useState<number|null>(null);
@@ -133,6 +134,7 @@ export function GuidedRequest(){
  },[showAskEntry]);
  const [askPhotos,setAskPhotos]=useState<{file:File;preview:string}[]>([]);
  const askPhotosRef=useRef<HTMLInputElement|null>(null);
+ const chatScrollRef=useRef<HTMLDivElement|null>(null);
  useEffect(()=>()=>{askPhotos.forEach(photo=>URL.revokeObjectURL(photo.preview))},[askPhotos]);
  const [introThinking,setIntroThinking]=useState(false);
  const [stage,setStage]=useState(0);
@@ -191,6 +193,7 @@ export function GuidedRequest(){
  const stageNames:string[]=category==='cleaning'?['Need','Time','Total','Contact']:[...questions.map((q,i)=>q.id==='timing'?'Time':q.id==='screenSize'?'TV size':q.id==='wallType'?'Wall':q.id==='bracket'?'Bracket':q.id==='frequency'?'Frequency':q.id==='size'?'Space':q.id==='cleanType'?'Type':i===0?'Need':'Details'),'Matches','Contact'];
  const aiRequestKey=requestKey;
  const aiWaiting=(!hydrated||introThinking)&&description.trim().length>=8&&!ready&&!showMatches&&stage===0;
+ useEffect(()=>{if(chatIntake)chatScrollRef.current?.scrollTo({top:chatScrollRef.current.scrollHeight,behavior:'smooth'})},[chatIntake,stage,aiWaiting]);
  useEffect(()=>{
   if(!introThinking)return;
   // Familiar requests get a brief typing transition; unfamiliar jobs get time
@@ -206,7 +209,7 @@ export function GuidedRequest(){
  ? cleaningLineItems.map(item=>item.label+' x '+item.quantity+' '+item.unit+(item.quantity===1?'':'s')+' (reference '+money(item.price*item.quantity)+')').join('; ')+'; Reference estimate: '+money(cleaningTotal)+' (not a confirmed quote)'
  : questions.filter(x=>x.id!=='timing').map(q=>answers[q.id]?q.title.replace('?','')+': '+answers[q.id]:null).filter(Boolean).join('; ');const full=[description.trim()||('I need help with '+label.toLowerCase()+' in '+area+'.'),context?'JiTap inferred service: '+context.task+'. Subcategory: '+context.subcategory:null,details,preferredDate&&preferredTime?'Preferred appointment: '+preferredDate+' at '+preferredTime+' (East Africa Time)':null].filter(Boolean).join('. ').slice(0,1500);const delta=Math.round((Date.parse(preferredDate+'T00:00:00Z')-Date.parse(clock.date+'T00:00:00Z'))/86400000);const t=delta<=1?'today':delta<=7?'this-week':'flexible';const params=new URLSearchParams(window.location.search);params.set('category',category);params.set('area',area);const finalBrief=full.length<12?'I need a local service fundi in '+area+'.':full;setFinalDescription(finalBrief);
  try{sessionStorage.setItem('jitap:matched-brief',JSON.stringify({savedAt:Date.now(),category,area,description:finalBrief,preferredDate,preferredTime,timing:t}))}catch{}
- params.set('description',finalBrief);params.set('timing',t);params.set('preferredDate',preferredDate);params.set('preferredTime',preferredTime);window.history.replaceState(window.history.state,'','/request?'+params.toString());setShowMatches(true)};
+ params.set('description',finalBrief);params.set('timing',t);params.set('preferredDate',preferredDate);params.set('preferredTime',preferredTime);window.location.assign('/request/match')};
  function next(){if(onTime&&(!validDate||!validTime))return;if(stage>=questions.length-1){finished()}else setStage(n=>n+1)}
  function skip(){if(onTime)return;if(stage>=questions.length-1)finished();else setStage(n=>n+1)}
  useEffect(()=>{
@@ -252,7 +255,8 @@ export function GuidedRequest(){
   setAiResolvedKey('');
   setStage(0);
   setIntroThinking(true);
-  setShowAskEntry(false);
+  setChatIntake(intent!=='moving');
+  setShowAskEntry(intent!=='moving');
   try{window.localStorage.setItem('jitap:area',area)}catch{}
  }
  if(showAskEntry)return <section className="jt-ask-entry-page" style={chatViewportHeight?{height:chatViewportHeight+'px'}:undefined} aria-label="Ask JiTap for a service">
@@ -266,15 +270,33 @@ export function GuidedRequest(){
     </nav>}
    </div>
   </header>
-  <div className="jt-chat-conversation" onClick={()=>askMenuOpen&&setAskMenuOpen(false)} />
+  <div className="jt-chat-conversation" ref={chatScrollRef} onClick={()=>askMenuOpen&&setAskMenuOpen(false)}>
+    {chatIntake&&<div className="jt-chat-transcript" aria-live="polite">
+      <div className="jt-chat-customer-bubble">{description}</div>
+      {aiWaiting?<div className="jt-chat-ai-bubble" role="status"><span className="jt-chat-loading-dots">● ● ●</span> JiTap is preparing your questions...</div>:question&&<section className="jt-chat-question" aria-label="JiTap service intake">
+        <div className="jt-chat-ai-label"><Sparkles size={18}/> JiTap · {label}</div>
+        <div className="jt-chat-question-progress">Question {stage+1} of {questions.length}</div>
+        <h2>{question.title}</h2>
+        {question.hint&&<p>{question.hint}</p>}
+        <label className="jt-chat-service-area">Your area <select value={area} onChange={e=>setArea(e.target.value)}>{areas.map(a=><option key={a} value={a}>{a}</option>)}</select></label>
+        {onTime?<div className="jt-chat-datetime">
+          <label>Preferred date <input type="date" min={clock.date} max={furthestDate(clock.date)} value={preferredDate} onChange={e=>{setPreferredDate(e.target.value);setPreferredTime('');setClock(nairobiNow())}}/></label>
+          <div className="jt-chat-date-buttons">{days.slice(0,4).map((day,i)=><button type="button" key={day.value} className={preferredDate===day.value?'selected':''} onClick={()=>{setPreferredDate(day.value);setPreferredTime('');setClock(nairobiNow())}}>{i===0?'Today':i===1?'Tomorrow':day.day+' '+day.number}</button>)}</div>
+          <label>Preferred time (EAT) <select value={preferredTime} disabled={!validDate} onChange={e=>{setPreferredTime(e.target.value);setClock(nairobiNow())}}><option value="">Select time</option>{preferredTimes.map(([v,text])=><option key={v} value={v} disabled={preferredDate===clock.date&&Number(v.slice(0,2))*60+Number(v.slice(3,5))<=clock.minutes}>{text}</option>)}</select></label>
+          <p>Requested times are subject to provider confirmation.</p>
+        </div>:onMamaFua?<div className="jt-chat-choices">{mamaFuaServices.map(service=>{const selected=selectedCleaning.includes(service.value);return <div key={service.value} className="jt-chat-clean-row"><button type="button" className={selected?'selected':''} onClick={()=>setAnswers(old=>{const selectedList=(old.cleanServices||'').split(' | ').filter(Boolean);return {...old,cleanServices:(selected?selectedList.filter(x=>x!==service.value):[...selectedList,service.value]).join(' | ')}})}>{selected?'✓ ':''}{service.label} · {money(service.price)}</button>{selected&&<select aria-label={'Quantity for '+service.label} value={cleaningQuantities[service.value]||1} onChange={e=>setCleaningQuantities(old=>({...old,[service.value]:Number(e.target.value)}))}>{Array.from({length:10},(_,i)=><option key={i+1} value={i+1}>{i+1}</option>)}</select>}</div>})}<strong>Reference estimate: {money(cleaningTotal)}</strong></div>:<div className="jt-chat-choices">{question.options.map(option=><button type="button" className={answer===option.value?'selected':''} aria-pressed={answer===option.value} key={option.value} onClick={()=>setAnswers(old=>({...old,[question.id]:option.value}))}>{option.label}</button>)}</div>}
+        <div className="jt-chat-question-actions">{stage>0&&<button type="button" onClick={()=>setStage(x=>x-1)}>Back</button>}{!onTime&&!onMamaFua&&<button type="button" onClick={skip}>Skip</button>}<button type="button" className="jt-chat-continue" disabled={onTime?!validDate||!validTime:onMamaFua?!selectedCleaning.length:!answer} onClick={next}>{onTime?'Find providers':'Continue'}</button></div>
+      </section>}
+    </div>}
+  </div>
   <div className="jt-chat-composer-dock">
    <form className="jt-chat-composer" onSubmit={beginAsk} aria-label="Describe your service request">
     {askPhotos.length>0&&<div className="jt-chat-photo-previews" aria-label="Selected images">{askPhotos.map((photo,i)=><div className="jt-chat-photo" key={photo.preview}><img src={photo.preview} alt={'Selected service photo '+(i+1)}/><button type="button" aria-label={'Remove photo '+(i+1)} onClick={()=>setAskPhotos(items=>items.filter(x=>x!==photo))}><X size={15}/></button></div>)}</div>}
     <div className="jt-chat-input-row">
      <input ref={askPhotosRef} className="jt-chat-file-input" type="file" accept="image/jpeg,image/png,image/webp" multiple aria-label="Add service photos" onChange={e=>{const files=Array.from(e.currentTarget.files||[]).filter(f=>f.type.startsWith('image/')&&f.size<=5*1024*1024);setAskPhotos(old=>[...old,...files.slice(0,Math.max(0,4-old.length)).map(file=>({file,preview:URL.createObjectURL(file)}))].slice(0,4));e.currentTarget.value=''}}/>
      <button type="button" className="jt-chat-add-photo" aria-label="Add photos to service brief" title="Add photos" onClick={()=>askPhotosRef.current?.click()}><Plus size={28}/></button>
-     <label className="jt-chat-input-label"><span className="sr-only">Describe the service you need</span><textarea rows={1} value={description} onChange={e=>{setDescription(e.target.value);if(askError)setAskError('');e.target.style.height='auto';e.target.style.height=Math.min(e.target.scrollHeight,144)+'px'}} placeholder="How can I help you today..." maxLength={1500} required onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.nativeEvent.isComposing){e.preventDefault();e.currentTarget.form?.requestSubmit()}}}/></label>
-     <button type="submit" className="jt-chat-send" disabled={!description.trim()}>Ask JiTap</button>
+     <label className="jt-chat-input-label"><textarea aria-label="Describe the service you need" rows={1} value={chatIntake?"":description} disabled={chatIntake} onChange={e=>{if(chatIntake)return;setDescription(e.target.value);if(askError)setAskError('');e.target.style.height='auto';e.target.style.height=Math.min(e.target.scrollHeight,144)+'px'}} placeholder="How can I help you..." maxLength={1500} required onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.nativeEvent.isComposing){e.preventDefault();e.currentTarget.form?.requestSubmit()}}}/></label>
+     <button type="submit" className="jt-chat-send" disabled={!description.trim()||chatIntake}>Ask JiTap</button>
     </div>
     {askPhotos.length>0&&<p className="jt-chat-photo-note">{askPhotos.length} photo{askPhotos.length===1?'':'s'} selected (preview only; not yet uploaded).</p>}
     {askError&&<p role="alert" className="jt-ask-entry-error">{askError}</p>}
