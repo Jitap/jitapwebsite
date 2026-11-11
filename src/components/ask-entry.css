@@ -31,3 +31,39 @@ body:has(.jt-ask-entry-page) #main{padding:0!important;min-height:0!important;ba
 .jt-ask-entry-error{color:#a12333;font-size:12px;background:white;margin:0;padding:4px 12px 10px;border-radius:0 0 21px 21px}
 @media(max-width:450px){.jt-chat-topbar{height:80px;min-height:80px;padding:18px 15px}.jt-chat-menu a{font-size:16px;min-height:60px}.jt-chat-composer-dock{padding:9px 13px calc(15px + env(safe-area-inset-bottom,0px))}.jt-chat-input-row{gap:7px;padding:6px;min-height:62px}.jt-chat-add-photo{width:42px;height:44px}.jt-chat-input-label{padding-left:9px}.jt-chat-input-label textarea{font-size:16px}.jt-chat-send{font-size:15px;padding:0 13px;min-height:44px}}
 @media(prefers-reduced-motion:reduce){.jt-chat-composer{transition:none}}
+
+/* Prevent any label text from overlapping the single placeholder line. */
+.jt-chat-input-label{position:relative;min-width:0;overflow:hidden}
+.jt-chat-input-label textarea{display:block;flex:1;min-width:0;box-sizing:border-box;white-space:pre-wrap}
+.jt-chat-input-label textarea:disabled{opacity:.65;-webkit-text-fill-color:#768a82}
+.jt-chat-composer{isolation:isolate;overflow:hidden;background:#10b981}
+.jt-chat-composer::before{content:"";position:absolute;z-index:-1;inset:-120%;background:conic-gradient(from 0deg,#008a3e,#10b981,#baff75,#4ede89,#008a3e,#d5ff70,#008a3e);animation:jt-ask-glowing-border 4s linear infinite}
+.jt-chat-input-row,.jt-chat-photo-previews,.jt-chat-photo-note,.jt-ask-entry-error{position:relative;z-index:1}
+@keyframes jt-ask-glowing-border{to{transform:rotate(360deg)}}
+.jt-chat-transcript{width:min(660px,100%);margin:0 auto;padding:20px 15px 35px;display:flex;flex-direction:column;gap:17px}
+.jt-chat-customer-bubble{align-self:flex-end;max-width:86%;padding:12px 16px;border-radius:20px 20px 4px 20px;background:#e9f7ef;color:#143d2a;font-size:15px;white-space:pre-wrap;overflow-wrap:anywhere}
+.jt-chat-ai-bubble{padding:17px 18px;border-radius:17px;background:#f4faf6;color:#147345;font-size:14px}
+.jt-chat-loading-dots{letter-spacing:3px;color:#10b981}
+.jt-chat-question{align-self:stretch;border:1px solid #d9eee0;background:#fff;border-radius:20px;padding:17px;box-shadow:0 5px 18px #075a2b0d}
+.jt-chat-ai-label{display:flex;align-items:center;gap:7px;color:#008a3e;font-size:13px;font-weight:750}
+.jt-chat-question-progress{color:#789184;font-size:12px;margin-top:10px}
+.jt-chat-question h2{font-size:19px;line-height:1.35;margin:12px 0 10px;color:#183326}
+.jt-chat-question p{font-size:13px;color:#667e72;line-height:1.5}
+.jt-chat-choices{display:flex;flex-wrap:wrap;gap:9px;margin-top:15px}
+.jt-chat-choices>button,.jt-chat-clean-row>button{border:1px solid #cbded2;border-radius:12px;background:#fff;color:#17422a;padding:11px 14px;text-align:left;font:inherit;font-size:14px}
+.jt-chat-choices button.selected,.jt-chat-clean-row button.selected{border-color:#10b981;background:#eaf9ee;color:#006d35}
+.jt-chat-clean-row{display:flex;align-items:center;gap:8px}
+.jt-chat-clean-row select{max-width:65px}
+.jt-chat-datetime{display:flex;flex-direction:column;gap:12px;margin-top:16px}
+.jt-chat-datetime label{display:flex;flex-direction:column;gap:6px;color:#23573a;font-size:13px;font-weight:650}
+.jt-chat-datetime input,.jt-chat-datetime select{height:45px;min-width:0;width:100%;border:1px solid #d3e5d8;border-radius:11px;padding:0 12px;background:#fff;color:#183326}
+.jt-chat-date-buttons{display:flex;flex-wrap:wrap;gap:7px}
+.jt-chat-date-buttons button{padding:10px 12px;border-radius:10px;border:1px solid #d5e3d9;background:#fff;color:#23603d}
+.jt-chat-date-buttons button.selected{background:#e6f8ed;border-color:#10b981}
+.jt-chat-question-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:17px}
+.jt-chat-question-actions button{min-height:41px;padding:9px 15px;border-radius:11px;border:1px solid #cfe5d5;background:#fff;color:#1c7041}
+.jt-chat-question-actions .jt-chat-continue{background:#008a3e;color:#fff;border-color:#008a3e;font-weight:700}
+.jt-chat-question-actions button:disabled{opacity:.45;cursor:not-allowed}
+body:has(.jt-match-page)>.header,body:has(.jt-match-page)>.footer{display:none!important}
+body:has(.jt-match-page) #main{padding:0!important}
+@media(prefers-reduced-motion:reduce){.jt-chat-composer::before{animation:none}}
