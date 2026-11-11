@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - 'src/app/api/request/photos/**'
+      - 'src/app/api/ai/service-photo/**'
       - 'src/app/api/intake/[kind]/route.ts'
       - 'scripts/request-photo-integration.mjs'
       - '.github/workflows/request-photo-integration.yml'
