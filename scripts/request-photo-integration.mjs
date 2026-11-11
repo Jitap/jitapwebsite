@@ -1,0 +1,21 @@
+import assert from 'node:assert/strict';
+import {randomUUID} from 'node:crypto';
+const origin=process.env.JITAP_TEST_URL||'https://www.jitap.app';
+const run=randomUUID().replaceAll('-','').slice(0,12);
+const input={name:'JiTap Automated QA TEST',phone:'0700000000',consent:true,notifyOptIn:false,whatsappOptIn:false,category:'plumbing',description:'Automated QA TEST only — secure service photo upload '+run,area:'Bamburi',locationLabel:'Bamburi, Mombasa',timing:'this-week',preferredDate:new Date(Date.now()+2*86400000).toISOString().slice(0,10),preferredTime:'11:00'};
+const response=await fetch(origin+'/api/intake/request',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify(input),signal:AbortSignal.timeout(25000)});
+const data=await response.json();
+assert.equal(response.status,201,'A synthetic QA request must be saved before photos');
+assert.match(data.reference,/^[a-f0-9-]{36}$/i);
+assert.ok(typeof data.photoUploadToken==='string'&&data.photoUploadToken.length>50,'Request needs a scoped upload token');
+const bytes=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9ePqAAAAAASUVORK5CYII=','base64');
+const body=new FormData();body.append('file',new Blob([bytes],{type:'image/png'}),'jitap-synthetic-qa.png');
+const upload=await fetch(origin+'/api/request/photos',{method:'POST',headers:{Origin:origin,'x-jitap-request-id':data.reference,'x-jitap-photo-token':data.photoUploadToken},body,signal:AbortSignal.timeout(25000)});
+const uploaded=await upload.json();
+assert.equal(upload.status,201,'Photo must be saved in private storage and linked to request: '+JSON.stringify({status:upload.status,error:uploaded.error}));
+assert.equal(uploaded.ok,true);
+assert.equal(uploaded.requestId,data.reference);
+const unauth=await fetch(origin+'/api/request/photos',{method:'POST',headers:{Origin:origin,'x-jitap-request-id':data.reference,'x-jitap-photo-token':'invalid'},body:new FormData(),signal:AbortSignal.timeout(8000)});
+assert.equal(unauth.status,403,'Tokenless photo upload must be forbidden');
+console.log('PASS synthetic QA photo stored privately and linked to '+data.reference+'; invalid token refused');
+// Do not log or persist the temporary photo-upload token.
