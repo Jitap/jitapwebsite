@@ -101,3 +101,18 @@ body:has(.jt-match-page) #main{padding:0!important}
 .jt-chat-loading-dots span:nth-child(3){animation-delay:.36s}
 @keyframes jt-thinking-dot{0%,65%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
 @media(prefers-reduced-motion:reduce){.jt-chat-loading-dots span{animation:none;opacity:.65}}
+
+/* JiTap request navigation: a discreet chevron reveals the customer nav from below. */
+.jt-request-nav-reveal{flex:none;position:relative;z-index:6;background:#fff;padding:0 max(12px,env(safe-area-inset-right)) calc(3px + env(safe-area-inset-bottom,0px));width:100%}
+.jt-request-nav-toggle{display:flex;align-items:center;justify-content:center;width:58px;height:23px;margin:0 auto;border:0;background:#fff;color:#087e50;border-radius:16px 16px 0 0;cursor:pointer;touch-action:manipulation}
+.jt-request-nav-toggle:focus-visible{outline:2px solid #008a3e;outline-offset:2px}
+.jt-request-nav-panel{display:grid;grid-template-rows:0fr;transition:grid-template-rows .24s ease}
+.jt-request-nav-reveal.is-open .jt-request-nav-panel{grid-template-rows:1fr}
+.jt-request-nav-links{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;min-height:0;overflow:hidden;align-items:center;width:min(640px,100%);margin:auto;background:rgba(255,255,255,.92);border:0 solid transparent;border-radius:21px;box-shadow:none;backdrop-filter:blur(16px)}
+.jt-request-nav-reveal.is-open .jt-request-nav-links{border-width:1px;border-color:#dbece2;box-shadow:0 6px 24px #0e51351c;padding:6px 4px}
+.jt-request-nav-links a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:0;height:0;overflow:hidden;color:#537368;font-size:11px;line-height:1.2;text-align:center}
+.jt-request-nav-reveal.is-open .jt-request-nav-links a{height:57px}
+.jt-request-nav-links a:hover{color:#008a3e;background:#edfaf2;border-radius:15px}
+.jt-request-nav-links a.jt-request-nav-primary{width:49px;justify-self:center;background:linear-gradient(140deg,#008a3e,#10b981);color:#fff;border-radius:50%;box-shadow:0 5px 13px #008a3e36}
+.jt-request-nav-reveal.is-open .jt-request-nav-links a.jt-request-nav-primary{height:49px}
+@media(prefers-reduced-motion:reduce){.jt-request-nav-panel{transition:none}}
