@@ -1,0 +1,18 @@
+.jt-match-page{min-height:100dvh;background:#f7fbf9;color:#183b2c;padding-bottom:40px}
+.jt-match-header{height:66px;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 clamp(16px,5vw,32px);border-bottom:1px solid #e3ede7}
+.jt-match-header>a{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:#edf8f1;color:#008a3e}
+.jt-match-header strong{font-size:20px;color:#008a3e}.jt-match-header>span{width:40px}
+.jt-sonar{min-height:calc(100dvh - 130px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:45px;overflow:hidden}
+.jt-sonar-stage{width:220px;height:220px;position:relative;display:grid;place-items:center;isolation:isolate}
+.jt-sonar-ring{position:absolute;left:calc(50% - 47px);top:calc(50% - 47px);width:94px;height:94px;border:2.5px solid var(--sonar-color,#008a3e);border-radius:50%;opacity:0;transform:scale(1);pointer-events:none;animation:jt-sonar-expand 3.2s linear infinite;will-change:transform,opacity}
+.jt-sonar-avatar{position:relative;z-index:2;display:grid;place-items:center;width:94px;height:94px;border-radius:50%;border:3px solid var(--sonar-color,#008a3e);background:#e6f7ec;color:#008a3e;box-shadow:0 8px 24px #008a3e26;overflow:hidden}
+.jt-sonar-avatar img{width:100%;height:100%;object-fit:cover}
+.jt-sonar-status{text-align:center;color:#087946;font-size:16px;font-weight:600;animation:jt-sonar-breathe 2s ease-in-out infinite;padding:0 20px}
+@keyframes jt-sonar-expand{0%{transform:scale(1);opacity:.6}85%{opacity:.08}100%{transform:scale(3.2);opacity:0}}
+@keyframes jt-sonar-breathe{0%,100%{opacity:.55}50%{opacity:1}}
+.jt-match-content{max-width:920px;margin:25px auto;padding:0 16px}
+.jt-match-content>h1{font-size:clamp(23px,4vw,31px);margin:8px 0 10px}
+.jt-match-info{display:flex;align-items:center;gap:7px;color:#38825b;font-size:14px}
+.jt-match-empty{max-width:600px;margin:100px auto;text-align:center;padding:24px}
+.jt-match-empty a{display:inline-block;padding:13px 22px;background:#008a3e;color:#fff;border-radius:14px}
+@media(prefers-reduced-motion:reduce){.jt-sonar-ring{animation:none;opacity:.2;transform:scale(1.6)}.jt-sonar-status{animation:none}}
