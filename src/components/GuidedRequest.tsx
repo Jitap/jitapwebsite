@@ -1,7 +1,7 @@
 'use client';
 import {useEffect,useMemo,useState,useRef} from 'react';
 import Link from 'next/link';
-import {ArrowLeft,ArrowRight,ChevronDown,ChevronLeft,MapPin,X,Sparkles,Menu,Plus,ImagePlus,Send,Shirt,Footprints,House,BedDouble,Layers,Droplets,Brush} from 'lucide-react';
+import {ArrowLeft,ArrowRight,ChevronDown,ChevronLeft,MapPin,X,Sparkles,Menu,Plus,ImagePlus,Bookmark,Network,SquarePlus,Shirt,Footprints,House,BedDouble,Layers,Droplets,Brush} from 'lucide-react';
 import './ask-entry.css';
 import {areas,categories,inferService} from '@/lib/data';
 import {understandJob} from '@/lib/job-intelligence';
@@ -121,6 +121,16 @@ export function GuidedRequest(){
  const [showAskEntry,setShowAskEntry]=useState(true);
  const [askError,setAskError]=useState('');
  const [askMenuOpen,setAskMenuOpen]=useState(false);
+ const [chatViewportHeight,setChatViewportHeight]=useState<number|null>(null);
+ useEffect(()=>{
+  if(!showAskEntry)return;
+  const viewport=window.visualViewport;
+  const sync=()=>setChatViewportHeight(Math.round(viewport?.height||window.innerHeight));
+  sync();
+  viewport?.addEventListener('resize',sync);
+  window.addEventListener('resize',sync);
+  return()=>{viewport?.removeEventListener('resize',sync);window.removeEventListener('resize',sync)};
+ },[showAskEntry]);
  const [askPhotos,setAskPhotos]=useState<{file:File;preview:string}[]>([]);
  const askPhotosRef=useRef<HTMLInputElement|null>(null);
  useEffect(()=>()=>{askPhotos.forEach(photo=>URL.revokeObjectURL(photo.preview))},[askPhotos]);
@@ -245,36 +255,28 @@ export function GuidedRequest(){
   setShowAskEntry(false);
   try{window.localStorage.setItem('jitap:area',area)}catch{}
  }
- if(showAskEntry)return <section className="jt-ask-entry-page" aria-label="Ask JiTap for a service">
+ if(showAskEntry)return <section className="jt-ask-entry-page" style={chatViewportHeight?{height:chatViewportHeight+'px'}:undefined} aria-label="Ask JiTap for a service">
   <header className="jt-chat-topbar">
-   <Link href="/account" className="jt-chat-home" aria-label="JiTap home"><img src="/images/jitap-logo-transparent.svg" alt="JiTap" /></Link>
-   <span className="jt-chat-title">Ask JiTap</span>
    <div className="jt-chat-menu-wrap">
-    <button type="button" className="jt-chat-menu-trigger" aria-expanded={askMenuOpen} aria-label="Open JiTap menu" onClick={()=>setAskMenuOpen(v=>!v)}>{askMenuOpen?<X size={23}/>:<Menu size={23}/>}</button>
+    <button type="button" className="jt-chat-menu-trigger" aria-expanded={askMenuOpen} aria-label="Open JiTap menu" onClick={()=>setAskMenuOpen(v=>!v)}>{askMenuOpen?<X size={28}/>:<Menu size={28}/>}</button>
     {askMenuOpen&&<nav className="jt-chat-menu" aria-label="JiTap request menu">
-     <Link href="/account?tab=network" onClick={()=>setAskMenuOpen(false)}>Saved Providers</Link>
-     <Link href="/account?tab=network" onClick={()=>setAskMenuOpen(false)}>My Network</Link>
-     <Link href="/account?tab=requests" onClick={()=>setAskMenuOpen(false)}>Requests</Link>
-     <Link href="/request" onClick={()=>{setDescription('');setAskMenuOpen(false);setAskPhotos([])}}>New Request</Link>
+     <Link href="/account?tab=saved" onClick={()=>setAskMenuOpen(false)}><Bookmark size={22}/> Saved Providers</Link>
+     <Link href="/account?tab=network" onClick={()=>setAskMenuOpen(false)}><Network size={22}/> My Network</Link>
+     <Link href="/account?tab=requests" onClick={()=>setAskMenuOpen(false)}><SquarePlus size={22}/> My Request</Link>
     </nav>}
    </div>
   </header>
-  <div className="jt-chat-conversation" aria-live="polite" onClick={()=>askMenuOpen&&setAskMenuOpen(false)} />
+  <div className="jt-chat-conversation" onClick={()=>askMenuOpen&&setAskMenuOpen(false)} />
   <div className="jt-chat-composer-dock">
    <form className="jt-chat-composer" onSubmit={beginAsk} aria-label="Describe your service request">
     {askPhotos.length>0&&<div className="jt-chat-photo-previews" aria-label="Selected images">{askPhotos.map((photo,i)=><div className="jt-chat-photo" key={photo.preview}><img src={photo.preview} alt={'Selected service photo '+(i+1)}/><button type="button" aria-label={'Remove photo '+(i+1)} onClick={()=>setAskPhotos(items=>items.filter(x=>x!==photo))}><X size={15}/></button></div>)}</div>}
     <div className="jt-chat-input-row">
      <input ref={askPhotosRef} className="jt-chat-file-input" type="file" accept="image/jpeg,image/png,image/webp" multiple aria-label="Add service photos" onChange={e=>{const files=Array.from(e.currentTarget.files||[]).filter(f=>f.type.startsWith('image/')&&f.size<=5*1024*1024);setAskPhotos(old=>[...old,...files.slice(0,Math.max(0,4-old.length)).map(file=>({file,preview:URL.createObjectURL(file)}))].slice(0,4));e.currentTarget.value=''}}/>
-     <button type="button" className="jt-chat-add-photo" aria-label="Add photos to service brief" title="Add photos" onClick={()=>askPhotosRef.current?.click()}><Plus size={25}/></button>
-     <label className="jt-chat-input-label"><span className="sr-only">Describe the service you need</span><textarea rows={1} value={description} onChange={e=>{setDescription(e.target.value);if(askError)setAskError('');e.target.style.height='auto';e.target.style.height=Math.min(e.target.scrollHeight,144)+'px'}} placeholder="Ask JiTap..." maxLength={1500} required onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.nativeEvent.isComposing){e.preventDefault();e.currentTarget.form?.requestSubmit()}}}/></label>
-     <button type="submit" className="jt-chat-send" aria-label="Ask JiTap" title="Ask JiTap" disabled={!description.trim()}><Send size={20}/></button>
+     <button type="button" className="jt-chat-add-photo" aria-label="Add photos to service brief" title="Add photos" onClick={()=>askPhotosRef.current?.click()}><Plus size={28}/></button>
+     <label className="jt-chat-input-label"><span className="sr-only">Describe the service you need</span><textarea rows={1} value={description} onChange={e=>{setDescription(e.target.value);if(askError)setAskError('');e.target.style.height='auto';e.target.style.height=Math.min(e.target.scrollHeight,144)+'px'}} placeholder="How can I help you today..." maxLength={1500} required onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.nativeEvent.isComposing){e.preventDefault();e.currentTarget.form?.requestSubmit()}}}/></label>
+     <button type="submit" className="jt-chat-send" disabled={!description.trim()}>Ask JiTap</button>
     </div>
-    <div className="jt-chat-composer-meta">
-     <label className="jt-chat-area"><MapPin size={15}/><select aria-label="Service area" value={area} onChange={e=>setArea(e.target.value)}>{areas.map(value=><option key={value} value={value}>{value}</option>)}</select><ChevronDown size={14}/></label>
-     {askPhotos.length>0&&<span className="jt-chat-photo-count"><ImagePlus size={14}/>{askPhotos.length} photo{askPhotos.length===1?'':'s'} selected</span>}
-     <span className="jt-chat-send-label">Ask JiTap</span>
-    </div>
-    {askPhotos.length>0&&<p className="jt-chat-photo-note">Photo previews are local to this screen and are not yet uploaded with the request.</p>}
+    {askPhotos.length>0&&<p className="jt-chat-photo-note">{askPhotos.length} photo{askPhotos.length===1?'':'s'} selected (preview only; not yet uploaded).</p>}
     {askError&&<p role="alert" className="jt-ask-entry-error">{askError}</p>}
    </form>
   </div>
