@@ -32,7 +32,7 @@ export function CustomerRouteNavigation(){
   window.addEventListener('jitap:auth-changed',update);
   return()=>{active=false;window.removeEventListener('jitap:auth-changed',update)};
  },[onCustomerRoute]);
- if(!onCustomerRoute||!account)return null;
+ if(!onCustomerRoute||!account||pathname==='/request'||pathname.startsWith('/request/'))return null;
  const initials=(account.fullName||'Customer').trim().split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]?.toUpperCase()).join('')||'J';
  return <div className="jt-customer-route-nav">
   <header className="jt-customer-route-header">
