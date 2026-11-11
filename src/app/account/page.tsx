@@ -98,7 +98,7 @@ export default function AccountPage(){
  function navigate(next:Tab){
   setTab(next);
   if(next==='requests')setActiveStory('track');
-  else if(next==='saved')setActiveStory('saved');
+  else if(next==='network')setActiveStory('network');
   const nextUrl=next==='home'?'/account':'/account?tab='+next;
   window.history.pushState(null,'',nextUrl);
   window.scrollTo({top:0,behavior:'smooth'});
