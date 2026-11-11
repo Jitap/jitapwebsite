@@ -1,0 +1,48 @@
+/* JiTap Trusted Network — scoped mobile-first glass UI */
+.jt-network{display:grid;gap:16px;max-width:740px;width:100%;margin:0 auto;padding-bottom:12px;color:#102254}
+.jt-network-header{display:flex;align-items:flex-start;gap:12px;margin:0 0 5px}
+.jt-network-emblem{display:grid;place-items:center;flex:none;width:46px;height:46px;border-radius:16px;background:#e0f9e9;color:#008c36;border:1px solid #c4e9d1}
+.jt-network-header h1{font-size:clamp(23px,5vw,30px);line-height:1.15;letter-spacing:-.04em;margin:1px 0 6px;color:#0d1d5c}
+.jt-network-header p{margin:0;font-size:13px;line-height:1.5;color:#66768e}
+.jt-network-card{background:linear-gradient(145deg,#ffffffed,#ffffffed);border:1px solid #e0e9ee;border-radius:22px;padding:19px;box-shadow:0 8px 25px rgba(13,40,69,.055);min-width:0}
+.jt-network-card>p{font-size:13px;color:#5c6c85;line-height:1.58;margin:0 0 15px}
+.jt-network-card-heading{display:flex;align-items:center;gap:9px;margin-bottom:10px}
+.jt-network-card-heading svg{color:#009a3d;flex:none}
+.jt-network-card-heading h2{font-size:18px;line-height:1.2;letter-spacing:-.02em;margin:0;color:#10215b}
+.jt-network-primary,.jt-network-secondary{min-height:45px;border-radius:12px;padding:11px 15px;font-size:13px;font-weight:770;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer}
+.jt-network-primary{background:linear-gradient(105deg,#00792a,#009d3f);color:white;border:1px solid #007e2d;box-shadow:0 4px 11px #086d3128}
+.jt-network-primary.is-discoverable{background:#0a703f}
+.jt-network-secondary{background:#edf8f1;color:#056a32;border:1px solid #bfe3cb}
+.jt-network-primary:disabled,.jt-network-secondary:disabled,.jt-network-person button:disabled{opacity:.52;cursor:default}
+.jt-network-search{display:grid;gap:7px;margin:16px 0 0}
+.jt-network-search label{font-size:12px;font-weight:720;color:#203e5d;margin-top:4px}
+.jt-network-search input{min-height:46px;border-radius:11px;background:#fff;color:#132c54;padding:10px 13px;border:1px solid #d1dbe0;outline:0;font-size:14px}
+.jt-network-search input:focus{border-color:#00963c;box-shadow:0 0 0 3px #11bc541b}
+.jt-network-search .jt-network-secondary{margin-top:5px}
+.jt-network-privacy{display:flex;align-items:flex-start;gap:8px;font-size:11px;line-height:1.45;color:#637e79;margin-top:15px}
+.jt-network-privacy svg{color:#00943a;flex:none}
+.jt-network-person{display:flex;align-items:center;gap:10px;padding:13px 0;border-top:1px solid #ecf0f3;min-width:0}
+.jt-network-person:first-of-type{border-top:none}
+.jt-network-avatar{width:41px;height:41px;display:grid;place-items:center;flex:none;border-radius:50%;background:#e7f8ed;color:#008e3c}
+.jt-network-person>div:not(.jt-network-decision){display:grid;gap:3px;flex:1;min-width:0}
+.jt-network-person strong{font-size:13px;font-weight:760;color:#14275a;overflow-wrap:anywhere}
+.jt-network-person small{font-size:11px;color:#65788d;line-height:1.35;overflow-wrap:anywhere}
+.jt-network-person>button{display:flex;align-items:center;gap:3px;border-radius:9px;padding:9px;background:#e4f8ec;color:#08743d;border:1px solid #b7e3c8;font-size:12px;font-weight:750}
+.jt-network-state{font-size:11px;color:#687a88;background:#f2f5f8;padding:6px 8px;border-radius:99px;font-weight:730;white-space:nowrap}
+.jt-network-state.accepted{background:#e1f9e8;color:#047d31}
+.jt-network-terms{display:block;font-size:11px;line-height:1.5;color:#6e7c8e;margin-top:10px}
+.jt-network-invitations{border-top:1px solid #e5eced;margin-top:16px;padding-top:14px}
+.jt-network-invitations h3{font-size:14px;margin:0 0 9px}
+.jt-network-invitations>div{display:flex;align-items:center;gap:9px;font-size:12px;color:#506977;padding:6px 0}
+.jt-network-invitations svg{color:#078c3d}
+.jt-network-saved{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:13px 0;border-bottom:1px solid #e7ebef;font-size:13px;font-weight:760;color:#14265a}
+.jt-network-saved span{color:#008c37;font-weight:730}
+.jt-network-alert,.jt-network-success,.jt-network-note{margin:0;padding:12px 13px;border-radius:12px;font-size:12px;line-height:1.5}
+.jt-network-alert{color:#962e25;background:#fff1ec;border:1px solid #f5ccc0}
+.jt-network-success{color:#046d39;background:#e7faee;border:1px solid #bde6c9;overflow-wrap:anywhere}
+.jt-network-note{color:#405b73;background:#ebf3ff;border:1px solid #c8d8ed}
+.jt-network-decision{display:flex;gap:7px;flex:none}
+.jt-network-decision button{border:1px solid #bddec9;background:#e8f9ee;color:#067b35;border-radius:10px;width:35px;height:35px;display:grid;place-items:center}
+.jt-network-decision button:last-child{background:#fff3f2;color:#ad4338;border-color:#eed2cf}
+.jt-network-loading{font-size:14px;color:#677b8b;padding:30px 5px}
+@media(max-width:420px){.jt-network-card{padding:15px;border-radius:19px}.jt-network-header h1{font-size:24px}.jt-network-person{gap:7px}.jt-network-person>button{font-size:11px;padding:8px}.jt-network-card-heading h2{font-size:17px}}
