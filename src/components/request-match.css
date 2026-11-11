@@ -40,3 +40,7 @@
 }
 .jt-match-page .jt-compact-intake .row-buttons .jt-request-submit-green:hover{transform:translateY(-1px);box-shadow:0 11px 28px #008a3e44,inset 0 1px 1px #ffffff78!important}
 .jt-match-page .jt-compact-intake .row-buttons .jt-request-submit-green:disabled{opacity:.74;transform:none}
+
+.jt-match-page .jt-matches .td-outline-button{border:1px solid #37ba77;color:#008a3e;background:#f0fbf4;border-radius:14px;box-shadow:0 4px 12px #008a3e10}
+.jt-match-page .jt-matches .td-outline-button:hover{background:#e2f7eb;color:#006f35}
+.jt-match-location-only{margin-top:18px}
