@@ -79,6 +79,11 @@ export async function POST(req:NextRequest){
   if(who.role!=='provider')return error('Provider mode required',403);
   if(typeof body.enabled!=='boolean')return error('Choose a discovery preference',422);
   name='jitap_network_set_discovery';payload={p_enabled:body.enabled};
+ }else if(action==='save'){
+  if(who.role!=='customer')return error('Customer mode required',403);
+  if(typeof body.providerId!=='string'||!/^[0-9a-f-]{36}$/i.test(body.providerId))return error('Invalid provider',422);
+  if(typeof body.saved!=='boolean')return error('Invalid saved state',422);
+  name='jitap_network_save';payload={p_provider_id:body.providerId,p_saved:body.saved};
  }else if(action==='invite'){
   if(who.role!=='customer')return error('Customer mode required',403);
   name='jitap_network_invite';
