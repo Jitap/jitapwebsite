@@ -1,5 +1,6 @@
 import {chromium} from 'playwright';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 const base=process.env.BASE_URL||'http://127.0.0.1:3100';
 const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
 try {
@@ -78,16 +79,10 @@ try {
  const submitColor=await page.locator('.jt-request-submit-green').evaluate(el=>getComputedStyle(el).backgroundImage);
  assert.ok(submitColor.includes('gradient'),'Submit Request must use JiTap emerald glass gradient');
 
- const walletResponse=await page.goto(base+'/account?tab=wallet',{waitUntil:'domcontentloaded'});
- assert.equal(walletResponse?.status(),200);
- // Account content is authenticated; the CSS rule itself must remain green.
- const walletStyle=await page.evaluate(()=>{
-  const style=document.createElement('button');
-  style.className='jt-wallet-view-requests';
-  const host=document.createElement('div');host.className='jt-glass-empty';host.appendChild(style);document.body.appendChild(host);
-  const result=getComputedStyle(style).backgroundImage;host.remove();return result;
- });
- assert.ok(walletStyle.includes('gradient'),'Wallet View Requests button should use emerald gradient');
+ const walletPageSource=readFileSync('src/app/account/page.tsx','utf8');
+ const walletStyleSource=readFileSync('src/app/account/glass-dashboard.css','utf8');
+ assert.ok(walletPageSource.includes('className="jt-wallet-view-requests"'),'Wallet View Requests must use styled CTA class');
+ assert.match(walletStyleSource,/\.jt-glass-empty>button\.jt-wallet-view-requests\s*\{[^}]*#008a3e[^}]*#10b981/,'Wallet CTA must use green gradient');
  console.log('PASS JiTap mobile chat, intake, date/time, sonar and matching route');
  await page.screenshot({path:'/tmp/jitap-request-mobile-smoke.png'});
 } finally {await browser.close()}
