@@ -8,7 +8,7 @@ const data=await response.json();
 assert.equal(response.status,201,'A synthetic QA request must be saved before photos');
 assert.match(data.reference,/^[a-f0-9-]{36}$/i);
 assert.ok(typeof data.photoUploadToken==='string'&&data.photoUploadToken.length>50,'Request needs a scoped upload token');
-const bytes=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9ePqAAAAAASUVORK5CYII=','base64');
+const bytes=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAIAAABMXPacAAAB+ElEQVR4nO3dwW0TQRiAURvRQ5CogBpohyt3SsidK+2khlSABFWYQyTLsg3y7Gz2w/DeKdqDN5ov/0qetTf7w+Gwo/Om/gX+dwLEBIgJEBMgJkBMgNjbzc707vO3zc4148fXT1uezgTEBIgJEBMgJkBMgJgAMQFiAsQEiAkQEyAmQEyAmAAxAWICxASI7f/+jyYuvpe58c3FZUxATICYADEBYgLEBIgJEBMgJkBMgJgAMQFiAsQEiAkQEyAmQEyAmAAxAWICxASICRATICZATICYADEBYgLEBIgJEBMgJkBMgJgAMQFiAsQEiG335NztVc/qHfp6rAmICRATICZATICYADEBYgLEBIgJEBMg9i/vBb2Sw/uPLz/svz/Nv9odPDPuUvgfsY6r/+JqA5txr+Vs9a8eGXWXE1B5eHy+PPjzy4eZ1zQBMQFudfXP/w/HbyRATICYADEBYgLEBIgJcKvfveHyRuy+CRATYMDl1Wby+rMTYNTpis+v/s5uaM4ExASICRATICZATICYAMMeHp8nb0OeEmDMcenXaiDAgLNFX6WBADEBpswPgQADru6++VzQplbZAT0lwApmhkCAYeteiARYYsULkQAxARY6G4LFMyHAcsdFn7kiuSccMwExAWICxASICRATICZATICYADEBYgLEBIj9AoZ4Ua1Cz9joAAAAAElFTkSuQmCC','base64');
 const visionForm=new FormData();visionForm.append('photo',new Blob([bytes],{type:'image/png'}),'jitap-synthetic-qa.png');
 const analyzed=await fetch(origin+'/api/ai/service-photo',{method:'POST',headers:{Origin:origin},body:visionForm,signal:AbortSignal.timeout(18000)});
 const analysis=await analyzed.json();
