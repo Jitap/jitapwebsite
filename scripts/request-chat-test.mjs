@@ -31,12 +31,16 @@ try {
   await page.locator('.jt-chat-question').waitFor();
  }
  assert.equal(await page.locator('.jt-chat-datetime').count(),1,'Date and time must remain on the chat page');
- const day=await page.locator('.jt-chat-date-buttons button').nth(1);
+ assert.equal(await page.locator('.jt-date-chip').count(),7,'Original seven date boxes should be present');
+ assert.equal(await page.locator('.jt-time-chip').count(),6,'Original six time boxes should be present');
+ const day=await page.locator('.jt-date-options button').nth(1);
  await day.click();
- await page.locator('.jt-chat-datetime select').selectOption('09:30');
+ await page.locator('.jt-chat-time-grid button').filter({hasText:'9:30 AM'}).click();
  await page.getByRole('button',{name:'Find providers'}).click();
  await page.waitForURL('**/request/match',{timeout:15000});
  await page.locator('.jt-sonar-stage').waitFor();
+ const unauthorized=await page.request.post(base+'/api/request/photos',{headers:{'x-jitap-request-id':'00000000-0000-0000-0000-000000000000','x-jitap-photo-token':'invalid'},multipart:{file:{name:'test.png',mimeType:'image/png',buffer:Buffer.from([137,80,78,71,13,10,26,10])}}});
+ assert.equal(unauthorized.status(),403,'Unauthenticated photo uploads must be rejected');
  assert.equal(await page.locator('.jt-sonar-ring').count(),4);
  const ring=await page.locator('.jt-sonar-ring').first().evaluate(el=>getComputedStyle(el).animationName);
  assert.equal(ring,'jt-sonar-expand');

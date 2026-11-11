@@ -6,6 +6,8 @@ import {setAuthCookies} from '@/lib/jitap-auth';
 import {sendRequestReceiptSms,serviceReference} from '@/lib/request-receipt-sms';
 import {after} from 'next/server';
 import {saveServiceBrief} from '@/lib/service-brief-server';
+import {issuePhotoToken} from '@/lib/request-photo-token';
+import {supabasePrivate} from '@/lib/coordinator-server';
 import {fundiListings} from '@/lib/fundis-public';
 
 export const runtime = 'nodejs';
@@ -181,6 +183,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{kind
       console.error('JiTap intake received an unexpected response');
       return respond({ error: 'We could not confirm receipt. Please contact JiTap.' }, 502);
     }
+    // Record the choices only after the service request is accepted.
+    if(kind==='request'&&customer.kind==='customer'){
+      try{
+        await supabasePrivate('jitap_accounts?user_id=eq.'+encodeURIComponent(customer.identity.userId),{
+          method:'PATCH',headers:{Prefer:'return=minimal'},
+          body:JSON.stringify({privacy_accepted_at:new Date().toISOString(),sms_updates_opt_in:!!('notifyOptIn' in data&&data.notifyOptIn),whatsapp_updates_opt_in:!!('whatsappOptIn' in data&&data.whatsappOptIn),request_preferences_set_at:new Date().toISOString()})
+        });
+      }catch{console.warn('JiTap request preferences not synced',{requestId:identifier})}
+    }
     const emailAccepted = await notifyInbox(kind as FormKind, data, identifier);
     // The request has already been committed. A Wasiliana failure must never
     // lose the job or cause the customer to re-submit it.
@@ -207,7 +218,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{kind
     const receipt=respond({
       ok: true,
       reference: identifier,
-      ...(kind==='request'?{serviceId:serviceReference(identifier),smsAcknowledgement:smsState==='submitted'?'submitted':smsState}:{}),
+      ...(kind==='request'?{serviceId:serviceReference(identifier),photoUploadToken:issuePhotoToken(identifier),smsAcknowledgement:smsState==='submitted'?'submitted':smsState}:{}),
       linkedToAccount:customer.kind === 'customer' && kind === 'request',
       emailNotificationAccepted: emailAccepted,
       message: kind === 'provider' ? 'Your provider application has been received successfully. JiTap will review it and contact you.' : 'Thank you for contacting JiTap. Your enquiry has been received successfully. Our team will review it and get back to you.'
