@@ -1,5 +1,5 @@
 'use client';
-import {useCallback,useEffect,useState} from 'react';
+import {useCallback,useEffect,useRef,useState} from 'react';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
 import {Bell,BriefcaseBusiness,CheckCircle2,ChevronRight,ClipboardList,Clock3,MapPin,Radio,ShieldCheck,UserRound,UsersRound,Wifi,WifiOff,Wrench,ArrowRight} from 'lucide-react';
@@ -26,6 +26,7 @@ export default function ProviderDashboardPage(){
  const router=useRouter();
  const [dashboard,setDashboard]=useState<Dashboard|null>(null);
  const [reviewMode,setReviewMode]=useState(false);
+ const referralClaimInFlight=useRef(false);
  const [reviewOnline,setReviewOnline]=useState(true);
  const inProgressJobs=(dashboard?.confirmedJobs||[]).filter(job=>['confirmed','on_my_way','arrived','in_progress'].includes(job.status));
  const completedJobs=(dashboard?.confirmedJobs||[]).filter(job=>job.status==='completed');
@@ -75,15 +76,21 @@ export default function ProviderDashboardPage(){
  },[]);
  useEffect(()=>{const q=new URLSearchParams(window.location.search);if(q.get('view')==='requests')setTab('requests');if(q.get('identity_return')==='1')setTab('verification')},[]);
  useEffect(()=>{
-  // A provider who follows an invitation retains attribution through SMS sign-in.
+  // The invitation survives SMS sign-in. Keep it through transient network
+  // failures; remove only when claimed or definitively ineligible.
+  if(referralClaimInFlight.current||reviewMode||!dashboard)return;
   try{
    const invite=sessionStorage.getItem('jitap:network-invite');
-   if(!invite||!/^[0-9a-f-]{36}$/i.test(invite)||reviewMode||!dashboard)return;
-   // Claim once; an existing provider or duplicate invite is rejected server-side.
-   sessionStorage.removeItem('jitap:network-invite');
+   if(!invite||!/^[0-9a-f-]{36}$/i.test(invite))return;
+   referralClaimInFlight.current=true;
    void fetch('/api/network',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({action:'claim',inviteId:invite})}).catch(()=>{});
-  }catch{}
+    credentials:'same-origin',body:JSON.stringify({action:'claim',inviteId:invite})})
+    .then(response=>{
+     if(response.ok||response.status===422||response.status===403){
+      sessionStorage.removeItem('jitap:network-invite');
+     }
+    }).catch(()=>{}).finally(()=>{referralClaimInFlight.current=false;});
+  }catch{referralClaimInFlight.current=false}
  },[dashboard,reviewMode]);
  useEffect(()=>{let active=true;refresh().catch(()=>{if(active)setError('Could not load your provider dashboard. Please refresh.')}).finally(()=>{if(active)setLoading(false)});return()=>{active=false}},[refresh]);
  useEffect(()=>{
