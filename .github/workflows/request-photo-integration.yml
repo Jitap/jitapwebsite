@@ -28,6 +28,8 @@ jobs:
           done
           echo 'Photo endpoint not deployed to production'
           exit 1
+      - name: Allow production alias propagation
+        run: sleep 45
       - name: Create safe synthetic request and upload 1px PNG
         run: node scripts/request-photo-integration.mjs
         env:
