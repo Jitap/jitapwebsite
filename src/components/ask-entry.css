@@ -37,7 +37,7 @@ body:has(.jt-ask-entry-page) #main{padding:0!important;min-height:0!important;ba
 .jt-chat-input-label textarea{display:block;flex:1;min-width:0;box-sizing:border-box;white-space:pre-wrap}
 .jt-chat-input-label textarea:disabled{opacity:.65;-webkit-text-fill-color:#768a82}
 .jt-chat-composer{isolation:isolate;overflow:hidden;background:#10b981}
-.jt-chat-composer::before{content:"";position:absolute;z-index:-1;inset:-120%;background:conic-gradient(from 0deg,#008a3e,#10b981,#baff75,#4ede89,#008a3e,#d5ff70,#008a3e);animation:jt-ask-glowing-border 4s linear infinite}
+.jt-chat-composer::before{content:"";position:absolute;z-index:0;inset:-120%;background:conic-gradient(from 0deg,#008a3e,#10b981,#baff75,#4ede89,#008a3e,#d5ff70,#008a3e);animation:jt-ask-glowing-border 4s linear infinite}
 .jt-chat-input-row,.jt-chat-photo-previews,.jt-chat-photo-note,.jt-ask-entry-error{position:relative;z-index:1}
 @keyframes jt-ask-glowing-border{to{transform:rotate(360deg)}}
 .jt-chat-transcript{width:min(660px,100%);margin:0 auto;padding:20px 15px 35px;display:flex;flex-direction:column;gap:17px}
@@ -67,3 +67,6 @@ body:has(.jt-ask-entry-page) #main{padding:0!important;min-height:0!important;ba
 body:has(.jt-match-page)>.header,body:has(.jt-match-page)>.footer{display:none!important}
 body:has(.jt-match-page) #main{padding:0!important}
 @media(prefers-reduced-motion:reduce){.jt-chat-composer::before{animation:none}}
+
+.jt-chat-service-area{display:flex;align-items:center;gap:10px;color:#23643d;font-weight:600;font-size:13px;margin:12px 0}
+.jt-chat-service-area select{border:1px solid #d4e8da;border-radius:9px;padding:7px 10px;color:#125d37;background:#fff;max-width:65%}
