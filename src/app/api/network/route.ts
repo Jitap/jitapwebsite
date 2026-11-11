@@ -37,6 +37,12 @@ async function rpc(token:string,name:string,payload:Json={}){
   return {ok:response.ok,status:response.status,data};
  }catch{return {ok:false,status:503,data:{message:'Network service temporarily unavailable'}}}
 }
+function concealPhoneNumbers(value:unknown):unknown{
+ if(typeof value==='string')return value.replace(/(?:\\+?254|0)[\\s().-]*[17](?:[\\s().-]*\\d){8}/g,'[number hidden]');
+ if(Array.isArray(value))return value.map(concealPhoneNumbers);
+ if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).map(([key,item])=>[key,concealPhoneNumbers(item)]));
+ return value;
+}
 const error=(message:string,status:number)=>respond({error:message},status);
 export async function GET(req:NextRequest){
  const review=getReviewSession(req);
@@ -45,10 +51,13 @@ export async function GET(req:NextRequest){
  }:{ok:true,reviewer:true,role:'provider',discoverable:false,connections:[]});
  const who=await identity(req);
  if(!who)return error('Sign in to access your network.',401);
- const result=await rpc(who.token,'jitap_network_state');
+ const result=await rpc(who.token,'jitap_network_state',{p_as_customer:who.role==='customer'});
  if(!result.ok)return error('Unable to load your network. Try again.',503);
  const state=result.data&&typeof result.data==='object'?result.data as Json:{};
- return respond({ok:true,...state,role:who.role},200,who.rotated);
+ // Provider biographies/business names are user-authored: redact any phone-like
+ // text before returning the profile, even after the connection is accepted.
+ const sanitized=concealPhoneNumbers(state) as Json;
+ return respond({ok:true,...sanitized,role:who.role},200,who.rotated);
 }
 export async function POST(req:NextRequest){
  if(!sameOrigin(req))return error('Invalid origin',403);
