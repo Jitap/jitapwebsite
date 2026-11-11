@@ -16,3 +16,8 @@
 .jt-match-empty{max-width:600px;margin:100px auto;text-align:center;padding:24px}
 .jt-match-empty a{display:inline-block;padding:13px 22px;background:#008a3e;color:#fff;border-radius:14px}
 @media(prefers-reduced-motion:reduce){.jt-sonar-ring{animation:none;opacity:.2;transform:scale(1.6)}.jt-sonar-status{animation:none}}
+
+/* Consistent JiTap emerald action styling at final contact/location step */
+.jt-match-page .jt-request-submit-green,.jt-match-page .jt-compact-intake .row-buttons button[type="submit"]{background:linear-gradient(110deg,#008a3e,#10b981)!important;border-color:#008a3e!important;color:#fff!important;box-shadow:0 6px 16px #008a3e25}
+.jt-photo-upload-status{margin-top:12px;font-size:14px;line-height:1.5}
+.jt-match-page .jt-photo-upload-status{color:#165a37}
