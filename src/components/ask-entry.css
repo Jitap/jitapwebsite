@@ -91,3 +91,13 @@ body:has(.jt-match-page) #main{padding:0!important}
 .jt-chat-message-photos{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .jt-chat-message-photos img{width:65px;height:65px;border-radius:12px;object-fit:cover;border:1px solid #a6d7b8}
 @media(max-width:480px){.jt-chat-transcript{padding:12px 14px 26px}.jt-chat-question{padding:16px 14px}.jt-chat-choices{flex-direction:column}.jt-chat-choices>button{width:100%;max-width:100%}}
+
+/* Compact reassuring JiTap thinking indicator. */
+.jt-chat-ai-bubble{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.jt-chat-ai-bubble>svg{color:#008a3e;flex:none}
+.jt-chat-loading-dots{display:inline-flex;align-items:center;gap:4px;margin-left:1px;letter-spacing:normal}
+.jt-chat-loading-dots span{width:5px;height:5px;background:#10b981;border-radius:50%;animation:jt-thinking-dot 1.15s ease-in-out infinite}
+.jt-chat-loading-dots span:nth-child(2){animation-delay:.18s}
+.jt-chat-loading-dots span:nth-child(3){animation-delay:.36s}
+@keyframes jt-thinking-dot{0%,65%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
+@media(prefers-reduced-motion:reduce){.jt-chat-loading-dots span{animation:none;opacity:.65}}
