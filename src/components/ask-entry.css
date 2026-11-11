@@ -70,3 +70,14 @@ body:has(.jt-match-page) #main{padding:0!important}
 
 .jt-chat-service-area{display:flex;align-items:center;gap:10px;color:#23643d;font-weight:600;font-size:13px;margin:12px 0}
 .jt-chat-service-area select{border:1px solid #d4e8da;border-radius:9px;padding:7px 10px;color:#125d37;background:#fff;max-width:65%}
+
+/* Restore the original boxed day/time picker inside the chat. */
+.jt-chat-datetime .jt-date-options{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
+.jt-chat-datetime .jt-date-chip{min-width:0;padding:10px 2px}
+.jt-chat-datetime .jt-date-chip.selected,.jt-chat-datetime .jt-time-chip.selected{background:#e6f7ee;border-color:#008a3e;color:#006e38;box-shadow:0 0 0 1px #008a3e}
+.jt-chat-datetime .jt-later-date{display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:10px}
+.jt-chat-datetime .jt-later-date input{width:auto;max-width:58%;min-height:42px}
+.jt-chat-datetime .jt-chat-time-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.jt-chat-datetime .jt-time-chip{min-height:52px;font-size:15px}
+.jt-chat-datetime .jt-time-chip:disabled{opacity:.4;cursor:not-allowed}
+@media(max-width:420px){.jt-chat-datetime .jt-date-options{gap:3px}.jt-chat-datetime .jt-date-chip strong{font-size:15px}.jt-chat-datetime .jt-date-chip small{font-size:9px}.jt-chat-datetime .jt-date-chip{padding:9px 1px}}
