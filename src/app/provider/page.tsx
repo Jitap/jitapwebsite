@@ -2,7 +2,7 @@
 import {useCallback,useEffect,useState} from 'react';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
-import {Bell,BriefcaseBusiness,CheckCircle2,ChevronRight,ClipboardList,Clock3,MapPin,Radio,ShieldCheck,UserRound,Wifi,WifiOff,Wrench,ArrowRight} from 'lucide-react';
+import {Bell,BriefcaseBusiness,CheckCircle2,ChevronRight,ClipboardList,Clock3,MapPin,Radio,ShieldCheck,UserRound,UsersRound,Wifi,WifiOff,Wrench,ArrowRight} from 'lucide-react';
 import {KENYAN_SERVICE_AREAS,SERVICE_OPTIONS} from '@/lib/provider-options';
 import {providerPreferredDate,providerPreferredTime} from '@/lib/provider-schedule';
 import {ProviderMediaFields,type MediaKind} from '@/components/ProviderMediaFields';
@@ -74,6 +74,17 @@ export default function ProviderDashboardPage(){
   setDashboard(current=>current?{...current,uploadedMedia:data.uploadedMedia,reviewStatus:data.reviewStatus}:data);
  },[]);
  useEffect(()=>{const q=new URLSearchParams(window.location.search);if(q.get('view')==='requests')setTab('requests');if(q.get('identity_return')==='1')setTab('verification')},[]);
+ useEffect(()=>{
+  // A provider who follows an invitation retains attribution through SMS sign-in.
+  try{
+   const invite=sessionStorage.getItem('jitap:network-invite');
+   if(!invite||!/^[0-9a-f-]{36}$/i.test(invite)||reviewMode||!dashboard)return;
+   // Claim once; an existing provider or duplicate invite is rejected server-side.
+   sessionStorage.removeItem('jitap:network-invite');
+   void fetch('/api/network',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({action:'claim',inviteId:invite})}).catch(()=>{});
+  }catch{}
+ },[dashboard,reviewMode]);
  useEffect(()=>{let active=true;refresh().catch(()=>{if(active)setError('Could not load your provider dashboard. Please refresh.')}).finally(()=>{if(active)setLoading(false)});return()=>{active=false}},[refresh]);
  useEffect(()=>{
   if(!dashboard?.profile?.is_online||tab==='profile')return;
@@ -213,6 +224,9 @@ export default function ProviderDashboardPage(){
         <ChevronRight size={18}/>
        </button>)}</div>}
      </aside>}
+    {approved&&<div style={{display:'flex',justifyContent:'flex-end',margin:'0 0 10px'}}>
+     <Link href="/provider/network" style={{display:'inline-flex',alignItems:'center',gap:8,padding:'9px 13px',borderRadius:12,background:'#e7f8ed',color:'#096e39',border:'1px solid #b9e7c8',fontSize:13,fontWeight:750}}><UsersRound size={18}/> My Network</Link>
+    </div>}
     {approved?<div className="jt-provider-home-greeting">
        <h1>Hello, <span>{firstName}</span></h1><p>{online?'You’re online and available':'You’re currently offline'}</p>
       </div>:<div className="jt-provider-greeting"><div><p>JITAP FOR PROVIDERS</p><h1>Habari, <span>{firstName}!</span></h1><div className="jt-provider-subtext">{!submitted?'Complete onboarding to get started.':'Your provider profile is awaiting JiTap review.'}</div></div>
