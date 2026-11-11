@@ -1,0 +1,46 @@
+import {chromium} from 'playwright';
+import assert from 'node:assert/strict';
+const base=process.env.BASE_URL||'http://127.0.0.1:3100';
+const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+try {
+ const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1,isMobile:true,hasTouch:true});
+ const response=await page.goto(base+'/request',{waitUntil:'domcontentloaded'});
+ assert.equal(response?.status(),200);
+ await page.getByRole('textbox',{name:'Describe the service you need'}).waitFor();
+ assert.equal(await page.locator('.jt-chat-input-label textarea').getAttribute('placeholder'),'How can I help you...');
+ assert.equal(await page.locator('.jt-chat-input-label span').count(),0,'Do not overlay hidden label text over placeholder');
+ assert.equal(await page.locator('.jt-chat-composer').count(),1);
+ const animated=await page.locator('.jt-chat-composer').evaluate(el=>getComputedStyle(el,'::before').animationName);
+ assert.equal(animated,'jt-ask-glowing-border','Border glow must animate');
+ const box=await page.locator('.jt-chat-composer').boundingBox();
+ assert.ok(box&&box.y>500&&box.x>=0&&box.x+box.width<=391,'Composer must sit at bottom and fit mobile width');
+ const placeholder=await page.locator('.jt-chat-input-label textarea').boundingBox();
+ const send=await page.locator('.jt-chat-send').boundingBox();
+ assert.ok(placeholder&&send&&placeholder.x+placeholder.width<=send.x+2,'Input must not overlap button');
+ await page.getByRole('button',{name:'Open JiTap menu'}).click();
+ for(const name of ['Saved Providers','My Network','My Request'])assert.equal(await page.getByRole('navigation',{name:'JiTap request menu'}).getByRole('link',{name}).count(),1);
+ await page.getByRole('button',{name:'Open JiTap menu'}).click();
+ await page.locator('.jt-chat-input-label textarea').fill('My kitchen tap is leaking and I need a plumber');
+ await page.getByRole('button',{name:'Ask JiTap'}).click();
+ await page.locator('.jt-chat-question').waitFor({timeout:20000});
+ assert.equal(await page.locator('.jt-chat-customer-bubble').count(),1,'Customer request must remain in the chat');
+ for(let i=0;i<6;i++){
+  if(await page.locator('.jt-chat-datetime').count())break;
+  await page.locator('.jt-chat-choices button').first().click();
+  await page.getByRole('button',{name:'Continue'}).click();
+  await page.locator('.jt-chat-question').waitFor();
+ }
+ assert.equal(await page.locator('.jt-chat-datetime').count(),1,'Date and time must remain on the chat page');
+ const day=await page.locator('.jt-chat-date-buttons button').nth(1);
+ await day.click();
+ await page.locator('.jt-chat-datetime select').selectOption('09:30');
+ await page.getByRole('button',{name:'Find providers'}).click();
+ await page.waitForURL('**/request/match',{timeout:15000});
+ await page.locator('.jt-sonar-stage').waitFor();
+ assert.equal(await page.locator('.jt-sonar-ring').count(),4);
+ const ring=await page.locator('.jt-sonar-ring').first().evaluate(el=>getComputedStyle(el).animationName);
+ assert.equal(ring,'jt-sonar-expand');
+ await page.getByRole('heading',{name:'Providers for your service'}).waitFor({timeout:10000});
+ console.log('PASS JiTap mobile chat, intake, date/time, sonar and matching route');
+ await page.screenshot({path:'/tmp/jitap-request-mobile-smoke.png'});
+} finally {await browser.close()}
