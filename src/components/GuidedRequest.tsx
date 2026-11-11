@@ -11,6 +11,7 @@ import {IntakeForm} from '@/components/Interactive';
 import {MatchedFundis} from '@/components/FundiDirectory';
 import {MovingRequest} from '@/components/MovingRequest';
 import {saveDraftPhotos} from '@/lib/request-photo-store';
+import {prepareServicePhoto} from '@/lib/prepare-service-photo';
 
 type Question={id:string;title:string;hint?:string;options:{value:string;label:string;hint?:string}[]};
 const mamaFuaServices=[
@@ -255,7 +256,7 @@ export function GuidedRequest(){
    setPhotoStatus('Saving photos and checking their service details...');
    try{
     await saveDraftPhotos(askPhotos.map(p=>p.file));
-    const checks=await Promise.allSettled(askPhotos.slice(0,2).map(async p=>{
+    const checks=await Promise.allSettled(askPhotos.slice(0,4).map(async p=>{
      const body=new FormData();body.append('photo',p.file);
      const res=await fetch('/api/ai/service-photo',{method:'POST',body});
      const data=await res.json();
@@ -311,7 +312,7 @@ export function GuidedRequest(){
    <form className="jt-chat-composer" onSubmit={beginAsk} aria-label="Describe your service request">
     {askPhotos.length>0&&<div className="jt-chat-photo-previews" aria-label="Selected images">{askPhotos.map((photo,i)=><div className="jt-chat-photo" key={photo.preview}><img src={photo.preview} alt={'Selected service photo '+(i+1)}/><button type="button" aria-label={'Remove photo '+(i+1)} onClick={()=>setAskPhotos(items=>items.filter(x=>x!==photo))}><X size={15}/></button></div>)}</div>}
     <div className="jt-chat-input-row">
-     <input ref={askPhotosRef} className="jt-chat-file-input" type="file" accept="image/jpeg,image/png,image/webp" multiple aria-label="Add service photos" onChange={e=>{const files=Array.from(e.currentTarget.files||[]).filter(f=>f.type.startsWith('image/')&&f.size<=5*1024*1024);setAskPhotos(old=>[...old,...files.slice(0,Math.max(0,4-old.length)).map(file=>({file,preview:URL.createObjectURL(file)}))].slice(0,4));e.currentTarget.value=''}}/>
+     <input ref={askPhotosRef} className="jt-chat-file-input" type="file" accept="image/jpeg,image/png,image/webp" multiple aria-label="Add service photos" onChange={async e=>{const files=Array.from(e.currentTarget.files||[]);e.currentTarget.value='';setAskError('');try{const prepared=await Promise.all(files.slice(0,4-askPhotos.length).map(prepareServicePhoto));setAskPhotos(old=>[...old,...prepared.map(file=>({file,preview:URL.createObjectURL(file)}))].slice(0,4))}catch(error){setAskError(error instanceof Error?error.message:'Unable to prepare this photo.')}}}/>
      <button type="button" className="jt-chat-add-photo" aria-label="Add photos to service brief" title="Add photos" onClick={()=>askPhotosRef.current?.click()}><Plus size={28}/></button>
      <label className="jt-chat-input-label"><textarea aria-label="Describe the service you need" rows={1} value={chatIntake?"":description} disabled={chatIntake} onChange={e=>{if(chatIntake)return;setDescription(e.target.value);if(askError)setAskError('');e.target.style.height='auto';e.target.style.height=Math.min(e.target.scrollHeight,144)+'px'}} placeholder="How can I help you..." maxLength={1500} required onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.nativeEvent.isComposing){e.preventDefault();e.currentTarget.form?.requestSubmit()}}}/></label>
      <button type="submit" className="jt-chat-send" disabled={!description.trim()||chatIntake||processingPhotos}>{processingPhotos?"Checking photos...":"Ask JiTap"}</button>
