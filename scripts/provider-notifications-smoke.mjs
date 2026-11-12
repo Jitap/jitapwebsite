@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 const url=process.env.JITAP_TEST_URL||'http://127.0.0.1:3000';
 const base=new URL(url);
 const tokenless={caseId:'00000000-0000-0000-0000-000000000001',recipientKind:'provider',assignmentId:'00000000-0000-0000-0000-000000000002',confirm:true};
-const rejected=await fetch(base+'/api/coordinator/whatsapp',{method:'POST',headers:{'content-type':'application/json','origin':base.origin},body:JSON.stringify(tokenless),signal:AbortSignal.timeout(7000)});
+const rejected=await fetch(base+'/api/coordinator/whatsapp',{method:'POST',headers:{'content-type':'application/json','origin':'https://'+base.host},body:JSON.stringify(tokenless),signal:AbortSignal.timeout(7000)});
 assert.equal(rejected.status,401,'SOC WhatsApp cannot be used without verified staff session');
 const forged=await fetch(base+'/api/coordinator/whatsapp',{method:'POST',headers:{'content-type':'application/json','origin':'https://malicious.example'},body:JSON.stringify(tokenless),signal:AbortSignal.timeout(7000)});
 assert.equal(forged.status,403,'WhatsApp endpoint requires same-origin request');
