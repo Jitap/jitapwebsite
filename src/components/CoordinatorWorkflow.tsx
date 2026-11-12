@@ -19,9 +19,22 @@ function conciseReportedFault(raw:string){
  const first=text.split(/\s*(?:Where exactly|How serious|When did|What type|Which type|Is there|Are there|Preferred appointment|Preferred date|Preferred time|What is|Can you|Please select)\s*[:?]/i)[0];
  return (first||text.split(';')[0]||'Service assessment requested').replace(/[.;\s]+$/,'').slice(0,230);
 }
+function reportedTechnicalDetails(raw:string){
+ const clean=raw.replace(/\s+/g,' ');
+ const fragments=[
+  [/Where exactly is the water escaping from:\s*([^;.]+)/i,'Reported leak source'],
+  [/How serious is the leak:\s*([^;.]+)/i,'Reported leak rate'],
+  [/What appliance(?: is affected)?:\s*([^;.]+)/i,'Equipment'],
+  [/What is the issue:\s*([^;.]+)/i,'Reported symptom']
+ ] as const;
+ return fragments.flatMap(([pattern,label])=>{
+  const match=clean.match(pattern);return match?[label+': '+match[1].trim().slice(0,65)]:[];
+ }).slice(0,3).join('; ');
+}
 function makeProviderBuzz(c:Case,provider:string,technical?:TechnicalBrief|null){
  const summary=(technical?.technical_summary||'').replace(/(?:\+?254|0)[17]\d{8}/g,'[phone withheld]').replace(/https?:\/\/\S+/gi,'[link withheld]').replace(/\s+/g,' ').trim();
  const issue=(summary||conciseReportedFault(c.description)).slice(0,245);
+ const details=technical?.technical_summary?'':reportedTechnicalDetails(c.description);
  const scope=(technical?.proposed_scope||'').replace(/\s+/g,' ').trim().slice(0,125);
  const trade=c.category.replaceAll('-',' ').replace(/\b\w/g,ch=>ch.toUpperCase());
  const place=(c.locationLabel||c.area||'Location to confirm').replace(/\s+/g,' ').slice(0,95);
@@ -31,6 +44,7 @@ function makeProviderBuzz(c:Case,provider:string,technical?:TechnicalBrief|null)
   'Provider: '+provider,
   'Service: '+trade,
   'Reported issue: '+issue,
+  ...(details?['Reported details: '+details]:[]),
   ...(scope?['Preliminary scope: '+scope]:[]),
   'Location: '+place,
   'Preferred visit: '+date+' EAT (subject to confirmation)',
