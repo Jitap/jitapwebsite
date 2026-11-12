@@ -6,7 +6,8 @@ import {providerMatchesTrade} from '@/lib/trade-categories';
 type Provider={id:string;business_name:string;service_categories:string[];service_areas:string[];base_area:string|null};
 type Assignment={id:string;provider_id:string;state:string;quoted_amount_kes:number|null;notes:string|null;assigned_at:string;responded_at:string|null};
 type ProviderSmsDraft={id:string;assignment_id:string;message:string};
-type ProviderSmsContact={providerId:string;enabled:boolean;maskedPhone:string};
+type ProviderSmsContact={providerId:string;enabled:boolean;whatsappEnabled:boolean;maskedPhone:string};
+type TechnicalBrief={technical_summary:string;proposed_scope:string;urgency:string;source:string};
 type SmsAttempt={id:string;customer_update_id:string|null;assignment_id:string|null;recipient_kind:string;gateway?:string;state:string;requested_at:string;http_status:number|null;provider_message_id:string|null};
 type Update={id:string;kind:string;channel:'whatsapp'|'sms'|'phone';message:string;state:'draft'|'sent_manually'|'cancelled';created_at:string;sent_at:string|null};
 type Case={id:string;reference:string;category:string;description:string;area:string;phone:string;status:string;canContact:boolean;source_kind:string;name:string;locationLabel:string;notifyOptIn:boolean;preferredDate?:string;preferredTime?:string;jobStatus?:string|null;providerName?:string|null;appointmentId?:string|null};
@@ -17,11 +18,30 @@ function toKenyanWhatsApp(phone:string){
  const number=n.startsWith('0')?'254'+n.slice(1):n;
  return /^254[17]\d{8}$/.test(number)?number:null;
 }
-function makeProviderBuzz(c:Case,provider:string){
- const brief=c.description.trim().replace(/(?:\+?254|0)[17]\d{8}/g,'[phone withheld]').replace(/\s+/g,' ').slice(0,270)||c.category;
- const place=c.locationLabel||c.area||'Confirm location';
- const date=[c.preferredDate,c.preferredTime].filter(Boolean).join(' at ')||'Confirm schedule';
- return ('JiTap BUZZ for '+provider+'. JT-'+c.reference+'. Job: '+brief+'. Location: '+place+'. Preferred: '+date+'. Open the secure response link at the end of this SMS to accept, decline or ask a question. Acceptance immediately confirms the booking.').slice(0,600);
+function conciseReportedFault(raw:string){
+ const text=raw.replace(/(?:\+?254|0)[17]\d{8}/g,'[phone withheld]').replace(/https?:\/\/\S+/gi,'[link withheld]').replace(/\s+/g,' ').trim();
+ // Older requests retain their question-and-answer transcript in the ticket, not the provider alert.
+ const first=text.split(/\s*(?:Where exactly|How serious|When did|What type|Which type|Is there|Are there|Preferred appointment|Preferred date|Preferred time|What is|Can you|Please select)\s*[:?]/i)[0];
+ return (first||text.split(';')[0]||'Service assessment requested').replace(/[.;\s]+$/,'').slice(0,230);
+}
+function makeProviderBuzz(c:Case,provider:string,technical?:TechnicalBrief|null){
+ const summary=(technical?.technical_summary||'').replace(/(?:\+?254|0)[17]\d{8}/g,'[phone withheld]').replace(/https?:\/\/\S+/gi,'[link withheld]').replace(/\s+/g,' ').trim();
+ const issue=(summary||conciseReportedFault(c.description)).slice(0,245);
+ const scope=(technical?.proposed_scope||'').replace(/\s+/g,' ').trim().slice(0,125);
+ const trade=c.category.replaceAll('-',' ').replace(/\b\w/g,ch=>ch.toUpperCase());
+ const place=(c.locationLabel||c.area||'Location to confirm').replace(/\s+/g,' ').slice(0,95);
+ const date=[c.preferredDate,c.preferredTime].filter(Boolean).join(' at ')||'To be arranged';
+ const fields=[
+  'JiTap BUZZ | JT-'+c.reference,
+  'Provider: '+provider,
+  'Service: '+trade,
+  'Reported issue: '+issue,
+  ...(scope?['Preliminary scope: '+scope]:[]),
+  'Location: '+place,
+  'Preferred visit: '+date+' EAT (subject to confirmation)',
+  'Review and respond via the secure link. Accepting the request follows the booking process; visit time is not confirmed until JiTap confirms.'
+ ];
+ return fields.join('\n').slice(0,600);
 }
 function makeMessage(c:Case,kind:string,providerName?:string){
  const ref='JT-'+c.reference;
@@ -45,6 +65,7 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
  const [providerDrafts,setProviderDrafts]=useState<ProviderSmsDraft[]>([]);
  const [buzzText,setBuzzText]=useState<Record<string,string>>({});
  const [providerSmsContacts,setProviderSmsContacts]=useState<ProviderSmsContact[]>([]);
+ const [technicalBrief,setTechnicalBrief]=useState<TechnicalBrief|null>(null);
  const [isAdmin,setIsAdmin]=useState(false);
  const [newProviderPhone,setNewProviderPhone]=useState('');
  const [consentSource,setConsentSource]=useState('');
@@ -70,7 +91,7 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
   const res=await fetch('/api/coordinator/workflow?caseId='+encodeURIComponent(caseItem.id),{cache:'no-store'});
   if(!res.ok)throw new Error('Unable to load workflow');
   const data=await res.json();
-  setProviders(data.providers||[]);setAssignments(data.assignments||[]);setUpdates(data.updates||[]);setSmsAttempts(data.smsAttempts||[]);setProviderDrafts(data.providerDrafts||[]);setSmsEnabled(data.smsEnabled===true);setSmsReady(data.smsReady===true);setProviderSmsContacts(data.providerSmsContacts||[]);setIsAdmin(data.staffRole==='admin');
+  setProviders(data.providers||[]);setAssignments(data.assignments||[]);setUpdates(data.updates||[]);setSmsAttempts(data.smsAttempts||[]);setProviderDrafts(data.providerDrafts||[]);setSmsEnabled(data.smsEnabled===true);setSmsReady(data.smsReady===true);setProviderSmsContacts(data.providerSmsContacts||[]);setTechnicalBrief(data.technicalBrief||null);setIsAdmin(data.staffRole==='admin');
  },[caseItem.id]);
  useEffect(()=>{
   let alive=true;
@@ -200,7 +221,7 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
       <p className="coordinator-help">JiTap uses the provider's saved private SMS contact. A unique secure response link is added automatically when sending. Review and save this service brief first.</p>
       {smsAttempts.some(s=>s.assignment_id===a.id)&&providerDrafts.find(d=>d.assignment_id===a.id)&&<p className="coordinator-provider-buzz-sent">{providerDrafts.find(d=>d.assignment_id===a.id)?.message}</p>}
       {!smsAttempts.some(s=>s.assignment_id===a.id)&&<>
-        <button type="button" disabled={busy} onClick={()=>setBuzzText(x=>({...x,[a.id]:makeProviderBuzz(caseItem,p?.business_name||'provider')}))}>Generate BUZZ draft</button>
+        <button type="button" disabled={busy} onClick={()=>setBuzzText(x=>({...x,[a.id]:makeProviderBuzz(caseItem,p?.business_name||'provider',technicalBrief)}))}>Generate BUZZ draft</button>
         <textarea aria-label="Provider BUZZ draft" rows={5} maxLength={600}
           value={buzzText[a.id]??providerDrafts.find(x=>x.assignment_id===a.id)?.message??makeProviderBuzz(caseItem,p?.business_name||'provider')}
           onChange={e=>setBuzzText(x=>({...x,[a.id]:e.target.value}))}/>
