@@ -21,16 +21,19 @@
 
 Existing five Meta-approved booking lifecycle templates are preserved. A new WhatsApp template MUST NOT be impersonated using an unrelated approved one. The provider name is included in the pending Booking template's existing service-summary variable, where consistent with the approved template wording.
 
-## 2. Five new Utility template registrations required for full follow-up delivery
-The following environment variables are **not yet configured** in production as of the initial integration. Each requires the matching template to be approved by Meta/Kapso and checked against its actual approved placeholder structure.
+## 2. Only two new Utility templates required for follow-up delivery
+The following environment variables are **not yet configured** in production as of the initial integration. Each must be submitted for approval in Meta/Kapso and tested against its actual approved placeholder structure.
 
-| Meta Utility template suggested name | Vercel production env key | Recipient |
+| Meta Utility template suggested name | Vercel production env key | Recipient and event |
 | --- | --- | --- |
-| `jitap_provider_accepted` | `KAPSO_TEMPLATE_PROVIDER_ACCEPTED` | Provider |
-| `jitap_eta` | `KAPSO_TEMPLATE_ETA` | Customer |
-| `jitap_on_my_way` | `KAPSO_TEMPLATE_ON_MY_WAY` | Customer |
-| `jitap_arrived` | `KAPSO_TEMPLATE_ARRIVED` | Customer |
-| `jitap_completed` | `KAPSO_TEMPLATE_COMPLETED` | Customer |
+| `jitap_provider_accepted` | `KAPSO_TEMPLATE_PROVIDER_ACCEPTED` | Provider: accepted job acknowledgement |
+| `jitap_customer_progress` | `KAPSO_TEMPLATE_CUSTOMER_PROGRESS` | Customer: ETA, On My Way, Arrived, Completed |
+
+**Suggested provider acknowledgement body:** `JiTap request {{1}}: {{2}}. {{3}}. View job details in JiTap.`
+
+**Suggested customer progress body:** `JiTap update for {{1}}. Provider: {{2}}. Status: {{3}}. View your request in JiTap.`
+
+The customer progress variable `{{3}}` contains an explicit, truthful status such as “On the way for your plumbing service”, “Estimated arrival: 12 Nov 5:30 PM EAT”, or “Arrived at the service location”. The five existing lifecycle templates remain available for booking, reminder, cancellation, rematch and reschedule.
 
 Template format used by current sender:
 - Body `{{1}}` = `JT-XXXXXXXX` request reference.
