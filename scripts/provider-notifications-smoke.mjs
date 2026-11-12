@@ -98,6 +98,10 @@ assert.ok(acquisition.includes('30*86400'),'Tracking invitations must have 30-da
 assert.ok(acquisition.includes('jitap_provider_booking_sms'),'One-time SMS sends are auditable');
 assert.ok(createRoute.includes('smsNotificationConsent:z.literal(true)'),'Provider must confirm SMS permission');
 assert.ok(createRoute.includes('sendProviderCreatedBookingSms'),'Provider-created booking must send customer SMS');
+assert.ok(createRoute.includes('jitap_provider_workspaces?select=business_name,full_name'),'Sender name must originate from verified provider profile');
+assert.ok(createRoute.includes('jobTitle:d.title,providerName'),'Provider business name must be passed to SMS sender');
+assert.ok(acquisition.includes("providerName+' has recorded your '"),'Customer SMS must name the provider instead of saying your provider');
+assert.ok(!acquisition.includes("your provider has recorded"),'Customer SMS must not use anonymous provider wording');
 assert.ok(trackingPage.includes('View full service details'),'Tracking landing must invite customer login/signup');
 assert.ok(trackingPage.includes('/api/track/preview'),'Signed preview must precede private ticket');
 assert.ok(providerForm.includes('data.smsStatus'),'Provider calendar must surface SMS gateway status');
