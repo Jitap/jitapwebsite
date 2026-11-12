@@ -40,7 +40,7 @@ export async function POST(req:NextRequest){
   }else if(existing[0].state==='blocked'){
    await supabasePrivate('jitap_provider_alerts?id=eq.'+existing[0].id,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({state:'pending',last_error:null})});
   }
-  const results=await dispatchProviderAlerts(1,d.assignmentId);
+  const results=await dispatchProviderAlerts(1,d.assignmentId,'whatsapp');
   return reply({ok:results.submitted>0,status:results.submitted>0?'submitted':results.blocked?'blocked':results.unknown?'unknown':results.rejected?'rejected':'queued',message:'WhatsApp submission status is recorded in SOD. API acceptance does not guarantee handset delivery.',results},results.submitted>0?200:409);
  }
  if(c.source_kind!=='website_request')return reply({error:'Customer WhatsApp requires a verified service request'},409);
