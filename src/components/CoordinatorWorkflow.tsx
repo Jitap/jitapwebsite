@@ -243,23 +243,23 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
     <button disabled={busy||!responses[a.id]||responses[a.id]===a.state} onClick={()=>action({action:'provider_response',assignmentId:a.id,state:responses[a.id],quote:responses[a.id]==='quote_received'&&quote[a.id]!==''?Number(quote[a.id]):null,note:responseNotes[a.id]||''},'Provider response saved')}>Record provider response</button>
     <div className="coordinator-provider-buzz">
       <h4>Provider BUZZ — review message</h4>
-      <p className="coordinator-help">JiTap uses the provider's saved private SMS contact. A unique secure response link is added automatically when sending. Review and save this service brief first.</p>
+      <p className="coordinator-help">Technical summary only—intake questions stay in the private ticket. Review and save this brief before SMS or WhatsApp. SMS adds a secure response link during delivery.</p>
       {smsAttempts.some(s=>s.assignment_id===a.id)&&providerDrafts.find(d=>d.assignment_id===a.id)&&<p className="coordinator-provider-buzz-sent">{providerDrafts.find(d=>d.assignment_id===a.id)?.message}</p>}
       {!smsAttempts.some(s=>s.assignment_id===a.id)&&<>
         <button type="button" disabled={busy} onClick={()=>setBuzzText(x=>({...x,[a.id]:makeProviderBuzz(caseItem,p?.business_name||'provider',technicalBrief)}))}>Generate BUZZ draft</button>
         <textarea aria-label="Provider BUZZ draft" rows={5} maxLength={600}
-          value={buzzText[a.id]??providerDrafts.find(x=>x.assignment_id===a.id)?.message??makeProviderBuzz(caseItem,p?.business_name||'provider')}
+          value={buzzText[a.id]??makeProviderBuzz(caseItem,p?.business_name||'provider',technicalBrief)}
           onChange={e=>setBuzzText(x=>({...x,[a.id]:e.target.value}))}/>
-        <button type="button" disabled={busy} onClick={()=>action({action:'provider_sms_draft',assignmentId:a.id,message:buzzText[a.id]??providerDrafts.find(x=>x.assignment_id===a.id)?.message??makeProviderBuzz(caseItem,p?.business_name||'provider')},'Provider BUZZ draft saved.')}>Save BUZZ draft — do not send</button>
-        {providerDrafts.some(x=>x.assignment_id===a.id)&&<small>Saved draft ready. Save again after any edit before sending.</small>}
+        <button type="button" disabled={busy} onClick={()=>action({action:'provider_sms_draft',assignmentId:a.id,message:buzzText[a.id]??makeProviderBuzz(caseItem,p?.business_name||'provider',technicalBrief)},'Provider BUZZ draft saved.')}>Save BUZZ draft — do not send</button>
+        {providerDrafts.some(x=>x.assignment_id===a.id)&&<small>{providerDrafts.find(x=>x.assignment_id===a.id)?.message===(buzzText[a.id]??makeProviderBuzz(caseItem,p?.business_name||'provider',technicalBrief))?'Reviewed technical draft saved.':'An older draft differs from this technical version. Save the updated draft before sending.'}</small>}
       </>}
     </div>
     {smsAttempts.filter(s=>s.assignment_id===a.id).map(s=><small key={s.id}>Provider SMS: {s.state} · {new Date(s.requested_at).toLocaleString('en-KE')}</small>)}
-    {!smsAttempts.some(s=>s.assignment_id===a.id)&&<button disabled={busy||!smsEnabled||!smsReady||!providerDrafts.some(d=>d.assignment_id===a.id)||(buzzText[a.id]!==undefined&&buzzText[a.id]!==providerDrafts.find(d=>d.assignment_id===a.id)?.message)||!providerSmsContacts.some(p=>p.providerId===a.provider_id&&p.enabled)||!['proposed','contacted','needs_clarification','quote_requested'].includes(a.state)} onClick={()=>sendSms('provider',a.id)}>Send provider SMS via Wasiliana</button>}
+    {!smsAttempts.some(s=>s.assignment_id===a.id)&&<button disabled={busy||!smsEnabled||!smsReady||!providerDrafts.some(d=>d.assignment_id===a.id)||((buzzText[a.id]??makeProviderBuzz(caseItem,p?.business_name||'provider',technicalBrief))!==providerDrafts.find(d=>d.assignment_id===a.id)?.message)||!providerSmsContacts.some(p=>p.providerId===a.provider_id&&p.enabled)||!['proposed','contacted','needs_clarification','quote_requested'].includes(a.state)} onClick={()=>sendSms('provider',a.id)}>Send provider SMS via Wasiliana</button>}
     <div className="coordinator-wa-actions">
      <strong>WhatsApp provider notification</strong>
      <p className="coordinator-help">Uses the reviewed saved technical BUZZ, not the customer's intake transcript. Opens WhatsApp for staff to send manually; no automatic delivery claim.</p>
-     <button type="button" disabled={busy||!providerDrafts.some(d=>d.assignment_id===a.id)||!providerSmsContacts.some(p=>p.providerId===a.provider_id&&p.whatsappEnabled)||!['proposed','contacted','needs_clarification','quote_requested'].includes(a.state)} onClick={()=>openReviewedWhatsApp('provider',a.id)}><ExternalLink size={15}/> Open provider WhatsApp</button>
+     <button type="button" disabled={busy||!providerDrafts.some(d=>d.assignment_id===a.id)||((buzzText[a.id]??makeProviderBuzz(caseItem,p?.business_name||'provider',technicalBrief))!==providerDrafts.find(d=>d.assignment_id===a.id)?.message)||!providerSmsContacts.some(p=>p.providerId===a.provider_id&&p.whatsappEnabled)||!['proposed','contacted','needs_clarification','quote_requested'].includes(a.state)} onClick={()=>openReviewedWhatsApp('provider',a.id)}><ExternalLink size={15}/> Open provider WhatsApp</button>
      {!providerSmsContacts.some(p=>p.providerId===a.provider_id&&p.whatsappEnabled)&&<small>Provider WhatsApp requires separately recorded opt-in. An SMS opt-in alone is not sufficient.</small>}
     </div>
     {!providerSmsContacts.some(p=>p.providerId===a.provider_id&&p.enabled)&&<small>Provider SMS requires documented opt-in and a private mobile number.</small>}
