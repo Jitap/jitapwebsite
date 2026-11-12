@@ -101,6 +101,9 @@ export async function POST(req:NextRequest){
     method:'POST',body:JSON.stringify({p_message_id:s.id,p_status:s.status,
      p_event_key:eventKey,p_error:s.error||null})
    });
+   await supabasePrivate('rpc/jitap_followup_record_receipt',{
+    method:'POST',body:JSON.stringify({p_message_id:s.id,p_status:s.status,p_error:s.error||null})
+   });
   }
   for(const m of inbound){
    await supabasePrivate('rpc/jitap_kapso_record_inbound',{
