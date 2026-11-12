@@ -58,7 +58,7 @@ export async function POST(req:NextRequest){
   const created=await response.json() as {requestId?:string;reference?:string;count?:number};
   if(!created.requestId)return send({error:'Booking saved but the tracking reference was not returned. Contact JiTap support before attempting another booking.'},502);
   // Resolve provider identity server-side, never from client-controlled form data.
-  const providerProfiles=await supabasePrivate<{business_name:string|null;full_name:string|null}[]>('jitap_provider_workspaces?select=business_name,full_name&user_id=eq.'+encodeURIComponent(session.userId)+'&limit=1');
+  const providerProfiles=await supabasePrivate<{business_name:string|null;full_name:string|null}[]>('jitap_provider_workspaces?select=business_name,full_name&user_id=eq.'+encodeURIComponent(session.userId)+'&limit=1').catch(()=>[]);
   const providerName=providerProfiles[0]?.business_name?.trim()||providerProfiles[0]?.full_name?.trim()||session.fullName?.trim()||'JiTap service provider';
   // A series of up to 24 bookings receives one introductory SMS, rather than 24 texts.
   // A reserved database attempt prevents duplicate SMS sends on network retries.
