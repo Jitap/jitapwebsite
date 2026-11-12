@@ -8,7 +8,18 @@ export async function GET(req:NextRequest){
  try{
   const staff=await requireCoordinator(req);
   const response=reply(staff?{ok:true,staff}:{ok:false},staff?200:401);
-  if(staff)await renewSocSession(req,response);
+  if(staff){
+   const token=req.cookies.get(accessCookie)?.value||'';
+   if(token&&!token.startsWith('soc_')){
+    // Upgrade existing verified one-hour SOD login automatically, without asking
+    // active staff to click another email link.
+    const persistentToken=await issueSocSession(req,staff);
+    setSocCookie(response,persistentToken);
+   }else{
+    // A temporary touch failure must not sign out an otherwise valid SOC.
+    await renewSocSession(req,response).catch(()=>{});
+   }
+  }
   return response;
  }
  catch{return reply({ok:false},503)}
