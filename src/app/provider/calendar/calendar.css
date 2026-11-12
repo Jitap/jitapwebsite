@@ -121,3 +121,9 @@
 .jcal-new-sharing{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%}
 .jcal-new-sharing a,.jcal-new-sharing button{display:grid;place-items:center;min-height:45px;padding:9px 8px;border:1px solid #a8d5c2;border-radius:10px;background:#f3fff8;text-decoration:none;color:#067747;font-size:12px;font-weight:760;text-align:center;cursor:pointer}
 .jcal-new-sharing a{border-color:#b7ddc7}
+
+.jcal-eta label{display:block;font-size:13px;font-weight:700;color:#285b43;margin:8px 0}
+.jcal-eta-controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.jcal-eta-controls input{flex:1 1 205px;min-width:0;border:1px solid #b6ddc7;border-radius:12px;padding:11px 12px;background:#fff;color:#173d2c;font:inherit}
+.jcal-eta-controls button{flex:0 0 auto}
+.jcal-eta small{display:block;margin-top:8px;line-height:1.4;color:#5e796a}

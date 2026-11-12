@@ -5,6 +5,9 @@ import {providerMatchesTrade} from '@/lib/trade-categories';
 
 type LifecycleEvent={id:string;event_key:string;template_kind:string;status:string;due_at:string;delivered_at:string|null;read_at:string|null;last_error:string|null};
 type LifecycleState={events:LifecycleEvent[];templateKinds:string[];templateIdentifiersConfigured:Record<string,boolean>;dueCount:number;enabled:boolean;configured:boolean;signedWebhookConfigured:boolean};
+type ServiceFollowup={id:string;event_type:string;recipient_role:string;status:string;error_code:string|null;created_at:string};
+type SocReminder={id:string;assignment_id:string;state:string;error_code:string|null;created_at:string};
+type RequestReceipt={id:string;event_type:string;status:string;created_at:string};
 type Provider={id:string;business_name:string;service_categories:string[];service_areas:string[];base_area:string|null};
 type Assignment={id:string;provider_id:string;state:string;quoted_amount_kes:number|null;notes:string|null;assigned_at:string;responded_at:string|null};
 type ProviderSmsDraft={id:string;assignment_id:string;message:string};
@@ -56,6 +59,9 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
  const [buzzText,setBuzzText]=useState<Record<string,string>>({});
  const [providerSmsContacts,setProviderSmsContacts]=useState<ProviderSmsContact[]>([]);
  const [providerAlerts,setProviderAlerts]=useState<ProviderAlert[]>([]);
+ const [serviceFollowups,setServiceFollowups]=useState<ServiceFollowup[]>([]);
+ const [providerReminders,setProviderReminders]=useState<SocReminder[]>([]);
+ const [requestReceipts,setRequestReceipts]=useState<RequestReceipt[]>([]);
  const [customerWhatsAppAttempts,setCustomerWhatsAppAttempts]=useState<CustomerWhatsAppAttempt[]>([]);
  const [providerWhatsAppReady,setProviderWhatsAppReady]=useState(false);
  const [customerWhatsAppReady,setCustomerWhatsAppReady]=useState(false);
@@ -87,7 +93,7 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
   const data=await res.json();
   const kapsoResponse=await fetch('/api/coordinator/kapso?caseId='+encodeURIComponent(caseItem.id),{cache:'no-store'}).catch(()=>null);
   if(kapsoResponse?.ok){const kapso=await kapsoResponse.json();setLifecycle(kapso)}
-  setProviders(data.providers||[]);setAssignments(data.assignments||[]);setUpdates(data.updates||[]);setSmsAttempts(data.smsAttempts||[]);setProviderDrafts(data.providerDrafts||[]);setSmsEnabled(data.smsEnabled===true);setSmsReady(data.smsReady===true);setProviderSmsContacts(data.providerSmsContacts||[]);setProviderAlerts(data.providerAlerts||[]);setCustomerWhatsAppAttempts(data.customerWhatsAppAttempts||[]);setProviderWhatsAppReady(data.providerWhatsAppReady===true);setCustomerWhatsAppReady(data.customerWhatsAppReady===true);setIsAdmin(data.staffRole==='admin');
+  setProviders(data.providers||[]);setAssignments(data.assignments||[]);setUpdates(data.updates||[]);setSmsAttempts(data.smsAttempts||[]);setProviderDrafts(data.providerDrafts||[]);setSmsEnabled(data.smsEnabled===true);setSmsReady(data.smsReady===true);setProviderSmsContacts(data.providerSmsContacts||[]);setProviderAlerts(data.providerAlerts||[]);setServiceFollowups(data.serviceFollowups||[]);setProviderReminders(data.providerReminders||[]);setRequestReceipts(data.requestReceipts||[]);setCustomerWhatsAppAttempts(data.customerWhatsAppAttempts||[]);setProviderWhatsAppReady(data.providerWhatsAppReady===true);setCustomerWhatsAppReady(data.customerWhatsAppReady===true);setIsAdmin(data.staffRole==='admin');
  },[caseItem.id]);
  useEffect(()=>{
   let alive=true;
@@ -202,6 +208,32 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
   }catch(e){setFeedback(e instanceof Error?e.message:'Unable to dispatch approved lifecycle templates')}
   finally{setBusy(false)}
  }
+ async function sendApprovedFollowup(eventId:string){
+  if(!window.confirm('Send this real approved WhatsApp service update now? This is a paid transaction and requires the correct recipient opt-in.'))return;
+  setBusy(true);setFeedback('');
+  try{
+   const response=await fetch('/api/coordinator/service-followup',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({caseId:caseItem.id,eventId,confirm:true})});
+   const result=await response.json();await load();
+   if(!response.ok)throw Error(result.error||result.message||'WhatsApp not confirmed');
+   setFeedback(result.message||'WhatsApp submitted to Kapso.');
+  }catch(e){setFeedback(e instanceof Error?e.message:'WhatsApp submission unavailable')}
+  finally{setBusy(false)}
+ }
+ async function sendProviderReminder(assignmentId:string){
+  if(!window.confirm('Send one actual SOC follow-up SMS to this unanswered provider? They will be reminded to use the original secure BUZZ link.'))return;
+  setBusy(true);setFeedback('');
+  try{
+   const response=await fetch('/api/coordinator/provider-reminder',{method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({caseId:caseItem.id,assignmentId,confirm:true})});
+   const data=await response.json();
+   await load();
+   if(!response.ok)throw Error(data.error||data.message||'Could not send reminder');
+   setFeedback(data.message||'Reminder submitted to Wasiliana.');
+  }catch(e){setFeedback(e instanceof Error?e.message:'Reminder unavailable')}
+  finally{setBusy(false)}
+ }
  async function confirmAcceptedBookingWhatsApp(){
   if(!accepted||!caseItem.whatsappOptIn||!preferredVisitFuture)return;
   if(!window.confirm('Confirm this accepted provider booking and send the approved JiTap booking WhatsApp to the opted-in customer? This is a real notification, not a test preview.'))return;
@@ -240,10 +272,24 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
    <button type="button" className="coordinator-send-sms" disabled={busy||!lifecycle.dueCount||!lifecycle.enabled||!lifecycle.configured||!lifecycle.signedWebhookConfigured} onClick={dispatchDueLifecycle}>Send due WhatsApp now ({lifecycle.dueCount})</button>
    <p className="coordinator-help">Only due, consented queued events can be sent. Past, skipped, delivered and future reminders are not resent.</p>
   </div>}
+  <div className="coordinator-wa-actions" aria-label="Service communications timeline">
+   <h3><MessageSquare size={19}/> Service communications</h3>
+   <p className="coordinator-help">SMS for the initial request and provider BUZZ; WhatsApp for accepted bookings, ETA and travel milestones. Submitted means the gateway accepted the message, not handset delivery.</p>
+   {requestReceipts.map(e=><div className="coordinator-update-item" key={e.id}><strong>Customer · SMS · {e.event_type.replaceAll('_',' ')}</strong><span className="coordinator-status">{e.status}</span><small>{new Date(e.created_at).toLocaleString('en-KE',{timeZone:'Africa/Nairobi'})}</small></div>)}
+   {lifecycle?.events.slice(0,8).map(e=><div className="coordinator-update-item" key={e.id}><strong>Customer · WhatsApp · {e.template_kind}</strong><span className="coordinator-status">{e.status}</span><small>{new Date(e.due_at).toLocaleString('en-KE',{timeZone:'Africa/Nairobi'})}{e.last_error?' · '+e.last_error.replaceAll('_',' '):''}</small></div>)}
+   {serviceFollowups.map(e=><div className="coordinator-update-item" key={e.id}>
+    <strong>{e.recipient_role==='provider'?'Provider':'Customer'} · WhatsApp · {e.event_type.replaceAll('_',' ')}</strong>
+    <span className="coordinator-status">{e.status}</span>
+    <small>{new Date(e.created_at).toLocaleString('en-KE',{timeZone:'Africa/Nairobi'})}{e.error_code?' · '+e.error_code.replaceAll('_',' '):''}</small>
+    {['pending','blocked'].includes(e.status)&&<button type="button" disabled={busy} onClick={()=>sendApprovedFollowup(e.id)}>Send eligible WhatsApp via Kapso</button>}
+   </div>)}
+   {!requestReceipts.length&&!lifecycle?.events.length&&!serviceFollowups.length&&<p className="coordinator-help">No notification events recorded for this request.</p>}
+   {serviceFollowups.some(e=>e.status==='blocked')&&<p className="coordinator-help">Some status WhatsApp messages require separate approved Utility templates. They are recorded but not sent while approval is missing.</p>}
+  </div>
   <div className="coordinator-contact-summary"><h3>Customer contact</h3><dl><dt>Service ID</dt><dd className="coordinator-service-id">JT-{caseItem.reference}</dd><dt>Name</dt><dd>{caseItem.name||'Not supplied (historical enquiry)'}</dd><dt>Mobile</dt><dd>{caseItem.phone||'Not supplied'}</dd><dt>Service location</dt><dd>{caseItem.locationLabel||caseItem.area||'Not supplied'}</dd><dt>SMS updates</dt><dd>{caseItem.notifyOptIn?'Opted in':'Not opted in / not recorded'}</dd></dl></div>
   <h3><UserRoundCheck size={18}/> Provider assignment</h3>
   {caseItem.jobStatus&&caseItem.jobStatus!=='cancelled'&&<div className="coordinator-auto-assignment"><strong>Confirmed booking from the provider app</strong><p>{caseItem.providerName||'Assigned provider'} · {caseItem.jobStatus.replaceAll('_',' ')}</p><small>This booking was accepted directly by the provider. SOD records the milestones automatically; do not create a second assignment.</small></div>}
-  <p className="coordinator-help">Assigning a provider automatically queues the short JiTap BUZZ by SMS and WhatsApp according to their recorded opt-ins. SOD shows each gateway submission status. Existing confirmed bookings should not be reassigned.</p>
+  <p className="coordinator-help">Assigning a provider sends the initial short JiTap BUZZ by SMS. WhatsApp follows confirmed acceptance, ETA and travel milestones when the matching approved templates and opt-ins are available. SOD shows gateway outcomes. Existing confirmed bookings should not be reassigned.</p>
   <label>Choose verified provider
    <select value={providerId} onChange={e=>setProviderId(e.target.value)} disabled={busy||caseItem.status==='incomplete'}>
     <option value="">Select a verified provider…</option>
@@ -277,7 +323,13 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
   {assignments.length? <div className="coordinator-assignment-list">{assignments.map(a=>{
    const p=providers.find(p=>p.id===a.provider_id);
    return <div className="coordinator-assignment" key={a.id}>
-    <strong>{p?.business_name||'Provider '+a.provider_id}</strong><span className="coordinator-status">{a.state.replaceAll('_',' ')}</span>
+    <strong>{p?.business_name||'Provider '+a.provider_id}</strong>
+    {['proposed','contacted'].includes(a.state)&&!a.responded_at&&<div className="coordinator-wa-actions">
+     <strong>Provider response monitoring</strong>
+     <small>{Date.now()-Date.parse(a.assigned_at)>=10*60000?'Escalate · 10+ minutes, consider another eligible provider':Date.now()-Date.parse(a.assigned_at)>=5*60000?'SOC follow-up due · 5+ minutes without response':Date.now()-Date.parse(a.assigned_at)>=2*60000?'Awaiting provider response · 2+ minutes':'BUZZ response window active'}</small>
+     {providerReminders.filter(r=>r.assignment_id===a.id).map(r=><small key={r.id}>SOC SMS reminder: {r.state}{r.error_code?' · '+r.error_code.replaceAll('_',' '):''}</small>)}
+     <button type="button" disabled={busy||Date.now()-Date.parse(a.assigned_at)<5*60000||providerReminders.some(r=>r.assignment_id===a.id)||!providerSmsContacts.some(p=>p.providerId===a.provider_id&&p.enabled)||!smsAttempts.some(t=>t.assignment_id===a.id&&t.state==='submitted')&&!providerAlerts.some(n=>n.assignment_id===a.id&&n.channel==='sms'&&n.state==='submitted')} onClick={()=>sendProviderReminder(a.id)}>Send SOC follow-up SMS</button>
+    </div>}<span className="coordinator-status">{a.state.replaceAll('_',' ')}</span>
     <small>Private SMS contact: {providerSmsContacts.find(x=>x.providerId===a.provider_id)?.enabled?'On file · '+providerSmsContacts.find(x=>x.providerId===a.provider_id)?.maskedPhone:'No consented SMS contact'}</small>
     {a.quoted_amount_kes!==null&&<small>Quoted: KES {Number(a.quoted_amount_kes).toLocaleString('en-KE')}</small>}
     <label>Provider response
@@ -305,11 +357,11 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
     {smsAttempts.filter(s=>s.assignment_id===a.id).map(s=><small key={s.id}>Provider SMS: {s.state} · {new Date(s.requested_at).toLocaleString('en-KE')}</small>)}
     {!smsAttempts.some(s=>s.assignment_id===a.id)&&!providerAlerts.some(n=>n.assignment_id===a.id&&n.channel==='sms')&&<button disabled={busy||!smsEnabled||!smsReady||!providerDrafts.some(d=>d.assignment_id===a.id)||((buzzText[a.id]??makeProviderBuzz(caseItem))!==providerDrafts.find(d=>d.assignment_id===a.id)?.message)||!providerSmsContacts.some(p=>p.providerId===a.provider_id&&p.enabled)||!['proposed','contacted','needs_clarification','quote_requested'].includes(a.state)} onClick={()=>sendSms('provider',a.id)}>Send provider SMS via Wasiliana</button>}
     <div className="coordinator-wa-actions">
-     <strong>WhatsApp provider notification</strong>
-     <p className="coordinator-help">Auto-sent on assignment when the approved Kapso BUZZ template is ready. SOC can submit a pending or blocked alert directly; successful API submission is not proof of handset delivery.</p>
+     <strong>Provider WhatsApp follow-up</strong>
+     <p className="coordinator-help">Initial contact is SMS only. Provider acceptance creates a separate WhatsApp acknowledgement event. Its status appears in Service communications; Meta approval is required for that specific utility message.</p>
      {providerAlerts.filter(n=>n.assignment_id===a.id).map(n=><small key={n.channel}>{n.channel.toUpperCase()}: <strong>{n.state}</strong>{n.last_error?' · '+n.last_error.replaceAll('_',' '):''}</small>)}
-     <button type="button" disabled={busy||!providerWhatsAppReady||!providerSmsContacts.some(p=>p.providerId===a.provider_id&&p.whatsappEnabled)||providerAlerts.some(n=>n.assignment_id===a.id&&n.channel==='whatsapp'&&['submitted','sending','rejected','unknown','skipped'].includes(n.state))||!['proposed','contacted','needs_clarification','quote_requested'].includes(a.state)} onClick={()=>sendWhatsApp('provider',a.id)}>Send provider WhatsApp now via Kapso</button>
-     {!providerWhatsAppReady&&<small>Approved provider BUZZ template must be configured in Kapso/Meta before API delivery can start.</small>}
+     <small>After acceptance, use the provider WhatsApp event in the Service communications timeline. Initial BUZZes use SMS only.</small>
+     {!providerWhatsAppReady&&<small>The original initial-BUZZ WhatsApp template is not used by the new SMS-first sequence.</small>}
      {!providerSmsContacts.some(p=>p.providerId===a.provider_id&&p.whatsappEnabled)&&<small>Provider WhatsApp requires separately recorded opt-in. An SMS opt-in alone is not sufficient.</small>}
     </div>
     {!providerSmsContacts.some(p=>p.providerId===a.provider_id&&p.enabled)&&<small>Provider SMS requires documented opt-in and a private mobile number.</small>}

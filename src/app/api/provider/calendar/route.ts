@@ -7,13 +7,14 @@ import {sameOrigin} from '@/lib/jitap-auth';
 import {supabasePrivate} from '@/lib/coordinator-server';
 import {notifyProviderCancelled} from '@/lib/wasiliana-booking-notifications';
 import {dispatchKapsoQueue} from '@/lib/kapso-dispatcher';
+import {dispatchServiceFollowups} from '@/lib/service-followup-dispatcher';
 import {SERVICE_OPTIONS} from '@/lib/provider-options';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
 const headers={'Cache-Control':'private, no-store','X-Robots-Tag':'noindex'};
 const reply=(data:unknown,status=200)=>NextResponse.json(data,{status,headers});
-type Appointment={id:string;request_id:string;provider_user_id:string;starts_at:string|null;ends_at:string|null;status:string;on_my_way_at:string|null};
+type Appointment={id:string;request_id:string;provider_user_id:string;starts_at:string|null;ends_at:string|null;status:string;on_my_way_at:string|null;provider_eta_at:string|null};
 type Brief={id:string;payload:Record<string,unknown>;customer_user_id:string|null};
 const safeText=(value:unknown)=>typeof value==='string'?value.slice(0,1200):'';
 async function myAppointment(userId:string,id:string){
@@ -35,7 +36,7 @@ export async function GET(req:NextRequest){
   return reply({appointments:appointments.map(a=>{
    const record=byId.get(a.request_id);
    const p=record?.payload||{};
-   return {id:a.id,requestId:a.request_id,startsAt:a.starts_at,endsAt:a.ends_at,status:a.status,
+   return {id:a.id,requestId:a.request_id,startsAt:a.starts_at,endsAt:a.ends_at,status:a.status,providerEtaAt:a.provider_eta_at,
     title:typeof p.title==='string'&&p.title.trim()?safeText(p.title).slice(0,120):(SERVICE_OPTIONS.find(item=>item.value===p.category)?.label||safeText(p.category).replace(/[-_]/g,' ')||'Service')+' Service',
     category:safeText(p.category),area:safeText(p.area),
     location:safeText(p.locationLabel)||safeText(p.area),
@@ -50,6 +51,7 @@ export async function GET(req:NextRequest){
  }catch{return reply({error:'Calendar is temporarily unavailable'},503)}
 }
 const action=z.discriminatedUnion('action',[
+ z.object({action:z.literal('confirm_eta'),appointmentId:z.string().uuid(),eta:z.string().datetime({offset:true})}).strict(),
  z.object({action:z.enum(['on_my_way','arrived','start_work','complete']),appointmentId:z.string().uuid()}).strict(),
  z.object({action:z.literal('rate_customer'),appointmentId:z.string().uuid(),stars:z.number().int().min(1).max(5),comment:z.string().trim().max(500).default('')}).strict(),
  z.object({action:z.literal('cancel'),appointmentId:z.string().uuid(),reason:z.enum(['schedule_conflict','unavailable','too_far','tools_or_skills','scope_changed','personal_emergency','other']),details:z.string().trim().max(500).default('')}).strict(),
@@ -65,6 +67,23 @@ export async function POST(req:NextRequest){
  try{
   const appointment=await myAppointment(session.userId,data.data.appointmentId);
   if(!appointment)return reply({error:'Appointment not found'},404);
+  if(data.data.action==='confirm_eta'){
+   const proposed=new Date(data.data.eta);
+   if(!Number.isFinite(proposed.getTime())||proposed.getTime()<Date.now()+60000||proposed.getTime()>Date.now()+48*3600000)
+    return reply({error:'Choose an ETA in the next 48 hours'},422);
+   const url=process.env.SUPABASE_URL?.replace(/[/]$/,'');
+   const key=process.env.SUPABASE_ANON_KEY;
+   if(!url||!key)return reply({error:'ETA updates unavailable'},503);
+   const response=await fetch(url+'/rest/v1/rpc/jitap_provider_confirm_eta',{
+    method:'POST',headers:{apikey:key,Authorization:'Bearer '+session.accessToken,'Content-Type':'application/json'},
+    body:JSON.stringify({p_appointment_id:appointment.id,p_eta_at:proposed.toISOString()}),
+    cache:'no-store',signal:AbortSignal.timeout(10000)
+   });
+   if(!response.ok)return reply({error:'ETA cannot be confirmed. Check job status and try again.'},409);
+   const confirmed=await response.json();
+   after(async()=>{await dispatchServiceFollowups(3).catch(()=>{})});
+   return reply({recorded:true,providerEtaAt:confirmed,status:appointment.status});
+  }
   if(data.data.action==='cancel'){
    if(!['confirmed','on_my_way','arrived','in_progress'].includes(appointment.status))return reply({error:'Only an active job can be cancelled'},409);
    const url=process.env.SUPABASE_URL?.replace(/[/]$/,'');
@@ -93,7 +112,7 @@ export async function POST(req:NextRequest){
    });
    if(!gateway.ok)return reply({error:'Job status has changed. Refresh and try again.'},409);
    const stage=await gateway.json();
-   if(data.data.action==='complete')after(async()=>{await dispatchKapsoQueue(3).catch(()=>{})});
+   if(['on_my_way','arrived','complete'].includes(data.data.action))after(async()=>{await Promise.allSettled([dispatchKapsoQueue(3),dispatchServiceFollowups(3)])});
    return reply({status:stage,recorded:true});
   }
   if(data.data.action!=='reschedule')return reply({error:'Unsupported job action'},422);

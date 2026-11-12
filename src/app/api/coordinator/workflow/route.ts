@@ -4,6 +4,7 @@ import {reply,requireCoordinator,supabasePrivate,validOrigin} from '@/lib/coordi
 import {wasilianaSettings} from '@/lib/wasiliana';
 import {dispatchProviderAlerts} from '@/lib/provider-alerts';
 import {dispatchKapsoQueue} from '@/lib/kapso-dispatcher';
+import {dispatchServiceFollowups} from '@/lib/service-followup-dispatcher';
 import {providerWhatsAppReady,customerSocWhatsAppReady} from '@/lib/provider-whatsapp-template';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -43,10 +44,19 @@ export async function GET(req:NextRequest){
   // The customer intake transcript stays in the private ticket; provider alerts use the technical brief.
   const source=await supabasePrivate<{source_kind:string;source_id:string}[]>('coordinator_cases?select=source_kind,source_id&id=eq.'+encodeURIComponent(caseId)+'&limit=1');
   const caseSource=source[0];
+  const [serviceFollowups,providerReminders,requestReceipts]=await Promise.all([
+   caseSource?.source_kind==='website_request'
+    ?supabasePrivate<{id:string;event_key:string;event_type:string;recipient_role:string;status:string;error_code:string|null;provider_message_id:string|null;created_at:string;finished_at:string|null}[]>('jitap_service_followups?select=id,event_key,event_type,recipient_role,status,error_code,provider_message_id,created_at,finished_at&request_id=eq.'+encodeURIComponent(caseSource.source_id)+'&order=created_at.desc&limit=60').catch(()=>[])
+    :Promise.resolve([]),
+   supabasePrivate<{id:string;assignment_id:string;state:string;error_code:string|null;created_at:string}[]>('jitap_soc_provider_reminders?select=id,assignment_id,state,error_code,created_at&case_id=eq.'+encodeURIComponent(caseId)+'&order=created_at.desc&limit=50').catch(()=>[]),
+   caseSource?.source_kind==='website_request'
+    ?supabasePrivate<{id:string;event_type:string;status:string;created_at:string}[]>('notification_outbox?select=id,event_type,status,created_at&reference_id=eq.'+encodeURIComponent(caseSource.source_id)+'&channel=eq.sms&order=created_at.desc&limit=12').catch(()=>[])
+    :Promise.resolve([])
+  ]);
   const brief=caseSource?.source_kind==='website_request'
    ?(await supabasePrivate<TechnicalBrief[]>('jitap_request_service_briefs?select=technical_summary,proposed_scope,urgency,source&request_id=eq.'+encodeURIComponent(caseSource.source_id)+'&limit=1').catch(()=>[]))[0]||null
    :null;
-  return reply({ok:true,providers,assignments,updates,smsAttempts,providerDrafts,providerSmsContacts,providerAlerts,customerWhatsAppAttempts,providerWhatsAppReady:providerWhatsAppReady(),customerWhatsAppReady:customerSocWhatsAppReady(),technicalBrief:brief,staffRole:staff.role,smsReady:wasilianaSettings().configured&&wasilianaSettings().senderConfigured,smsEnabled:process.env.JITAP_COORDINATOR_SMS_ENABLED==='true'});
+  return reply({ok:true,providers,assignments,updates,smsAttempts,providerDrafts,providerSmsContacts,providerAlerts,customerWhatsAppAttempts,serviceFollowups,providerReminders,requestReceipts,providerWhatsAppReady:providerWhatsAppReady(),customerWhatsAppReady:customerSocWhatsAppReady(),technicalBrief:brief,staffRole:staff.role,smsReady:wasilianaSettings().configured&&wasilianaSettings().senderConfigured,smsEnabled:process.env.JITAP_COORDINATOR_SMS_ENABLED==='true'});
  }catch{return reply({error:'Unable to load provider workflow'},503)}
 }
 export async function POST(req:NextRequest){
@@ -91,8 +101,8 @@ export async function POST(req:NextRequest){
    const cases=await supabasePrivate<{source_kind:string;source_id:string}[]>('coordinator_cases?select=source_kind,source_id&id=eq.'+d.caseId+'&limit=1').catch(()=>[]);
    const source=cases[0];
    if(source?.source_kind==='website_request'){
-    const notification=await dispatchKapsoQueue(2,source.source_id).catch(()=>({ready:false,reason:'scheduled_retry'}));
-    return reply({...result,bookingWhatsApp:notification});
+    const [bookingWhatsApp,providerFollowup]=await Promise.allSettled([dispatchKapsoQueue(2,source.source_id),dispatchServiceFollowups(2)]);
+    return reply({...result,bookingWhatsApp:bookingWhatsApp.status==='fulfilled'?bookingWhatsApp.value:{ready:false,reason:'scheduled_retry'},providerFollowup:providerFollowup.status==='fulfilled'?providerFollowup.value:{ready:false,reason:'scheduled_retry'}});
    }
   }
   return reply(result);
