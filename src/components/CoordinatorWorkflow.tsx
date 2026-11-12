@@ -33,11 +33,11 @@ function reportedTechnicalDetails(raw:string){
 }
 function makeProviderBuzz(c:Case,provider:string,technical?:TechnicalBrief|null){
  const summary=(technical?.technical_summary||'').replace(/(?:\+?254|0)[17]\d{8}/g,'[phone withheld]').replace(/https?:\/\/\S+/gi,'[link withheld]').replace(/\s+/g,' ').trim();
- const issue=(summary||conciseReportedFault(c.description)).slice(0,245);
- const details=technical?.technical_summary?'':reportedTechnicalDetails(c.description);
- const scope=(technical?.proposed_scope||'').replace(/\s+/g,' ').trim().slice(0,125);
+ const issue=(summary||conciseReportedFault(c.description)).slice(0,165);
+ const details=technical?.technical_summary?'':reportedTechnicalDetails(c.description).slice(0,94);
+ const scope=(technical?.proposed_scope||'').replace(/\s+/g,' ').trim().slice(0,85);
  const trade=c.category.replaceAll('-',' ').replace(/\b\w/g,ch=>ch.toUpperCase());
- const place=(c.locationLabel||c.area||'Location to confirm').replace(/\s+/g,' ').slice(0,95);
+ const place=(c.locationLabel||c.area||'Location to confirm').replace(/\s+/g,' ').slice(0,70);
  const date=[c.preferredDate,c.preferredTime].filter(Boolean).join(' at ')||'To be arranged';
  const fields=[
   'JiTap BUZZ | JT-'+c.reference,
@@ -45,10 +45,10 @@ function makeProviderBuzz(c:Case,provider:string,technical?:TechnicalBrief|null)
   'Service: '+trade,
   'Reported issue: '+issue,
   ...(details?['Reported details: '+details]:[]),
-  ...(scope?['Preliminary scope: '+scope]:[]),
   'Location: '+place,
-  'Preferred visit: '+date+' EAT (subject to confirmation)',
-  'Reply to JiTap to accept, decline or request clarification. A preferred time is not a confirmed appointment.'
+  'Preferred visit: '+date+' EAT (unconfirmed)',
+  ...(scope?['Initial assessment: '+scope]:[]),
+  'Reply to JiTap to accept, decline or clarify. Booking is confirmed only when JiTap notifies you.'
  ];
  return fields.join('\n').slice(0,600);
 }
