@@ -138,6 +138,18 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
   }catch(e){setFeedback(e instanceof Error?e.message:'Could not save provider contact')}
   finally{setBusy(false)}
  }
+ async function enableExistingProviderWhatsApp(){
+  if(!providerId||consentSource.trim().length<5||!providerWhatsAppConsent)return;
+  setBusy(true);setFeedback('');
+  try{
+   const res=await fetch('/api/coordinator/provider-contact',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'enable_whatsapp',providerId,consentConfirmed:true,consentSource})});
+   const data=await res.json();
+   if(!res.ok)throw Error(data.error||'Unable to save WhatsApp consent');
+   setConsentSource('');setProviderWhatsAppConsent(false);await load();
+   setFeedback('WhatsApp permission recorded for this provider.');
+  }catch(e){setFeedback(e instanceof Error?e.message:'Unable to record WhatsApp consent')}
+  finally{setBusy(false)}
+ }
  async function checkSmsDiagnostics(){
   setCheckingSms(true);setFeedback('');
   try{
@@ -206,6 +218,13 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
   </label>
   {matches.length===0&&<p className="coordinator-help"><AlertCircle size={15}/> No verified provider category match confirmed. Use <strong>Needs sourcing</strong> for human intervention.</p>}
   {providerId&&<p className="coordinator-help">Provider SMS contact: {providerSmsContacts.find(p=>p.providerId===providerId)?.enabled?'SMS consent recorded · '+providerSmsContacts.find(p=>p.providerId===providerId)?.maskedPhone:'No opted-in phone on file'}</p>}
+  {providerId&&isAdmin&&providerSmsContacts.some(p=>p.providerId===providerId&&p.enabled&&!p.whatsappEnabled)&&<div className="coordinator-provider-contact">
+   <h4>Enable WhatsApp alerts for existing provider</h4>
+   <p className="coordinator-help">SMS permission does not imply WhatsApp permission. Only enable this if the provider separately agreed.</p>
+   <label>WhatsApp consent evidence<input value={consentSource} onChange={e=>setConsentSource(e.target.value)} maxLength={300} placeholder="e.g. provider agreed on call, 12 Nov"/></label>
+   <label className="coordinator-check"><input type="checkbox" checked={providerWhatsAppConsent} onChange={e=>setProviderWhatsAppConsent(e.target.checked)}/> I confirm the provider separately opted in to WhatsApp job notifications.</label>
+   <button type="button" disabled={busy||!providerWhatsAppConsent||consentSource.trim().length<5} onClick={enableExistingProviderWhatsApp}>Record provider WhatsApp consent</button>
+  </div>}
   {providerId&&isAdmin&&!providerSmsContacts.find(p=>p.providerId===providerId)?.enabled&&<div className="coordinator-provider-contact">
    <h4>Private provider SMS onboarding</h4>
    <p className="coordinator-help">Only enter a provider's number after the provider has agreed to JiTap SMS job alerts. This number remains private.</p>
