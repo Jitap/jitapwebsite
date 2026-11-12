@@ -47,18 +47,18 @@ export async function sendKapsoSocCustomerUpdate(input:{phone:string;reference:s
 }
 
 /**
- * Subsequent job-status WhatsApp messages use independently approved Utility
- * templates. Existing booking / cancellation / reminder templates remain unchanged.
+ * Provider acknowledgements and customer job-progress updates use TWO
+ * independently approved Utility templates. Existing five lifecycle templates remain unchanged.
  * Body variables: {{1}} JT-reference, {{2}} provider name or service,
- * {{3}} short status/ETA. Dynamic URL-button suffix {{1}} = JT-reference.
+ * {{3}} explicit short service status/ETA. Dynamic URL-button suffix {{1}} = JT-reference.
  */
 export type FollowupTemplateKind='provider_accepted'|'eta'|'on_my_way'|'arrived'|'completed';
 const followupTemplateEnv:Record<FollowupTemplateKind,string>={
  provider_accepted:'KAPSO_TEMPLATE_PROVIDER_ACCEPTED',
- eta:'KAPSO_TEMPLATE_ETA',
- on_my_way:'KAPSO_TEMPLATE_ON_MY_WAY',
- arrived:'KAPSO_TEMPLATE_ARRIVED',
- completed:'KAPSO_TEMPLATE_COMPLETED'
+ eta:'KAPSO_TEMPLATE_CUSTOMER_PROGRESS',
+ on_my_way:'KAPSO_TEMPLATE_CUSTOMER_PROGRESS',
+ arrived:'KAPSO_TEMPLATE_CUSTOMER_PROGRESS',
+ completed:'KAPSO_TEMPLATE_CUSTOMER_PROGRESS'
 };
 export function followupTemplateReady(kind:FollowupTemplateKind){
  const name=process.env[followupTemplateEnv[kind]];
