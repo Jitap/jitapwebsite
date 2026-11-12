@@ -45,3 +45,31 @@ export async function sendKapsoSocCustomerUpdate(input:{phone:string;reference:s
  // URL button prefix configured in Meta must resolve this reference's customer ticket.
  return templateSend(input.phone,process.env.KAPSO_TEMPLATE_SOC_UPDATE!,[input.reference,input.kind,input.message],input.reference);
 }
+
+/**
+ * Subsequent job-status WhatsApp messages use independently approved Utility
+ * templates. Existing booking / cancellation / reminder templates remain unchanged.
+ * Body variables: {{1}} JT-reference, {{2}} provider name or service,
+ * {{3}} short status/ETA. Dynamic URL-button suffix {{1}} = JT-reference.
+ */
+export type FollowupTemplateKind='provider_accepted'|'eta'|'on_my_way'|'arrived'|'completed';
+const followupTemplateEnv:Record<FollowupTemplateKind,string>={
+ provider_accepted:'KAPSO_TEMPLATE_PROVIDER_ACCEPTED',
+ eta:'KAPSO_TEMPLATE_ETA',
+ on_my_way:'KAPSO_TEMPLATE_ON_MY_WAY',
+ arrived:'KAPSO_TEMPLATE_ARRIVED',
+ completed:'KAPSO_TEMPLATE_COMPLETED'
+};
+export function followupTemplateReady(kind:FollowupTemplateKind){
+ const name=process.env[followupTemplateEnv[kind]];
+ const config=kapsoConfiguration();
+ return config.enabled&&config.configured&&typeof name==='string'&&/^[a-z][a-z0-9_]{1,255}$/.test(name);
+}
+export async function sendJiTapFollowup(input:{phone:string;kind:FollowupTemplateKind;parameters:string[]}):Promise<Result>{
+ if(!followupTemplateReady(input.kind))return {accepted:false,reason:'approved_'+input.kind+'_template_not_configured'};
+ const params=input.parameters;
+ if(params.length!==3||!/^JT-[0-9A-F]{8}$/.test(params[0]))return {accepted:false,reason:'invalid_followup_template_parameters'};
+ // Template URL prefix (set in Meta) MUST be the same as the corresponding
+ // customer ticket or provider dashboard destination, with {{1}} the JT ref.
+ return templateSend(input.phone,process.env[followupTemplateEnv[input.kind]]!,params,params[0]);
+}
