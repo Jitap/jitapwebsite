@@ -62,8 +62,8 @@ begin
  -- Existing booking template is already enqueued by the approved lifecycle trigger.
  -- Record a distinct provider acknowledgement using its own *approved* template.
  if (tg_op='INSERT' or old.status is distinct from new.status) and new.status='confirmed' then
-  select regexp_replace(coalesce(u.phone_e164,''),'[^0-9]','','g')
-  into provider_phone from public.jitap_provider_workspaces u where u.user_id=new.provider_user_id limit 1;
+  select regexp_replace(coalesce(ac.phone,''),'[^0-9]','','g')
+  into provider_phone from public.jitap_accounts ac where ac.user_id=new.provider_user_id and ac.whatsapp_updates_opt_in=true limit 1;
   if provider_phone like '0%' then provider_phone:='254'||substring(provider_phone from 2);end if;
   if provider_phone ~ '^254[17][0-9]{8}$' then
    insert into public.jitap_service_followups(event_key,request_id,appointment_id,recipient_role,event_type,recipient_phone,template_kind,template_parameters,status)
