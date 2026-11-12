@@ -13,7 +13,7 @@ type CaseRow={id:string;source_kind:string;source_id:string};
 type Assignment={id:string;provider_id:string;state:string};
 type Contact={phone_e164:string;whatsapp_opt_in:boolean;opted_out_at:string|null};
 type Intake={payload:Record<string,unknown>};
-type Update={id:string;channel:string;state:string;message:string};
+type Update={id:string;channel:string;state:string;kind:string;message:string};
 
 export async function POST(req:NextRequest){
  if(!validOrigin(req))return reply({error:'Invalid origin'},403);
@@ -47,7 +47,7 @@ export async function POST(req:NextRequest){
  const intakes=await supabasePrivate<Intake[]>('website_intake?select=payload&id=eq.'+c.source_id+'&limit=1');
  const payload=intakes[0]?.payload;
  if(!payload||payload.whatsappOptIn!==true)return reply({error:'Customer has not opted in to WhatsApp notifications'},409);
- const updates=await supabasePrivate<Update[]>('coordinator_customer_updates?select=id,channel,state,message&id=eq.'+d.updateId+'&case_id=eq.'+d.caseId+'&limit=1');
+ const updates=await supabasePrivate<Update[]>('coordinator_customer_updates?select=id,channel,state,kind,message&id=eq.'+d.updateId+'&case_id=eq.'+d.caseId+'&limit=1');
  const update=updates[0];if(!update||update.channel!=='whatsapp'||update.state!=='draft')return reply({error:'Save a WhatsApp customer update first'},409);
  const to=phone254(String(payload.phone||''));
  if(!to)return reply({error:'Customer WhatsApp number is invalid'},409);
