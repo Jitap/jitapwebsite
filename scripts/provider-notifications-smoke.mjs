@@ -80,6 +80,27 @@ assert.match(consentDispatcher,/notification_outdated/);
 assert.match(reminderRoute,/Date\.now\(\)-Date\.parse\(a\.assigned_at\)<5\*60000/);
 assert.match(reminderRoute,/jitap_soc_provider_reminders/);
 assert.match(receiptCode,/jitap_followup_record_receipt/);
+const externalBooking=await fetch(base+'/api/provider/calendar/create',{method:'POST',
+ headers:{'content-type':'application/json','origin':'https://'+base.host},
+ body:JSON.stringify({title:'QA test job',customerName:'QA Customer',phone:'0700000000',location:'QA location',date:'2026-12-12',startTime:'10:00',endTime:'11:00',smsNotificationConsent:true}),
+ signal:AbortSignal.timeout(7000)});
+assert.equal(externalBooking.status,401,'Only a signed-in provider can create an externally sourced booking');
+const publicTrack=await fetch(base+'/api/track/preview?ref=JT-88EEA7BC&invite=invalid',{signal:AbortSignal.timeout(7000)});
+assert.equal(publicTrack.status,403,'A short reference without signed invite must not expose tracking status');
+const invalidTrack=await fetch(base+'/api/track/preview?ref=invalid&invite=invalid',{signal:AbortSignal.timeout(7000)});
+assert.equal(invalidTrack.status,400,'Invalid references must not be queryable');
+const acquisition=readFileSync('src/lib/provider-booking-acquisition.ts','utf8');
+const createRoute=readFileSync('src/app/api/provider/calendar/create/route.ts','utf8');
+const trackingPage=readFileSync('src/app/track/page.tsx','utf8');
+const providerForm=readFileSync('src/components/ProviderNewJob.tsx','utf8');
+assert.match(acquisition,/timingSafeEqual/,'Public tracking preview must validate signed invite in constant time');
+assert.match(acquisition,/30\\*86400/,'Invitation must expire after thirty days');
+assert.match(acquisition,/jitap_provider_booking_sms/,'One-time SMS sends are auditable');
+assert.match(createRoute,/smsNotificationConsent:z.literal\\(true\\)/,'Provider must confirm SMS permission');
+assert.match(createRoute,/sendProviderCreatedBookingSms/,'Provider-created booking must dispatch SMS automatically');
+assert.match(trackingPage,/View full service details/,'Tracking landing must convert into verified JiTap signup');
+assert.match(trackingPage,/api\\/track\\/preview/,'Signed preview must precede private customer ticket');
+assert.match(providerForm,/data.smsStatus/,'Provider calendar must surface SMS delivery attempt state');
 const cron=await fetch(base+'/api/cron/kapso',{signal:AbortSignal.timeout(7000)});
 assert.equal(cron.status,401,'Automated provider dispatch requires protected cron credentials');
 
