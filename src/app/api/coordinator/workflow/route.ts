@@ -4,6 +4,7 @@ import {reply,requireCoordinator,supabasePrivate,validOrigin} from '@/lib/coordi
 import {wasilianaSettings} from '@/lib/wasiliana';
 import {dispatchProviderAlerts} from '@/lib/provider-alerts';
 import {dispatchKapsoQueue} from '@/lib/kapso-dispatcher';
+import {dispatchServiceFollowups} from '@/lib/service-followup-dispatcher';
 import {providerWhatsAppReady,customerSocWhatsAppReady} from '@/lib/provider-whatsapp-template';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -100,8 +101,8 @@ export async function POST(req:NextRequest){
    const cases=await supabasePrivate<{source_kind:string;source_id:string}[]>('coordinator_cases?select=source_kind,source_id&id=eq.'+d.caseId+'&limit=1').catch(()=>[]);
    const source=cases[0];
    if(source?.source_kind==='website_request'){
-    const notification=await dispatchKapsoQueue(2,source.source_id).catch(()=>({ready:false,reason:'scheduled_retry'}));
-    return reply({...result,bookingWhatsApp:notification});
+    const [bookingWhatsApp,providerFollowup]=await Promise.allSettled([dispatchKapsoQueue(2,source.source_id),dispatchServiceFollowups(2)]);
+    return reply({...result,bookingWhatsApp:bookingWhatsApp.status==='fulfilled'?bookingWhatsApp.value:{ready:false,reason:'scheduled_retry'},providerFollowup:providerFollowup.status==='fulfilled'?providerFollowup.value:{ready:false,reason:'scheduled_retry'}});
    }
   }
   return reply(result);
