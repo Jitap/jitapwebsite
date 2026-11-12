@@ -93,14 +93,14 @@ const acquisition=readFileSync('src/lib/provider-booking-acquisition.ts','utf8')
 const createRoute=readFileSync('src/app/api/provider/calendar/create/route.ts','utf8');
 const trackingPage=readFileSync('src/app/track/page.tsx','utf8');
 const providerForm=readFileSync('src/components/ProviderNewJob.tsx','utf8');
-assert.match(acquisition,/timingSafeEqual/,'Public tracking preview must validate signed invite in constant time');
-assert.match(acquisition,/30\\*86400/,'Invitation must expire after thirty days');
-assert.match(acquisition,/jitap_provider_booking_sms/,'One-time SMS sends are auditable');
-assert.match(createRoute,/smsNotificationConsent:z.literal\\(true\\)/,'Provider must confirm SMS permission');
-assert.match(createRoute,/sendProviderCreatedBookingSms/,'Provider-created booking must dispatch SMS automatically');
-assert.match(trackingPage,/View full service details/,'Tracking landing must convert into verified JiTap signup');
-assert.match(trackingPage,/api\\/track\\/preview/,'Signed preview must precede private customer ticket');
-assert.match(providerForm,/data.smsStatus/,'Provider calendar must surface SMS delivery attempt state');
+assert.ok(acquisition.includes('timingSafeEqual'),'Tracking link must validate MAC using constant-time comparison');
+assert.ok(acquisition.includes('30*86400'),'Tracking invitations must have 30-day expiry');
+assert.ok(acquisition.includes('jitap_provider_booking_sms'),'One-time SMS sends are auditable');
+assert.ok(createRoute.includes('smsNotificationConsent:z.literal(true)'),'Provider must confirm SMS permission');
+assert.ok(createRoute.includes('sendProviderCreatedBookingSms'),'Provider-created booking must send customer SMS');
+assert.ok(trackingPage.includes('View full service details'),'Tracking landing must invite customer login/signup');
+assert.ok(trackingPage.includes('/api/track/preview'),'Signed preview must precede private ticket');
+assert.ok(providerForm.includes('data.smsStatus'),'Provider calendar must surface SMS gateway status');
 const cron=await fetch(base+'/api/cron/kapso',{signal:AbortSignal.timeout(7000)});
 assert.equal(cron.status,401,'Automated provider dispatch requires protected cron credentials');
 
