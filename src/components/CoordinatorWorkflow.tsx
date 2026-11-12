@@ -14,43 +14,20 @@ type Case={id:string;reference:string;category:string;description:string;area:st
 const responseStates=[['contacted','Contacted'],['accepted','Accepted'],['declined','Declined'],['needs_clarification','Needs clarification'],['quote_requested','Quote requested'],['quote_received','Quote received'],['cancelled','Cancelled']] as const;
 const updateKinds=[['request_received','Request received'],['provider_search','Searching for provider'],['provider_found','Provider found'],['quote_update','Quotation update'],['scheduled','Scheduled'],['progress','Job progress'],['completion','Completion'],['clarification','Clarification needed']] as const;
 function conciseReportedFault(raw:string){
- const text=raw.replace(/(?:\+?254|0)[17]\d{8}/g,'[phone withheld]').replace(/https?:\/\/\S+/gi,'[link withheld]').replace(/\s+/g,' ').trim();
- // Older requests retain their question-and-answer transcript in the ticket, not the provider alert.
- const first=text.split(/\s*(?:Where exactly|How serious|When did|What type|Which type|Is there|Are there|Preferred appointment|Preferred date|Preferred time|What is|Can you|Please select)\s*[:?]/i)[0];
- return (first||text.split(';')[0]||'Service assessment requested').replace(/[.;\s]+$/,'').slice(0,230);
+ const clean=raw.replace(/(?:\+?254|0)[17]\d{8}/g,'').replace(/https?:\/\/\S+/gi,'').replace(/\s+/g,' ').trim();
+ // Keep the original symptom only. Follow-up questions and answers belong in the ticket.
+ const first=clean.split(/\s*(?:Where exactly|How serious|When did|What type|Which type|Is there|Are there|Preferred appointment|Preferred date|Preferred time|What is|Can you|Please select)\s*[:?]|[.;\n]/i)[0]||'';
+ const issue=first.replace(/^(?:my|our|the)\s+/i,'').replace(/^(?:i\s+(?:need|have|am looking for)|we\s+need)\s+/i,'').replace(/\s+/g,' ').trim();
+ if(!issue)return 'Service assessment requested';
+ return issue.charAt(0).toUpperCase()+issue.slice(1).replace(/[.,:;!?\s]+$/,'').slice(0,77);
 }
-function reportedTechnicalDetails(raw:string){
- const clean=raw.replace(/\s+/g,' ');
- const fragments=[
-  [/Where exactly is the water escaping from:\s*([^;.]+)/i,'Reported leak source'],
-  [/How serious is the leak:\s*([^;.]+)/i,'Reported leak rate'],
-  [/What appliance(?: is affected)?:\s*([^;.]+)/i,'Equipment'],
-  [/What is the issue:\s*([^;.]+)/i,'Reported symptom']
- ] as const;
- return fragments.flatMap(([pattern,label])=>{
-  const match=clean.match(pattern);return match?[label+': '+match[1].trim().slice(0,65)]:[];
- }).slice(0,3).join('; ');
-}
-function makeProviderBuzz(c:Case,provider:string,technical?:TechnicalBrief|null){
- const summary=(technical?.technical_summary||'').replace(/(?:\+?254|0)[17]\d{8}/g,'[phone withheld]').replace(/https?:\/\/\S+/gi,'[link withheld]').replace(/\s+/g,' ').trim();
- const issue=(summary||conciseReportedFault(c.description)).slice(0,165);
- const details=technical?.technical_summary?'':reportedTechnicalDetails(c.description).slice(0,94);
- const scope=(technical?.proposed_scope||'').replace(/\s+/g,' ').trim().slice(0,85);
+function makeProviderBuzz(c:Case){
  const trade=c.category.replaceAll('-',' ').replace(/\b\w/g,ch=>ch.toUpperCase());
- const place=(c.locationLabel||c.area||'Location to confirm').replace(/\s+/g,' ').slice(0,70);
- const date=[c.preferredDate,c.preferredTime].filter(Boolean).join(' at ')||'To be arranged';
- const fields=[
+ return [
   'JiTap BUZZ | JT-'+c.reference,
-  'Provider: '+provider,
   'Service: '+trade,
-  'Reported issue: '+issue,
-  ...(details?['Reported details: '+details]:[]),
-  'Location: '+place,
-  'Preferred visit: '+date+' EAT (unconfirmed)',
-  ...(scope?['Initial assessment: '+scope]:[]),
-  'Reply to JiTap to accept, decline or clarify. Booking is confirmed only when JiTap notifies you.'
- ];
- return fields.join('\n').slice(0,600);
+  'Reported issue: '+conciseReportedFault(c.description)
+ ].join('\n');
 }
 function makeMessage(c:Case,kind:string,providerName?:string){
  const ref='JT-'+c.reference;
@@ -257,23 +234,23 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
     <button disabled={busy||!responses[a.id]||responses[a.id]===a.state} onClick={()=>action({action:'provider_response',assignmentId:a.id,state:responses[a.id],quote:responses[a.id]==='quote_received'&&quote[a.id]!==''?Number(quote[a.id]):null,note:responseNotes[a.id]||''},'Provider response saved')}>Record provider response</button>
     <div className="coordinator-provider-buzz">
       <h4>Provider BUZZ — review message</h4>
-      <p className="coordinator-help">Technical summary only—intake questions stay in the private ticket. Review and save this brief before SMS or WhatsApp. SMS adds a secure response link during delivery.</p>
+      <p className="coordinator-help">SMS notification only: reference, trade and a short reported issue. Full technical details remain in the ticket. The secure Respond link is added automatically when sending.</p>
       {smsAttempts.some(s=>s.assignment_id===a.id)&&providerDrafts.find(d=>d.assignment_id===a.id)&&<p className="coordinator-provider-buzz-sent">{providerDrafts.find(d=>d.assignment_id===a.id)?.message}</p>}
       {!smsAttempts.some(s=>s.assignment_id===a.id)&&<>
-        <button type="button" disabled={busy} onClick={()=>setBuzzText(x=>({...x,[a.id]:makeProviderBuzz(caseItem,p?.business_name||'provider',technicalBrief)}))}>Generate BUZZ draft</button>
+        <button type="button" disabled={busy} onClick={()=>setBuzzText(x=>({...x,[a.id]:makeProviderBuzz(caseItem)}))}>Generate BUZZ draft</button>
         <textarea aria-label="Provider BUZZ draft" rows={5} maxLength={600}
-          value={buzzText[a.id]??makeProviderBuzz(caseItem,p?.business_name||'provider',technicalBrief)}
+          value={buzzText[a.id]??makeProviderBuzz(caseItem)}
           onChange={e=>setBuzzText(x=>({...x,[a.id]:e.target.value}))}/>
-        <button type="button" disabled={busy} onClick={()=>action({action:'provider_sms_draft',assignmentId:a.id,message:buzzText[a.id]??makeProviderBuzz(caseItem,p?.business_name||'provider',technicalBrief)},'Provider BUZZ draft saved.')}>Save BUZZ draft — do not send</button>
-        {providerDrafts.some(x=>x.assignment_id===a.id)&&<small>{providerDrafts.find(x=>x.assignment_id===a.id)?.message===(buzzText[a.id]??makeProviderBuzz(caseItem,p?.business_name||'provider',technicalBrief))?'Reviewed technical draft saved.':'An older draft differs from this technical version. Save the updated draft before sending.'}</small>}
+        <button type="button" disabled={busy} onClick={()=>action({action:'provider_sms_draft',assignmentId:a.id,message:buzzText[a.id]??makeProviderBuzz(caseItem)},'Provider BUZZ draft saved.')}>Save BUZZ draft — do not send</button>
+        {providerDrafts.some(x=>x.assignment_id===a.id)&&<small>{providerDrafts.find(x=>x.assignment_id===a.id)?.message===(buzzText[a.id]??makeProviderBuzz(caseItem))?'Reviewed technical draft saved.':'An older draft differs from this technical version. Save the updated draft before sending.'}</small>}
       </>}
     </div>
     {smsAttempts.filter(s=>s.assignment_id===a.id).map(s=><small key={s.id}>Provider SMS: {s.state} · {new Date(s.requested_at).toLocaleString('en-KE')}</small>)}
-    {!smsAttempts.some(s=>s.assignment_id===a.id)&&<button disabled={busy||!smsEnabled||!smsReady||!providerDrafts.some(d=>d.assignment_id===a.id)||((buzzText[a.id]??makeProviderBuzz(caseItem,p?.business_name||'provider',technicalBrief))!==providerDrafts.find(d=>d.assignment_id===a.id)?.message)||!providerSmsContacts.some(p=>p.providerId===a.provider_id&&p.enabled)||!['proposed','contacted','needs_clarification','quote_requested'].includes(a.state)} onClick={()=>sendSms('provider',a.id)}>Send provider SMS via Wasiliana</button>}
+    {!smsAttempts.some(s=>s.assignment_id===a.id)&&<button disabled={busy||!smsEnabled||!smsReady||!providerDrafts.some(d=>d.assignment_id===a.id)||((buzzText[a.id]??makeProviderBuzz(caseItem))!==providerDrafts.find(d=>d.assignment_id===a.id)?.message)||!providerSmsContacts.some(p=>p.providerId===a.provider_id&&p.enabled)||!['proposed','contacted','needs_clarification','quote_requested'].includes(a.state)} onClick={()=>sendSms('provider',a.id)}>Send provider SMS via Wasiliana</button>}
     <div className="coordinator-wa-actions">
      <strong>WhatsApp provider notification</strong>
      <p className="coordinator-help">Uses the reviewed saved technical BUZZ, not the customer's intake transcript. Opens WhatsApp for staff to send manually; no automatic delivery claim.</p>
-     <button type="button" disabled={busy||!providerDrafts.some(d=>d.assignment_id===a.id)||((buzzText[a.id]??makeProviderBuzz(caseItem,p?.business_name||'provider',technicalBrief))!==providerDrafts.find(d=>d.assignment_id===a.id)?.message)||!providerSmsContacts.some(p=>p.providerId===a.provider_id&&p.whatsappEnabled)||!['proposed','contacted','needs_clarification','quote_requested'].includes(a.state)} onClick={()=>openReviewedWhatsApp('provider',a.id)}><ExternalLink size={15}/> Open provider WhatsApp</button>
+     <button type="button" disabled={busy||!providerDrafts.some(d=>d.assignment_id===a.id)||((buzzText[a.id]??makeProviderBuzz(caseItem))!==providerDrafts.find(d=>d.assignment_id===a.id)?.message)||!providerSmsContacts.some(p=>p.providerId===a.provider_id&&p.whatsappEnabled)||!['proposed','contacted','needs_clarification','quote_requested'].includes(a.state)} onClick={()=>openReviewedWhatsApp('provider',a.id)}><ExternalLink size={15}/> Open provider WhatsApp</button>
      {!providerSmsContacts.some(p=>p.providerId===a.provider_id&&p.whatsappEnabled)&&<small>Provider WhatsApp requires separately recorded opt-in. An SMS opt-in alone is not sufficient.</small>}
     </div>
     {!providerSmsContacts.some(p=>p.providerId===a.provider_id&&p.enabled)&&<small>Provider SMS requires documented opt-in and a private mobile number.</small>}
