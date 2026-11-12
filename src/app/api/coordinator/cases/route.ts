@@ -19,6 +19,7 @@ function normalizedRecord(c:CaseRow,source?:Intake|Move){
  return {
   ...c,reference:c.source_id.slice(0,8).toUpperCase(),
   notifyOptIn:isRequest?payload.notifyOptIn===true:false,
+  whatsappOptIn:isRequest?payload.whatsappOptIn===true:false,
   category:isRequest?safeText(payload.category,70)||'other-services':'moving',
   preferredProviderId:isRequest?safeText(payload.preferredProviderId,20):'',
   preferredProviderName:isRequest?fundiListings.find(p=>p.id===payload.preferredProviderId)?.name||'':'',
