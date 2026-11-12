@@ -19,6 +19,17 @@ for(const kind of ['booking','reminder','cancellation','rematch','reschedule'])
 assert.match(kapsoClaim,/consent_confirmed=true/,'Due-only template sending must require customer consent');
 assert.match(kapsoClaim,/due_at<=now\(\)/,'Future reminders must not send early');
 assert.match(kapsoClaim,/for update skip locked/i,'SOC and cron must never double-claim the same booking event');
+const confirmUnauthenticated=await fetch(base+'/api/coordinator/kapso',{method:'POST',headers:{'content-type':'application/json','origin':'https://'+base.host},body:JSON.stringify({caseId:'00000000-0000-0000-0000-000000000001',action:'confirm_accepted_booking',confirm:true}),signal:AbortSignal.timeout(7000)});
+assert.equal(confirmUnauthenticated.status,401,'SOD booking confirmation must require staff sign-in');
+const acceptedTrigger=readFileSync('supabase/migrations/20261112_sod_accepted_booking_whatsapp.sql','utf8');
+const backfill=readFileSync('supabase/migrations/20261112_sod_reconcile_existing_booking_whatsapp.sql','utf8');
+const providerSource=readFileSync('src/lib/provider-alerts.ts','utf8');
+assert.match(acceptedTrigger,/new.state='accepted'/,'SOD accepted assignment must trigger booking');
+assert.match(acceptedTrigger,/jitap_kapso_queue_event/,'Use five approved booking templates');
+assert.match(acceptedTrigger,/preferredDate/,'Do not confirm unscheduled requests');
+assert.match(backfill,/whatsappOptIn/,'Explicit confirmations require customer WhatsApp consent');
+assert.match(backfill,/event_key='sod-booking:'/,'Do not duplicate booking notifications');
+assert.match(providerSource,/sms_previously_attempted_via_soc/,'Already-sent provider SMS must not conflict with existing links');
 const cron=await fetch(base+'/api/cron/kapso',{signal:AbortSignal.timeout(7000)});
 assert.equal(cron.status,401,'Automated provider dispatch requires protected cron credentials');
 
