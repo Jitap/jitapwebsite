@@ -80,6 +80,27 @@ assert.match(consentDispatcher,/notification_outdated/);
 assert.match(reminderRoute,/Date\.now\(\)-Date\.parse\(a\.assigned_at\)<5\*60000/);
 assert.match(reminderRoute,/jitap_soc_provider_reminders/);
 assert.match(receiptCode,/jitap_followup_record_receipt/);
+const externalBooking=await fetch(base+'/api/provider/calendar/create',{method:'POST',
+ headers:{'content-type':'application/json','origin':'https://'+base.host},
+ body:JSON.stringify({title:'QA test job',customerName:'QA Customer',phone:'0700000000',location:'QA location',date:'2026-12-12',startTime:'10:00',endTime:'11:00',smsNotificationConsent:true}),
+ signal:AbortSignal.timeout(7000)});
+assert.equal(externalBooking.status,401,'Only a signed-in provider can create an externally sourced booking');
+const publicTrack=await fetch(base+'/api/track/preview?ref=JT-88EEA7BC&invite=invalid',{signal:AbortSignal.timeout(7000)});
+assert.equal(publicTrack.status,403,'A short reference without signed invite must not expose tracking status');
+const invalidTrack=await fetch(base+'/api/track/preview?ref=invalid&invite=invalid',{signal:AbortSignal.timeout(7000)});
+assert.equal(invalidTrack.status,400,'Invalid references must not be queryable');
+const acquisition=readFileSync('src/lib/provider-booking-acquisition.ts','utf8');
+const createRoute=readFileSync('src/app/api/provider/calendar/create/route.ts','utf8');
+const trackingPage=readFileSync('src/app/track/page.tsx','utf8');
+const providerForm=readFileSync('src/components/ProviderNewJob.tsx','utf8');
+assert.ok(acquisition.includes('timingSafeEqual'),'Tracking link must validate MAC using constant-time comparison');
+assert.ok(acquisition.includes('30*86400'),'Tracking invitations must have 30-day expiry');
+assert.ok(acquisition.includes('jitap_provider_booking_sms'),'One-time SMS sends are auditable');
+assert.ok(createRoute.includes('smsNotificationConsent:z.literal(true)'),'Provider must confirm SMS permission');
+assert.ok(createRoute.includes('sendProviderCreatedBookingSms'),'Provider-created booking must send customer SMS');
+assert.ok(trackingPage.includes('View full service details'),'Tracking landing must invite customer login/signup');
+assert.ok(trackingPage.includes('/api/track/preview'),'Signed preview must precede private ticket');
+assert.ok(providerForm.includes('data.smsStatus'),'Provider calendar must surface SMS gateway status');
 const cron=await fetch(base+'/api/cron/kapso',{signal:AbortSignal.timeout(7000)});
 assert.equal(cron.status,401,'Automated provider dispatch requires protected cron credentials');
 

@@ -53,10 +53,13 @@ export async function GET(req:NextRequest){
     ?supabasePrivate<{id:string;event_type:string;status:string;created_at:string}[]>('notification_outbox?select=id,event_type,status,created_at&reference_id=eq.'+encodeURIComponent(caseSource.source_id)+'&channel=eq.sms&order=created_at.desc&limit=12').catch(()=>[])
     :Promise.resolve([])
   ]);
+  const providerBookingSms=caseSource?.source_kind==='website_request'
+    ?await supabasePrivate<{id:string;state:string;error_code:string|null;requested_at:string}[]>('jitap_provider_booking_sms?select=id,state,error_code,requested_at&request_id=eq.'+encodeURIComponent(caseSource.source_id)+'&limit=1').catch(()=>[])
+    :[];
   const brief=caseSource?.source_kind==='website_request'
    ?(await supabasePrivate<TechnicalBrief[]>('jitap_request_service_briefs?select=technical_summary,proposed_scope,urgency,source&request_id=eq.'+encodeURIComponent(caseSource.source_id)+'&limit=1').catch(()=>[]))[0]||null
    :null;
-  return reply({ok:true,providers,assignments,updates,smsAttempts,providerDrafts,providerSmsContacts,providerAlerts,customerWhatsAppAttempts,serviceFollowups,providerReminders,requestReceipts,providerWhatsAppReady:providerWhatsAppReady(),customerWhatsAppReady:customerSocWhatsAppReady(),technicalBrief:brief,staffRole:staff.role,smsReady:wasilianaSettings().configured&&wasilianaSettings().senderConfigured,smsEnabled:process.env.JITAP_COORDINATOR_SMS_ENABLED==='true'});
+  return reply({ok:true,providers,assignments,updates,smsAttempts,providerDrafts,providerSmsContacts,providerAlerts,customerWhatsAppAttempts,serviceFollowups,providerReminders,requestReceipts,providerBookingSms,providerWhatsAppReady:providerWhatsAppReady(),customerWhatsAppReady:customerSocWhatsAppReady(),technicalBrief:brief,staffRole:staff.role,smsReady:wasilianaSettings().configured&&wasilianaSettings().senderConfigured,smsEnabled:process.env.JITAP_COORDINATOR_SMS_ENABLED==='true'});
  }catch{return reply({error:'Unable to load provider workflow'},503)}
 }
 export async function POST(req:NextRequest){

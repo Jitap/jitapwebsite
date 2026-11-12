@@ -13,3 +13,15 @@ body:has(.jt-tracking-page) #main{background:#f5faf7!important;padding:0!importa
 .jt-tracking-page .button,.jt-tracking-page .jt-tracking-action{background:linear-gradient(115deg,#008a3e,#10b981)!important;border:1px solid #45ce8a!important;color:#fff!important;border-radius:18px!important;box-shadow:0 8px 20px #008a3e24,inset 0 1px 0 #ffffff62!important;backdrop-filter:blur(12px);font-weight:750;text-decoration:none}
 .jt-tracking-page .button:hover{filter:brightness(1.04)}
 @media(max-width:480px){.jt-tracking-brand{height:62px}.jt-tracking-page .jt-account-shell{padding:24px 16px 32px!important}}
+
+.jt-tracking-acquisition{display:flex;flex-direction:column;gap:14px}
+.jt-tracking-acquisition h2{font-size:clamp(23px,4vw,30px);line-height:1.2;color:#123a27;margin:0}
+.jt-tracking-acquisition>p{line-height:1.6;margin:0;color:#496957}
+.jt-tracking-acquisition-icon{display:inline-flex;align-items:center;gap:9px;color:#078a4e;font-weight:750}
+.jt-tracking-private{display:flex;align-items:flex-start;gap:13px;border:1px solid #cdebd8;border-radius:17px;background:#f1faf4;padding:18px 16px;color:#174a30}
+.jt-tracking-private>svg{flex:none}
+.jt-tracking-private strong{font-size:16px}
+.jt-tracking-private p{font-size:14px;margin:7px 0 0;color:#446f54;line-height:1.5}
+.jt-tracking-acquisition .jt-tracking-action{display:flex;align-items:center;justify-content:center;gap:9px;padding:15px 17px;margin-top:3px}
+.jt-tracking-page .jt-tracking-muted{font-size:12px;color:#698471;line-height:1.5}
+.jt-tracking-discover{text-align:center;display:block;padding:9px;color:#087d45;font-weight:700;text-decoration:underline;text-underline-offset:4px}
