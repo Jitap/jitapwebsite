@@ -3,6 +3,14 @@ on:
   pull_request:
     paths:
       - 'src/lib/provider-alerts.ts'
+      - 'src/lib/service-followup-dispatcher.ts'
+      - 'src/app/api/coordinator/service-followup/**'
+      - 'src/app/api/coordinator/provider-reminder/**'
+      - 'src/app/api/provider/calendar/**'
+      - 'src/app/api/webhooks/kapso/**'
+      - 'supabase/migrations/20261112_*communication*'
+      - 'supabase/migrations/20261112_*followup*'
+      - 'supabase/migrations/20261112_*provider*eta*'
       - 'src/lib/provider-whatsapp-template.ts'
       - 'src/app/api/coordinator/whatsapp/**'
       - 'src/app/api/coordinator/workflow/**'
@@ -15,6 +23,14 @@ on:
     branches: [main]
     paths:
       - 'src/lib/provider-alerts.ts'
+      - 'src/lib/service-followup-dispatcher.ts'
+      - 'src/app/api/coordinator/service-followup/**'
+      - 'src/app/api/coordinator/provider-reminder/**'
+      - 'src/app/api/provider/calendar/**'
+      - 'src/app/api/webhooks/kapso/**'
+      - 'supabase/migrations/20261112_*communication*'
+      - 'supabase/migrations/20261112_*followup*'
+      - 'supabase/migrations/20261112_*provider*eta*'
       - 'src/lib/provider-whatsapp-template.ts'
       - 'src/app/api/coordinator/whatsapp/**'
       - 'scripts/provider-notifications-smoke.mjs'
