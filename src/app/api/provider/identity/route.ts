@@ -35,10 +35,16 @@ export async function GET(req:NextRequest){
     row=await readLatest(session.userId);
    }
   }
+  // Do not mistake missing live Didit integration for a rejected or
+  // not-yet-started ID check. Real sessions are possible only when the live
+  // workflow, API key and signed webhook destination have been configured.
+  const available=cfg.enabled&&cfg.configured;
   return reply({enabled:cfg.enabled,configured:cfg.configured,
-   status:row?.status||'not_started',identityVerified:row?.status==='Approved',
+   available,setupPending:!available,
+   status:row?.status||(!available?'setup_pending':'not_started'),
+   identityVerified:row?.status==='Approved',
    identityUnderReview:row?.status==='In Review',updatedAt:row?.updated_at||null,
-   verificationUrl:row&&['Not Started','In Progress','Resubmitted'].includes(row.status)?row.verification_url:null
+   verificationUrl:available&&row&&['Not Started','In Progress','Resubmitted'].includes(row.status)?row.verification_url:null
   });
  }catch{return reply({error:'Unable to load identity verification status'},503)}
 }
@@ -50,7 +56,7 @@ export async function POST(req:NextRequest){
  const body=await req.json().catch(()=>null) as {consent?:unknown}|null;
  if(body?.consent!==true)return reply({error:'Please agree to the identity verification and biometric processing notice.'},422);
  const cfg=diditConfig();
- if(!cfg.enabled||!cfg.configured)return reply({error:'Identity verification is being configured. Please check again later.'},503);
+ if(!cfg.enabled||!cfg.configured)return reply({error:'JiTap identity verification is temporarily unavailable because the live Didit connection is not yet active. Your provider profile is saved. JiTap will not ask for ID photos while this is being configured.',code:'DIDIT_LIVE_SETUP_PENDING'},503);
  let rowId:string|null=null;
  try{
   const [workspace]=await supabasePrivate<Workspace[]>('jitap_provider_workspaces?user_id=eq.'+
