@@ -6,22 +6,51 @@ import {providerMatchesTrade} from '@/lib/trade-categories';
 type Provider={id:string;business_name:string;service_categories:string[];service_areas:string[];base_area:string|null};
 type Assignment={id:string;provider_id:string;state:string;quoted_amount_kes:number|null;notes:string|null;assigned_at:string;responded_at:string|null};
 type ProviderSmsDraft={id:string;assignment_id:string;message:string};
-type ProviderSmsContact={providerId:string;enabled:boolean;maskedPhone:string};
+type ProviderSmsContact={providerId:string;enabled:boolean;whatsappEnabled:boolean;maskedPhone:string};
+type TechnicalBrief={technical_summary:string;proposed_scope:string;urgency:string;source:string};
 type SmsAttempt={id:string;customer_update_id:string|null;assignment_id:string|null;recipient_kind:string;gateway?:string;state:string;requested_at:string;http_status:number|null;provider_message_id:string|null};
 type Update={id:string;kind:string;channel:'whatsapp'|'sms'|'phone';message:string;state:'draft'|'sent_manually'|'cancelled';created_at:string;sent_at:string|null};
-type Case={id:string;reference:string;category:string;description:string;area:string;phone:string;status:string;canContact:boolean;source_kind:string;name:string;locationLabel:string;notifyOptIn:boolean;preferredDate?:string;preferredTime?:string;jobStatus?:string|null;providerName?:string|null;appointmentId?:string|null};
+type Case={id:string;reference:string;category:string;description:string;area:string;phone:string;status:string;canContact:boolean;whatsappOptIn:boolean;source_kind:string;name:string;locationLabel:string;notifyOptIn:boolean;preferredDate?:string;preferredTime?:string;jobStatus?:string|null;providerName?:string|null;appointmentId?:string|null};
 const responseStates=[['contacted','Contacted'],['accepted','Accepted'],['declined','Declined'],['needs_clarification','Needs clarification'],['quote_requested','Quote requested'],['quote_received','Quote received'],['cancelled','Cancelled']] as const;
 const updateKinds=[['request_received','Request received'],['provider_search','Searching for provider'],['provider_found','Provider found'],['quote_update','Quotation update'],['scheduled','Scheduled'],['progress','Job progress'],['completion','Completion'],['clarification','Clarification needed']] as const;
-function toKenyanWhatsApp(phone:string){
- const n=phone.replace(/\D/g,'');
- const number=n.startsWith('0')?'254'+n.slice(1):n;
- return /^254[17]\d{8}$/.test(number)?number:null;
+function conciseReportedFault(raw:string){
+ const text=raw.replace(/(?:\+?254|0)[17]\d{8}/g,'[phone withheld]').replace(/https?:\/\/\S+/gi,'[link withheld]').replace(/\s+/g,' ').trim();
+ // Older requests retain their question-and-answer transcript in the ticket, not the provider alert.
+ const first=text.split(/\s*(?:Where exactly|How serious|When did|What type|Which type|Is there|Are there|Preferred appointment|Preferred date|Preferred time|What is|Can you|Please select)\s*[:?]/i)[0];
+ return (first||text.split(';')[0]||'Service assessment requested').replace(/[.;\s]+$/,'').slice(0,230);
 }
-function makeProviderBuzz(c:Case,provider:string){
- const brief=c.description.trim().replace(/(?:\+?254|0)[17]\d{8}/g,'[phone withheld]').replace(/\s+/g,' ').slice(0,270)||c.category;
- const place=c.locationLabel||c.area||'Confirm location';
- const date=[c.preferredDate,c.preferredTime].filter(Boolean).join(' at ')||'Confirm schedule';
- return ('JiTap BUZZ for '+provider+'. JT-'+c.reference+'. Job: '+brief+'. Location: '+place+'. Preferred: '+date+'. Open the secure response link at the end of this SMS to accept, decline or ask a question. Acceptance immediately confirms the booking.').slice(0,600);
+function reportedTechnicalDetails(raw:string){
+ const clean=raw.replace(/\s+/g,' ');
+ const fragments=[
+  [/Where exactly is the water escaping from:\s*([^;.]+)/i,'Reported leak source'],
+  [/How serious is the leak:\s*([^;.]+)/i,'Reported leak rate'],
+  [/What appliance(?: is affected)?:\s*([^;.]+)/i,'Equipment'],
+  [/What is the issue:\s*([^;.]+)/i,'Reported symptom']
+ ] as const;
+ return fragments.flatMap(([pattern,label])=>{
+  const match=clean.match(pattern);return match?[label+': '+match[1].trim().slice(0,65)]:[];
+ }).slice(0,3).join('; ');
+}
+function makeProviderBuzz(c:Case,provider:string,technical?:TechnicalBrief|null){
+ const summary=(technical?.technical_summary||'').replace(/(?:\+?254|0)[17]\d{8}/g,'[phone withheld]').replace(/https?:\/\/\S+/gi,'[link withheld]').replace(/\s+/g,' ').trim();
+ const issue=(summary||conciseReportedFault(c.description)).slice(0,165);
+ const details=technical?.technical_summary?'':reportedTechnicalDetails(c.description).slice(0,94);
+ const scope=(technical?.proposed_scope||'').replace(/\s+/g,' ').trim().slice(0,85);
+ const trade=c.category.replaceAll('-',' ').replace(/\b\w/g,ch=>ch.toUpperCase());
+ const place=(c.locationLabel||c.area||'Location to confirm').replace(/\s+/g,' ').slice(0,70);
+ const date=[c.preferredDate,c.preferredTime].filter(Boolean).join(' at ')||'To be arranged';
+ const fields=[
+  'JiTap BUZZ | JT-'+c.reference,
+  'Provider: '+provider,
+  'Service: '+trade,
+  'Reported issue: '+issue,
+  ...(details?['Reported details: '+details]:[]),
+  'Location: '+place,
+  'Preferred visit: '+date+' EAT (unconfirmed)',
+  ...(scope?['Initial assessment: '+scope]:[]),
+  'Reply to JiTap to accept, decline or clarify. Booking is confirmed only when JiTap notifies you.'
+ ];
+ return fields.join('\n').slice(0,600);
 }
 function makeMessage(c:Case,kind:string,providerName?:string){
  const ref='JT-'+c.reference;
@@ -45,10 +74,12 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
  const [providerDrafts,setProviderDrafts]=useState<ProviderSmsDraft[]>([]);
  const [buzzText,setBuzzText]=useState<Record<string,string>>({});
  const [providerSmsContacts,setProviderSmsContacts]=useState<ProviderSmsContact[]>([]);
+ const [technicalBrief,setTechnicalBrief]=useState<TechnicalBrief|null>(null);
  const [isAdmin,setIsAdmin]=useState(false);
  const [newProviderPhone,setNewProviderPhone]=useState('');
  const [consentSource,setConsentSource]=useState('');
  const [providerConsent,setProviderConsent]=useState(false);
+ const [providerWhatsAppConsent,setProviderWhatsAppConsent]=useState(false);
  const [smsEnabled,setSmsEnabled]=useState(false);
  const [smsReady,setSmsReady]=useState(false);
  const [smsDiagnostics,setSmsDiagnostics]=useState<{ok:boolean;httpStatus?:number;balanceKes?:number;senderId?:string;errorCode?:string;error?:string}|null>(null);
@@ -70,7 +101,7 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
   const res=await fetch('/api/coordinator/workflow?caseId='+encodeURIComponent(caseItem.id),{cache:'no-store'});
   if(!res.ok)throw new Error('Unable to load workflow');
   const data=await res.json();
-  setProviders(data.providers||[]);setAssignments(data.assignments||[]);setUpdates(data.updates||[]);setSmsAttempts(data.smsAttempts||[]);setProviderDrafts(data.providerDrafts||[]);setSmsEnabled(data.smsEnabled===true);setSmsReady(data.smsReady===true);setProviderSmsContacts(data.providerSmsContacts||[]);setIsAdmin(data.staffRole==='admin');
+  setProviders(data.providers||[]);setAssignments(data.assignments||[]);setUpdates(data.updates||[]);setSmsAttempts(data.smsAttempts||[]);setProviderDrafts(data.providerDrafts||[]);setSmsEnabled(data.smsEnabled===true);setSmsReady(data.smsReady===true);setProviderSmsContacts(data.providerSmsContacts||[]);setTechnicalBrief(data.technicalBrief||null);setIsAdmin(data.staffRole==='admin');
  },[caseItem.id]);
  useEffect(()=>{
   let alive=true;
@@ -107,13 +138,25 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
   setBusy(true);setFeedback('');
   try{
    const res=await fetch('/api/coordinator/provider-contact',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-    providerId,phone:newProviderPhone,consentConfirmed:true,consentSource
+    providerId,phone:newProviderPhone,consentConfirmed:true,consentSource,whatsappConsent:providerWhatsAppConsent
    })});
    const data=await res.json();
    if(!res.ok)throw new Error(data.error||'Provider contact was not saved');
-   setNewProviderPhone('');setConsentSource('');setProviderConsent(false);await load();
-   setFeedback('Private provider SMS contact saved with documented consent.');
+   setNewProviderPhone('');setConsentSource('');setProviderConsent(false);setProviderWhatsAppConsent(false);await load();
+   setFeedback(providerWhatsAppConsent?'Private provider SMS and WhatsApp consent recorded.':'Private provider SMS contact saved with documented consent.');
   }catch(e){setFeedback(e instanceof Error?e.message:'Could not save provider contact')}
+  finally{setBusy(false)}
+ }
+ async function enableExistingProviderWhatsApp(){
+  if(!providerId||consentSource.trim().length<5||!providerWhatsAppConsent)return;
+  setBusy(true);setFeedback('');
+  try{
+   const res=await fetch('/api/coordinator/provider-contact',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'enable_whatsapp',providerId,consentConfirmed:true,consentSource})});
+   const data=await res.json();
+   if(!res.ok)throw Error(data.error||'Unable to save WhatsApp consent');
+   setConsentSource('');setProviderWhatsAppConsent(false);await load();
+   setFeedback('WhatsApp permission recorded for this provider.');
+  }catch(e){setFeedback(e instanceof Error?e.message:'Unable to record WhatsApp consent')}
   finally{setBusy(false)}
  }
  async function checkSmsDiagnostics(){
@@ -146,11 +189,21 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
   try{await navigator.clipboard.writeText(body);setFeedback('Message copied. Send it manually, then confirm it was sent.')}
   catch{setFeedback('Clipboard unavailable. Select the message text and copy it manually.')}
  }
- function openWhatsApp(body:string){
-  const to=toKenyanWhatsApp(caseItem.phone);
-  if(!to){setFeedback('Confirm the customer phone before opening WhatsApp.');return}
-  window.open('https://wa.me/'+to+'?text='+encodeURIComponent(body),'_blank','noopener,noreferrer');
+ async function openReviewedWhatsApp(recipientKind:'customer'|'provider',id:string){
+  const recipient=recipientKind==='provider'?'provider':'customer';
+  if(!window.confirm('Open a WhatsApp message to the '+recipient+'? This opens WhatsApp for you to review and press Send manually; JiTap cannot confirm delivery automatically.'))return;
+  setBusy(true);setFeedback('');
+  try{
+   const response=await fetch('/api/coordinator/whatsapp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({caseId:caseItem.id,recipientKind,...(recipientKind==='provider'?{assignmentId:id}:{updateId:id})})});
+   const result=await response.json();
+   if(!response.ok)throw Error(result.error||'WhatsApp message could not be prepared.');
+   if(typeof result.url!=='string'||!result.url.startsWith('https://wa.me/'))throw Error('WhatsApp destination unavailable');
+   // Use a real user-triggered popup and never claim a message has been delivered.
+   window.location.assign(result.url);
+  }catch(error){setFeedback(error instanceof Error?error.message:'Could not open WhatsApp')}
+  finally{setBusy(false)}
  }
+
  if(loading)return <section className="coordinator-workflow">Loading provider workflow…</section>;
  return <section className="coordinator-workflow">
   <div className="coordinator-contact-summary"><h3>Customer contact</h3><dl><dt>Service ID</dt><dd className="coordinator-service-id">JT-{caseItem.reference}</dd><dt>Name</dt><dd>{caseItem.name||'Not supplied (historical enquiry)'}</dd><dt>Mobile</dt><dd>{caseItem.phone||'Not supplied'}</dd><dt>Service location</dt><dd>{caseItem.locationLabel||caseItem.area||'Not supplied'}</dd><dt>SMS updates</dt><dd>{caseItem.notifyOptIn?'Opted in':'Not opted in / not recorded'}</dd></dl></div>
@@ -170,12 +223,19 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
   </label>
   {matches.length===0&&<p className="coordinator-help"><AlertCircle size={15}/> No verified provider category match confirmed. Use <strong>Needs sourcing</strong> for human intervention.</p>}
   {providerId&&<p className="coordinator-help">Provider SMS contact: {providerSmsContacts.find(p=>p.providerId===providerId)?.enabled?'SMS consent recorded · '+providerSmsContacts.find(p=>p.providerId===providerId)?.maskedPhone:'No opted-in phone on file'}</p>}
+  {providerId&&isAdmin&&providerSmsContacts.some(p=>p.providerId===providerId&&p.enabled&&!p.whatsappEnabled)&&<div className="coordinator-provider-contact">
+   <h4>Enable WhatsApp alerts for existing provider</h4>
+   <p className="coordinator-help">SMS permission does not imply WhatsApp permission. Only enable this if the provider separately agreed.</p>
+   <label>WhatsApp consent evidence<input value={consentSource} onChange={e=>setConsentSource(e.target.value)} maxLength={300} placeholder="e.g. provider agreed on call, 12 Nov"/></label>
+   <label className="coordinator-check"><input type="checkbox" checked={providerWhatsAppConsent} onChange={e=>setProviderWhatsAppConsent(e.target.checked)}/> I confirm the provider separately opted in to WhatsApp job notifications.</label>
+   <button type="button" disabled={busy||!providerWhatsAppConsent||consentSource.trim().length<5} onClick={enableExistingProviderWhatsApp}>Record provider WhatsApp consent</button>
+  </div>}
   {providerId&&isAdmin&&!providerSmsContacts.find(p=>p.providerId===providerId)?.enabled&&<div className="coordinator-provider-contact">
    <h4>Private provider SMS onboarding</h4>
    <p className="coordinator-help">Only enter a provider's number after the provider has agreed to JiTap SMS job alerts. This number remains private.</p>
    <label>Provider mobile number<input inputMode="tel" autoComplete="off" placeholder="07XXXXXXXX" value={newProviderPhone} maxLength={25} onChange={e=>setNewProviderPhone(e.target.value)}/></label>
    <label>Consent evidence<input placeholder="e.g. agreed during onboarding call on 5 Nov" value={consentSource} maxLength={300} onChange={e=>setConsentSource(e.target.value)}/></label>
-   <label className="coordinator-check"><input type="checkbox" checked={providerConsent} onChange={e=>setProviderConsent(e.target.checked)}/> I confirm the provider gave permission to receive JiTap SMS alerts.</label>
+   <label className="coordinator-check"><input type="checkbox" checked={providerConsent} onChange={e=>setProviderConsent(e.target.checked)}/> I confirm the provider gave permission to receive JiTap SMS alerts.</label><label className="coordinator-check"><input type="checkbox" checked={providerWhatsAppConsent} onChange={e=>setProviderWhatsAppConsent(e.target.checked)}/> The provider separately agreed to receive JiTap WhatsApp job notifications (optional).</label>
    <button disabled={busy||!providerConsent||consentSource.trim().length<5||newProviderPhone.trim().length<10} onClick={saveProviderContact}>Save private SMS contact</button>
   </div>}
   <input aria-label="Provider assignment note" maxLength={1000} value={providerNote} onChange={e=>setProviderNote(e.target.value)} placeholder="Private note for sourcing or proposed provider"/>
@@ -197,19 +257,25 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
     <button disabled={busy||!responses[a.id]||responses[a.id]===a.state} onClick={()=>action({action:'provider_response',assignmentId:a.id,state:responses[a.id],quote:responses[a.id]==='quote_received'&&quote[a.id]!==''?Number(quote[a.id]):null,note:responseNotes[a.id]||''},'Provider response saved')}>Record provider response</button>
     <div className="coordinator-provider-buzz">
       <h4>Provider BUZZ — review message</h4>
-      <p className="coordinator-help">JiTap uses the provider's saved private SMS contact. A unique secure response link is added automatically when sending. Review and save this service brief first.</p>
+      <p className="coordinator-help">Technical summary only—intake questions stay in the private ticket. Review and save this brief before SMS or WhatsApp. SMS adds a secure response link during delivery.</p>
       {smsAttempts.some(s=>s.assignment_id===a.id)&&providerDrafts.find(d=>d.assignment_id===a.id)&&<p className="coordinator-provider-buzz-sent">{providerDrafts.find(d=>d.assignment_id===a.id)?.message}</p>}
       {!smsAttempts.some(s=>s.assignment_id===a.id)&&<>
-        <button type="button" disabled={busy} onClick={()=>setBuzzText(x=>({...x,[a.id]:makeProviderBuzz(caseItem,p?.business_name||'provider')}))}>Generate BUZZ draft</button>
+        <button type="button" disabled={busy} onClick={()=>setBuzzText(x=>({...x,[a.id]:makeProviderBuzz(caseItem,p?.business_name||'provider',technicalBrief)}))}>Generate BUZZ draft</button>
         <textarea aria-label="Provider BUZZ draft" rows={5} maxLength={600}
-          value={buzzText[a.id]??providerDrafts.find(x=>x.assignment_id===a.id)?.message??makeProviderBuzz(caseItem,p?.business_name||'provider')}
+          value={buzzText[a.id]??makeProviderBuzz(caseItem,p?.business_name||'provider',technicalBrief)}
           onChange={e=>setBuzzText(x=>({...x,[a.id]:e.target.value}))}/>
-        <button type="button" disabled={busy} onClick={()=>action({action:'provider_sms_draft',assignmentId:a.id,message:buzzText[a.id]??providerDrafts.find(x=>x.assignment_id===a.id)?.message??makeProviderBuzz(caseItem,p?.business_name||'provider')},'Provider BUZZ draft saved.')}>Save BUZZ draft — do not send</button>
-        {providerDrafts.some(x=>x.assignment_id===a.id)&&<small>Saved draft ready. Save again after any edit before sending.</small>}
+        <button type="button" disabled={busy} onClick={()=>action({action:'provider_sms_draft',assignmentId:a.id,message:buzzText[a.id]??makeProviderBuzz(caseItem,p?.business_name||'provider',technicalBrief)},'Provider BUZZ draft saved.')}>Save BUZZ draft — do not send</button>
+        {providerDrafts.some(x=>x.assignment_id===a.id)&&<small>{providerDrafts.find(x=>x.assignment_id===a.id)?.message===(buzzText[a.id]??makeProviderBuzz(caseItem,p?.business_name||'provider',technicalBrief))?'Reviewed technical draft saved.':'An older draft differs from this technical version. Save the updated draft before sending.'}</small>}
       </>}
     </div>
     {smsAttempts.filter(s=>s.assignment_id===a.id).map(s=><small key={s.id}>Provider SMS: {s.state} · {new Date(s.requested_at).toLocaleString('en-KE')}</small>)}
-    {!smsAttempts.some(s=>s.assignment_id===a.id)&&<button disabled={busy||!smsEnabled||!smsReady||!providerDrafts.some(d=>d.assignment_id===a.id)||(buzzText[a.id]!==undefined&&buzzText[a.id]!==providerDrafts.find(d=>d.assignment_id===a.id)?.message)||!providerSmsContacts.some(p=>p.providerId===a.provider_id&&p.enabled)||!['proposed','contacted','needs_clarification','quote_requested'].includes(a.state)} onClick={()=>sendSms('provider',a.id)}>Send provider SMS via Wasiliana</button>}
+    {!smsAttempts.some(s=>s.assignment_id===a.id)&&<button disabled={busy||!smsEnabled||!smsReady||!providerDrafts.some(d=>d.assignment_id===a.id)||((buzzText[a.id]??makeProviderBuzz(caseItem,p?.business_name||'provider',technicalBrief))!==providerDrafts.find(d=>d.assignment_id===a.id)?.message)||!providerSmsContacts.some(p=>p.providerId===a.provider_id&&p.enabled)||!['proposed','contacted','needs_clarification','quote_requested'].includes(a.state)} onClick={()=>sendSms('provider',a.id)}>Send provider SMS via Wasiliana</button>}
+    <div className="coordinator-wa-actions">
+     <strong>WhatsApp provider notification</strong>
+     <p className="coordinator-help">Uses the reviewed saved technical BUZZ, not the customer's intake transcript. Opens WhatsApp for staff to send manually; no automatic delivery claim.</p>
+     <button type="button" disabled={busy||!providerDrafts.some(d=>d.assignment_id===a.id)||((buzzText[a.id]??makeProviderBuzz(caseItem,p?.business_name||'provider',technicalBrief))!==providerDrafts.find(d=>d.assignment_id===a.id)?.message)||!providerSmsContacts.some(p=>p.providerId===a.provider_id&&p.whatsappEnabled)||!['proposed','contacted','needs_clarification','quote_requested'].includes(a.state)} onClick={()=>openReviewedWhatsApp('provider',a.id)}><ExternalLink size={15}/> Open provider WhatsApp</button>
+     {!providerSmsContacts.some(p=>p.providerId===a.provider_id&&p.whatsappEnabled)&&<small>Provider WhatsApp requires separately recorded opt-in. An SMS opt-in alone is not sufficient.</small>}
+    </div>
     {!providerSmsContacts.some(p=>p.providerId===a.provider_id&&p.enabled)&&<small>Provider SMS requires documented opt-in and a private mobile number.</small>}
     {!providerDrafts.some(d=>d.assignment_id===a.id)&&!smsAttempts.some(s=>s.assignment_id===a.id)&&<small>Save the provider BUZZ draft to unlock SMS sending.</small>}
     {!smsEnabled&&<small>Coordinator SMS sending is not activated.</small>}
@@ -237,7 +303,7 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
     <button disabled={busy} onClick={()=>copyUpdate(u.message)}><Copy size={14}/> Copy message</button>
     {u.channel==='sms'&&<>{!caseItem.notifyOptIn&&<small>Customer has not opted in to SMS notifications.</small>}{smsAttempts.filter(s=>s.customer_update_id===u.id).map(s=><small key={s.id}>{s.gateway==='wasiliana'?'Wasiliana':'SMSLeopard'} API: {s.state} (HTTP {s.http_status||'unknown'}) · attempt {s.id.slice(0,8)}</small>)}
     {!smsAttempts.some(s=>s.customer_update_id===u.id)&&<button className="coordinator-send-sms" disabled={busy||!smsEnabled||!smsReady||!caseItem.notifyOptIn||!caseItem.canContact} onClick={()=>sendSms('customer',u.id)}>Send SMS now — via Wasiliana</button>}</>}
-    {u.channel==='whatsapp'&&caseItem.canContact&&<button disabled={busy} onClick={()=>openWhatsApp(u.message)}><ExternalLink size={14}/> Open WhatsApp</button>}
+    {u.channel==='whatsapp'&&caseItem.canContact&&<button disabled={busy||!caseItem.whatsappOptIn} onClick={()=>openReviewedWhatsApp('customer',u.id)}><ExternalLink size={14}/> Open customer WhatsApp</button>}{u.channel==='whatsapp'&&!caseItem.whatsappOptIn&&<small>Customer has not opted in to WhatsApp updates.</small>}
     {u.channel!=='sms'&&<button disabled={busy} onClick={()=>{if(window.confirm('Have you actually delivered this update to the customer using '+u.channel+'?'))action({action:'customer_update_mark_sent',updateId:u.id},'Manual customer update recorded')}}>Confirm manual delivery</button>}
    </div>}
   </div>)}</div>}
