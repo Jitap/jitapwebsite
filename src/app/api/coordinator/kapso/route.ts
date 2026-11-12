@@ -66,7 +66,7 @@ export async function POST(req:NextRequest){
    return reply({error:'Booking confirmation requires an accepted provider, selected date/time and customer WhatsApp consent. Existing provider-app bookings are handled separately.'},409);
   }
   const result=await dispatchKapsoQueue(1,c.source_id).catch(()=>null);
-  return reply({ok:true,confirmation,result,message:result&&'submitted' in result&&result.submitted>0
+  return reply({ok:true,confirmation,result,message:result&&'submitted' in result&&(result.submitted??0)>0
    ?'Kapso accepted the customer booking WhatsApp; receipt delivery is pending.'
    :'Booking event already queued or submission pending; check event status before any further attempt.'});
  }
