@@ -94,6 +94,6 @@ assert.match(sql,/unique \(assignment_id,channel\)/,'Notification jobs must be u
 assert.match(sql,/for update skip locked/i,'Queue workers must not double-claim jobs');
 assert.match(sql,/after insert or update of state/i,'Alert queue must be event driven');
 assert.match(template,/type:'template'/,'Business initiated WhatsApp messages require approved templates');
-assert.match(workflow,/Send provider WhatsApp now via Kapso/);
+assert.match(workflow,/Send eligible WhatsApp via Kapso/,'SOC can send a real approved milestone');
 assert.match(workflow,/Send customer WhatsApp now via Kapso/);
 console.log('PASS SOC authorization, origin, protected cron, consent and notification contracts');
