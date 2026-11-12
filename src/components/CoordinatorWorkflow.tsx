@@ -13,11 +13,6 @@ type Update={id:string;kind:string;channel:'whatsapp'|'sms'|'phone';message:stri
 type Case={id:string;reference:string;category:string;description:string;area:string;phone:string;status:string;canContact:boolean;whatsappOptIn:boolean;source_kind:string;name:string;locationLabel:string;notifyOptIn:boolean;preferredDate?:string;preferredTime?:string;jobStatus?:string|null;providerName?:string|null;appointmentId?:string|null};
 const responseStates=[['contacted','Contacted'],['accepted','Accepted'],['declined','Declined'],['needs_clarification','Needs clarification'],['quote_requested','Quote requested'],['quote_received','Quote received'],['cancelled','Cancelled']] as const;
 const updateKinds=[['request_received','Request received'],['provider_search','Searching for provider'],['provider_found','Provider found'],['quote_update','Quotation update'],['scheduled','Scheduled'],['progress','Job progress'],['completion','Completion'],['clarification','Clarification needed']] as const;
-function toKenyanWhatsApp(phone:string){
- const n=phone.replace(/\D/g,'');
- const number=n.startsWith('0')?'254'+n.slice(1):n;
- return /^254[17]\d{8}$/.test(number)?number:null;
-}
 function conciseReportedFault(raw:string){
  const text=raw.replace(/(?:\+?254|0)[17]\d{8}/g,'[phone withheld]').replace(/https?:\/\/\S+/gi,'[link withheld]').replace(/\s+/g,' ').trim();
  // Older requests retain their question-and-answer transcript in the ticket, not the provider alert.
@@ -39,7 +34,7 @@ function makeProviderBuzz(c:Case,provider:string,technical?:TechnicalBrief|null)
   ...(scope?['Preliminary scope: '+scope]:[]),
   'Location: '+place,
   'Preferred visit: '+date+' EAT (subject to confirmation)',
-  'Review and respond via the secure link. Accepting the request follows the booking process; visit time is not confirmed until JiTap confirms.'
+  'Reply to JiTap to accept, decline or request clarification. A preferred time is not a confirmed appointment.'
  ];
  return fields.join('\n').slice(0,600);
 }
@@ -194,11 +189,7 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
   }catch(error){setFeedback(error instanceof Error?error.message:'Could not open WhatsApp')}
   finally{setBusy(false)}
  }
- function openWhatsApp(body:string){
-  const to=toKenyanWhatsApp(caseItem.phone);
-  if(!to){setFeedback('Confirm the customer phone before opening WhatsApp.');return}
-  window.open('https://wa.me/'+to+'?text='+encodeURIComponent(body),'_blank','noopener,noreferrer');
- }
+
  if(loading)return <section className="coordinator-workflow">Loading provider workflow…</section>;
  return <section className="coordinator-workflow">
   <div className="coordinator-contact-summary"><h3>Customer contact</h3><dl><dt>Service ID</dt><dd className="coordinator-service-id">JT-{caseItem.reference}</dd><dt>Name</dt><dd>{caseItem.name||'Not supplied (historical enquiry)'}</dd><dt>Mobile</dt><dd>{caseItem.phone||'Not supplied'}</dd><dt>Service location</dt><dd>{caseItem.locationLabel||caseItem.area||'Not supplied'}</dd><dt>SMS updates</dt><dd>{caseItem.notifyOptIn?'Opted in':'Not opted in / not recorded'}</dd></dl></div>
