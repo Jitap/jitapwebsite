@@ -3,6 +3,10 @@ on:
   pull_request:
     paths:
       - 'src/lib/provider-alerts.ts'
+      - 'src/lib/coordinator-session.ts'
+      - 'src/lib/coordinator-server.ts'
+      - 'src/app/api/coordinator/auth/**'
+      - 'src/components/CoordinatorDashboard.tsx'
       - 'src/lib/service-followup-dispatcher.ts'
       - 'src/app/api/coordinator/service-followup/**'
       - 'src/app/api/coordinator/provider-reminder/**'
@@ -23,6 +27,10 @@ on:
     branches: [main]
     paths:
       - 'src/lib/provider-alerts.ts'
+      - 'src/lib/coordinator-session.ts'
+      - 'src/lib/coordinator-server.ts'
+      - 'src/app/api/coordinator/auth/**'
+      - 'src/components/CoordinatorDashboard.tsx'
       - 'src/lib/service-followup-dispatcher.ts'
       - 'src/app/api/coordinator/service-followup/**'
       - 'src/app/api/coordinator/provider-reminder/**'

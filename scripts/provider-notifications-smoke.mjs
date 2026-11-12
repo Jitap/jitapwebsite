@@ -101,6 +101,26 @@ assert.ok(createRoute.includes('sendProviderCreatedBookingSms'),'Provider-create
 assert.ok(trackingPage.includes('View full service details'),'Tracking landing must invite customer login/signup');
 assert.ok(trackingPage.includes('/api/track/preview'),'Signed preview must precede private ticket');
 assert.ok(providerForm.includes('data.smsStatus'),'Provider calendar must surface SMS gateway status');
+const socUnauthenticated=await fetch(base+'/api/coordinator/auth',{cache:'no-store',signal:AbortSignal.timeout(7000)});
+assert.equal(socUnauthenticated.status,401,'SOD must require a valid, unrevoked staff session');
+const forgedSocLogout=await fetch(base+'/api/coordinator/auth',{method:'POST',
+ headers:{'content-type':'application/json','origin':'https://malicious.example'},
+ body:JSON.stringify({action:'logout'}),signal:AbortSignal.timeout(7000)});
+assert.equal(forgedSocLogout.status,403,'SOD logout must require same origin');
+const sessionCode=readFileSync('src/lib/coordinator-session.ts','utf8');
+const coordinatorCode=readFileSync('src/lib/coordinator-server.ts','utf8');
+const socAuthCode=readFileSync('src/app/api/coordinator/auth/route.ts','utf8');
+const socMigration=readFileSync('supabase/migrations/20261112_persistent_soc_sessions.sql','utf8');
+assert.ok(sessionCode.includes('randomBytes(32)'),'SOC sessions need securely random opaque tokens');
+assert.ok(sessionCode.includes("createHash('sha256')"),'SOC tokens must be hashed in DB');
+assert.ok(sessionCode.includes('SOC_SESSION_SECONDS=90*86400'),'SOC session must persist for 90 days of inactivity');
+assert.ok(sessionCode.includes('revokeSocSession'),'SOC logout must revoke persistent session');
+assert.ok(coordinatorCode.includes("token.startsWith('soc_')"),'SOD authorization must accept new persistent sessions');
+assert.ok(socAuthCode.includes('issueSocSession(req,staff)'),'SOD must upgrade existing valid one-hour sessions');
+assert.ok(socAuthCode.includes('issueSocSession(req,allowed)'),'OTP login must create persistent SOC session');
+assert.ok(socAuthCode.includes('renewSocSession(req,response)'),'SOD login session must renew with use');
+assert.ok(socMigration.includes('enable row level security'),'SOD session table must be private');
+assert.ok(socMigration.includes('revoked_at'),'Explicit logout must allow immediate session revocation');
 const cron=await fetch(base+'/api/cron/kapso',{signal:AbortSignal.timeout(7000)});
 assert.equal(cron.status,401,'Automated provider dispatch requires protected cron credentials');
 
