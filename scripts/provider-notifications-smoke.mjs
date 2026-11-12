@@ -58,6 +58,28 @@ assert.match(followupDispatcher,/consentStillValid/,'Recheck consent at send');
 assert.match(followupDispatcher,/notification_outdated/,'Do not send stale ETA updates');
 assert.match(templateSource,/KAPSO_TEMPLATE_ON_MY_WAY/,'On My Way must use a separately approved template');
 assert.ok(!nativeAccept.includes('notifyProviderAccepted('),'Provider acceptance must not send duplicate customer SMS');
+const followupUnauthenticated=await fetch(base+'/api/coordinator/service-followup',{method:'POST',
+ headers:{'content-type':'application/json','origin':'https://'+base.host},
+ body:JSON.stringify({caseId:'00000000-0000-0000-0000-000000000001',eventId:'00000000-0000-0000-0000-000000000002',confirm:true}),
+ signal:AbortSignal.timeout(7000)});
+assert.equal(followupUnauthenticated.status,401,'SOC follow-up WhatsApp requires verified coordinator session');
+const templateCode=readFileSync('src/lib/provider-whatsapp-template.ts','utf8');
+const eventSql=readFileSync('supabase/migrations/20261112_communication_followups_eta_soc_escalation.sql','utf8');
+const consentDispatcher=readFileSync('src/lib/service-followup-dispatcher.ts','utf8');
+const reminderRoute=readFileSync('src/app/api/coordinator/provider-reminder/route.ts','utf8');
+const receiptCode=readFileSync('src/app/api/webhooks/kapso/route.ts','utf8');
+assert.ok(templateCode.includes("eta:'KAPSO_TEMPLATE_CUSTOMER_PROGRESS'"));
+assert.ok(templateCode.includes("on_my_way:'KAPSO_TEMPLATE_CUSTOMER_PROGRESS'"));
+assert.ok(templateCode.includes("arrived:'KAPSO_TEMPLATE_CUSTOMER_PROGRESS'"));
+assert.ok(templateCode.includes("completed:'KAPSO_TEMPLATE_CUSTOMER_PROGRESS'"));
+assert.ok(templateCode.includes("provider_accepted:'KAPSO_TEMPLATE_PROVIDER_ACCEPTED'"));
+assert.match(eventSql,/event_key text not null unique/);
+assert.match(eventSql,/after insert or update of status,provider_eta_at/);
+assert.match(consentDispatcher,/consentStillValid/);
+assert.match(consentDispatcher,/notification_outdated/);
+assert.match(reminderRoute,/Date\.now\(\)-Date\.parse\(a\.assigned_at\)<5\*60000/);
+assert.match(reminderRoute,/jitap_soc_provider_reminders/);
+assert.match(receiptCode,/jitap_followup_record_receipt/);
 const cron=await fetch(base+'/api/cron/kapso',{signal:AbortSignal.timeout(7000)});
 assert.equal(cron.status,401,'Automated provider dispatch requires protected cron credentials');
 
