@@ -3,6 +3,7 @@ import {z} from 'zod';
 import {reply,requireCoordinator,supabasePrivate,validOrigin} from '@/lib/coordinator-server';
 import {wasilianaSettings} from '@/lib/wasiliana';
 import {dispatchProviderAlerts} from '@/lib/provider-alerts';
+import {dispatchKapsoQueue} from '@/lib/kapso-dispatcher';
 import {providerWhatsAppReady,customerSocWhatsAppReady} from '@/lib/provider-whatsapp-template';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -82,6 +83,16 @@ export async function POST(req:NextRequest){
    if(assignment?.id){
     const notifications=await dispatchProviderAlerts(2,assignment.id).catch(()=>({error:'Notifications queued; scheduled dispatcher will process them.'}));
     return reply({...result,notifications});
+   }
+  }
+  if(d.action==='provider_response'&&d.state==='accepted'){
+   // SOC acceptance creates a genuine booking notification through the DB event
+   // trigger. Attempt prompt dispatch; the protected cron reconciles queued work.
+   const cases=await supabasePrivate<{source_kind:string;source_id:string}[]>('coordinator_cases?select=source_kind,source_id&id=eq.'+d.caseId+'&limit=1').catch(()=>[]);
+   const source=cases[0];
+   if(source?.source_kind==='website_request'){
+    const notification=await dispatchKapsoQueue(2,source.source_id).catch(()=>({ready:false,reason:'scheduled_retry'}));
+    return reply({...result,bookingWhatsApp:notification});
    }
   }
   return reply(result);
