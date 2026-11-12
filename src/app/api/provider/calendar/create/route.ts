@@ -4,7 +4,7 @@ import {z} from 'zod';
 import {getProviderSession} from '@/lib/provider-session-server';
 import {sameOrigin} from '@/lib/jitap-auth';
 import {supabasePrivate} from '@/lib/coordinator-server';
-import {sendProviderCreatedBookingSms} from '@/lib/provider-booking-acquisition';
+import {sendProviderCreatedBookingSms,createTrackingInvite} from '@/lib/provider-booking-acquisition';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
 const headers={'Cache-Control':'private,no-store','X-Robots-Tag':'noindex'};
@@ -65,6 +65,6 @@ export async function POST(req:NextRequest){
    consentConfirmed:d.smsNotificationConsent
   }).catch(()=>({status:'unknown' as const,reason:'sms_dispatch_unavailable'}));
   after(async()=>{await dispatchKapsoQueue(5).catch(()=>{})});
-  return send({ok:true,...created,smsStatus:sms.status,smsReason:'reason' in sms?sms.reason:undefined});
+  return send({ok:true,...created,trackingLink:createTrackingInvite(created.requestId).link,smsStatus:sms.status,smsReason:'reason' in sms?sms.reason:undefined});
  }catch{return send({error:'Booking could not be saved. Please retry.'},503)}
 }
