@@ -2,6 +2,7 @@ import {NextRequest} from 'next/server';
 import {z} from 'zod';
 import {reply,requireCoordinator,supabasePrivate,validOrigin} from '@/lib/coordinator-server';
 import {wasilianaSettings} from '@/lib/wasiliana';
+import {dispatchProviderAlerts} from '@/lib/provider-alerts';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
 const uuid=z.string().uuid();
@@ -71,6 +72,15 @@ export async function POST(req:NextRequest){
    case 'customer_update_mark_sent':params.p_update_id=d.updateId;break;
   }
   const result=await supabasePrivate<Record<string,unknown>>('rpc/coordinator_workflow_action',{method:'POST',body:JSON.stringify(params)});
+  if(d.action==='assign_provider'){
+   const assignment=(result as {assignment?:{id?:string}}).assignment;
+   // Provider assignment enqueues alerts in Supabase; send immediately where possible.
+   // Any crash/timeout leaves an auditable queue for the scheduled dispatcher.
+   if(assignment?.id){
+    const notifications=await dispatchProviderAlerts(2,assignment.id).catch(()=>({error:'Notifications queued; scheduled dispatcher will process them.'}));
+    return reply({...result,notifications});
+   }
+  }
   return reply(result);
  }catch(e){
   if(e instanceof SyntaxError)return reply({error:'Invalid request'},400);
