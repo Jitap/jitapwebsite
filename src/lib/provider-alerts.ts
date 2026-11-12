@@ -36,6 +36,12 @@ async function updateAlert(id:string,state:string,reason:string|null=null,messag
 async function handleAlert(job:Alert){
  const assignments=await supabasePrivate<Assignment[]>('coordinator_provider_assignments?select=id,case_id,provider_id,state,assigned_by&id=eq.'+job.assignment_id+'&limit=1');
  const a=assignments[0];
+ // If SOC already submitted an SMS using its original secure ticket link,
+ // treat the automated SMS as satisfied: never generate another link or duplicate send.
+ if(a&&job.channel==='sms'){
+  const prior=await supabasePrivate<SmsAttempt[]>('coordinator_sms_attempts?select=id&assignment_id=eq.'+a.id+'&limit=1');
+  if(prior.length){await updateAlert(job.id,'skipped','sms_previously_attempted_via_soc');return 'skipped'}
+ }
  if(!a||!['proposed','contacted','needs_clarification','quote_requested'].includes(a.state)){
   await updateAlert(job.id,'skipped','assignment_not_pending');return 'skipped';
  }
