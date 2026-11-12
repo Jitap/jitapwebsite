@@ -105,6 +105,7 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
  },[load]);
  const accepted=assignments.find(x=>x.state==='accepted');
  const acceptedName=providers.find(p=>p.id===accepted?.provider_id)?.business_name;
+ const preferredVisitFuture=!!(caseItem.preferredDate&&caseItem.preferredTime&&/^\\d{4}-\\d{2}-\\d{2}$/.test(caseItem.preferredDate)&&/^\\d{2}:\\d{2}$/.test(caseItem.preferredTime)&&Date.parse(caseItem.preferredDate+'T'+caseItem.preferredTime+':00+03:00')>Date.now());
  const matches=useMemo(()=>providers.filter(p=>
   providerMatchesTrade(caseItem.category,p.service_categories)&&
   p.service_areas.some(area=>area.toLowerCase()===caseItem.area.toLowerCase())
@@ -202,7 +203,7 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
   finally{setBusy(false)}
  }
  async function confirmAcceptedBookingWhatsApp(){
-  if(!accepted||!caseItem.whatsappOptIn||!caseItem.preferredDate||!caseItem.preferredTime)return;
+  if(!accepted||!caseItem.whatsappOptIn||!preferredVisitFuture)return;
   if(!window.confirm('Confirm this accepted provider booking and send the approved JiTap booking WhatsApp to the opted-in customer? This is a real notification, not a test preview.'))return;
   setBusy(true);setFeedback('');
   try{
@@ -232,9 +233,9 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
    {accepted&&caseItem.source_kind==='website_request'&&!caseItem.jobStatus&&!lifecycle.events.some(e=>e.template_kind==='booking'&&e.event_key?.startsWith('sod-booking:'))&&<div className="coordinator-wa-actions">
     <strong>Already-accepted SOC booking</strong>
     <p className="coordinator-help">This provider was accepted before the customer booking WhatsApp event was connected. Confirm the booking once to create the approved notification for this customer.</p>
-    <button type="button" className="coordinator-send-sms" disabled={busy||!lifecycle.enabled||!lifecycle.configured||!lifecycle.signedWebhookConfigured||!caseItem.whatsappOptIn||!caseItem.preferredDate||!caseItem.preferredTime} onClick={confirmAcceptedBookingWhatsApp}>Confirm accepted booking &amp; send customer WhatsApp</button>
+    <button type="button" className="coordinator-send-sms" disabled={busy||!lifecycle.enabled||!lifecycle.configured||!lifecycle.signedWebhookConfigured||!caseItem.whatsappOptIn||!preferredVisitFuture} onClick={confirmAcceptedBookingWhatsApp}>Confirm accepted booking &amp; send customer WhatsApp</button>
     {!caseItem.whatsappOptIn&&<small>Customer WhatsApp opt-in not recorded.</small>}
-    {(!caseItem.preferredDate||!caseItem.preferredTime)&&<small>Confirm the requested appointment date and time first.</small>}
+    {!preferredVisitFuture&&<small>The preferred appointment is missing or already in the past. Set a future appointment before sending a booking confirmation; do not send a false confirmation for an expired test.</small>}
    </div>}
    <button type="button" className="coordinator-send-sms" disabled={busy||!lifecycle.dueCount||!lifecycle.enabled||!lifecycle.configured||!lifecycle.signedWebhookConfigured} onClick={dispatchDueLifecycle}>Send due WhatsApp now ({lifecycle.dueCount})</button>
    <p className="coordinator-help">Only due, consented queued events can be sent. Past, skipped, delivered and future reminders are not resent.</p>
