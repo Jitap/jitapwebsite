@@ -31,7 +31,7 @@ export function verifyTrackingInvite(reference:string,invite:string){
 type Existing={id:string;state:string};
 export async function sendProviderCreatedBookingSms(input:{
  requestId:string;providerUserId:string;customerPhone:string;customerName:string;
- jobTitle:string;count:number;consentConfirmed:boolean
+ jobTitle:string;providerName:string;count:number;consentConfirmed:boolean
 }){
  const phone=phone254(input.customerPhone);
  if(!input.consentConfirmed||!phone)return {status:'skipped' as const};
@@ -48,7 +48,8 @@ export async function sendProviderCreatedBookingSms(input:{
  const title=input.jobTitle.replace(/[\n\r\t]+/g,' ').trim().slice(0,60);
  const first=input.customerName.trim().split(/\s+/)[0]?.replace(/[^\p{L}'-]/gu,'').slice(0,24)||'there';
  const suffix=input.count>1?' ('+input.count+' scheduled visits)':'';
- const text='JiTap: Habari '+first+', your provider has recorded your '+title+' booking'+suffix+'. Ref: '+reference+'. Track your booking: '+link;
+ const providerName=input.providerName.replace(/[\r\n\t]+/g,' ').replace(/\s+/g,' ').trim().slice(0,80)||'JiTap service provider';
+ const text='JiTap: Habari '+first+', '+providerName+' has recorded your '+title+' booking'+suffix+'. Ref: '+reference+'. Track your booking: '+link;
  let state:'submitted'|'rejected'|'unknown'='unknown',id:string|null=null,err:string|null=null;
  try{
   const sent=await sendWasilianaSms(phone,text);
