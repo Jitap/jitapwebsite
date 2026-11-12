@@ -24,7 +24,7 @@ assert.equal(confirmUnauthenticated.status,401,'SOD booking confirmation must re
 const acceptedTrigger=readFileSync('supabase/migrations/20261112_sod_accepted_booking_whatsapp.sql','utf8');
 const backfill=readFileSync('supabase/migrations/20261112_sod_reconcile_existing_booking_whatsapp.sql','utf8');
 const providerSource=readFileSync('src/lib/provider-alerts.ts','utf8');
-assert.match(acceptedTrigger,/new\\.state<>'accepted'/,'SOD booking trigger must reject non-accepted states');
+assert.ok(acceptedTrigger.includes("new.state<>'accepted'"),'SOD booking trigger must reject non-accepted states');
 assert.match(acceptedTrigger,/jitap_kapso_queue_event/,'Use five approved booking templates');
 assert.match(acceptedTrigger,/preferredDate/,'Do not confirm unscheduled requests');
 assert.match(backfill,/whatsappOptIn/,'Explicit confirmations require customer WhatsApp consent');
