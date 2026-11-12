@@ -3,7 +3,7 @@ import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {Copy,ExternalLink,RefreshCw,MessageSquare,UserRoundCheck,AlertCircle} from 'lucide-react';
 import {providerMatchesTrade} from '@/lib/trade-categories';
 
-type LifecycleEvent={id:string;template_kind:string;status:string;due_at:string;delivered_at:string|null;read_at:string|null;last_error:string|null};
+type LifecycleEvent={id:string;event_key:string;template_kind:string;status:string;due_at:string;delivered_at:string|null;read_at:string|null;last_error:string|null};
 type LifecycleState={events:LifecycleEvent[];templateKinds:string[];templateIdentifiersConfigured:Record<string,boolean>;dueCount:number;enabled:boolean;configured:boolean;signedWebhookConfigured:boolean};
 type Provider={id:string;business_name:string;service_categories:string[];service_areas:string[];base_area:string|null};
 type Assignment={id:string;provider_id:string;state:string;quoted_amount_kes:number|null;notes:string|null;assigned_at:string;responded_at:string|null};
@@ -201,6 +201,19 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
   }catch(e){setFeedback(e instanceof Error?e.message:'Unable to dispatch approved lifecycle templates')}
   finally{setBusy(false)}
  }
+ async function confirmAcceptedBookingWhatsApp(){
+  if(!accepted||!caseItem.whatsappOptIn||!caseItem.preferredDate||!caseItem.preferredTime)return;
+  if(!window.confirm('Confirm this accepted provider booking and send the approved JiTap booking WhatsApp to the opted-in customer? This is a real notification, not a test preview.'))return;
+  setBusy(true);setFeedback('');
+  try{
+   const response=await fetch('/api/coordinator/kapso',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({caseId:caseItem.id,action:'confirm_accepted_booking',confirm:true})});
+   const data=await response.json();
+   if(!response.ok)throw Error(data.error||'Booking confirmation not available');
+   await load();await onChanged();
+   setFeedback(data.message||'Booking notification queued. Check delivery status.');
+  }catch(e){setFeedback(e instanceof Error?e.message:'Could not confirm booking')}
+  finally{setBusy(false)}
+ }
  if(loading)return <section className="coordinator-workflow">Loading provider workflow…</section>;
  return <section className="coordinator-workflow">
   {lifecycle&&<div className="coordinator-wa-actions" aria-label="Approved WhatsApp lifecycle templates">
@@ -216,6 +229,13 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
     </div>
    })}
    {caseItem.source_kind!=='website_request'&&<p className="coordinator-help">Lifecycle templates apply to confirmed website bookings only.</p>}
+   {accepted&&caseItem.source_kind==='website_request'&&!caseItem.jobStatus&&!lifecycle.events.some(e=>e.template_kind==='booking'&&e.event_key?.startsWith('sod-booking:'))&&<div className="coordinator-wa-actions">
+    <strong>Already-accepted SOC booking</strong>
+    <p className="coordinator-help">This provider was accepted before the customer booking WhatsApp event was connected. Confirm the booking once to create the approved notification for this customer.</p>
+    <button type="button" className="coordinator-send-sms" disabled={busy||!lifecycle.enabled||!lifecycle.configured||!lifecycle.signedWebhookConfigured||!caseItem.whatsappOptIn||!caseItem.preferredDate||!caseItem.preferredTime} onClick={confirmAcceptedBookingWhatsApp}>Confirm accepted booking &amp; send customer WhatsApp</button>
+    {!caseItem.whatsappOptIn&&<small>Customer WhatsApp opt-in not recorded.</small>}
+    {(!caseItem.preferredDate||!caseItem.preferredTime)&&<small>Confirm the requested appointment date and time first.</small>}
+   </div>}
    <button type="button" className="coordinator-send-sms" disabled={busy||!lifecycle.dueCount||!lifecycle.enabled||!lifecycle.configured||!lifecycle.signedWebhookConfigured} onClick={dispatchDueLifecycle}>Send due WhatsApp now ({lifecycle.dueCount})</button>
    <p className="coordinator-help">Only due, consented queued events can be sent. Past, skipped, delivered and future reminders are not resent.</p>
   </div>}
