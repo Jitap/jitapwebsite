@@ -30,6 +30,34 @@ assert.match(acceptedTrigger,/preferredDate/,'Do not confirm unscheduled request
 assert.match(backfill,/whatsappOptIn/,'Explicit confirmations require customer WhatsApp consent');
 assert.match(backfill,/event_key='sod-booking:'/,'Do not duplicate booking notifications');
 assert.match(providerSource,/sms_previously_attempted_via_soc/,'Already-sent provider SMS must not conflict with existing links');
+const reminder=await fetch(base+'/api/coordinator/provider-reminder',{method:'POST',
+ headers:{'content-type':'application/json','origin':'https://'+base.host},
+ body:JSON.stringify({caseId:'00000000-0000-0000-0000-000000000001',assignmentId:'00000000-0000-0000-0000-000000000002',confirm:true}),
+ signal:AbortSignal.timeout(7000)});
+assert.equal(reminder.status,401,'SOC SMS reminder must require authentication');
+const forgedReminder=await fetch(base+'/api/coordinator/provider-reminder',{method:'POST',
+ headers:{'content-type':'application/json','origin':'https://malicious.example'},
+ body:JSON.stringify({caseId:'00000000-0000-0000-0000-000000000001',assignmentId:'00000000-0000-0000-0000-000000000002',confirm:true}),
+ signal:AbortSignal.timeout(7000)});
+assert.equal(forgedReminder.status,403,'SOC SMS reminder must enforce same-origin');
+const etaUnauthenticated=await fetch(base+'/api/provider/calendar',{method:'POST',
+ headers:{'content-type':'application/json','origin':'https://'+base.host},
+ body:JSON.stringify({action:'confirm_eta',appointmentId:'00000000-0000-0000-0000-000000000001',eta:'2026-11-19T12:00:00+03:00'}),
+ signal:AbortSignal.timeout(7000)});
+assert.equal(etaUnauthenticated.status,401,'ETA updates must require provider session');
+const followupSql=readFileSync('supabase/migrations/20261112_communication_followups_eta_soc_escalation.sql','utf8');
+const smsFirstSql=readFileSync('supabase/migrations/20261112_sms_first_whatsapp_followups.sql','utf8');
+const followupDispatcher=readFileSync('src/lib/service-followup-dispatcher.ts','utf8');
+const templateSource=readFileSync('src/lib/provider-whatsapp-template.ts','utf8');
+const nativeAccept=readFileSync('src/app/api/provider/workspace/route.ts','utf8');
+assert.match(followupSql,/event_key text not null unique/,'Follow-up event must have unique key');
+assert.match(followupSql,/after insert or update of status,provider_eta_at/,'Provider status and ETA must trigger communication');
+assert.match(followupSql,/jitap_claim_followup_events/,'Private queue must claim with row locks');
+assert.ok(smsFirstSql.includes("select new.id,new.case_id,'sms'"),'BUZZ contact starts with SMS only');
+assert.match(followupDispatcher,/consentStillValid/,'Recheck consent at send');
+assert.match(followupDispatcher,/notification_outdated/,'Do not send stale ETA updates');
+assert.match(templateSource,/KAPSO_TEMPLATE_ON_MY_WAY/,'On My Way must use a separately approved template');
+assert.ok(!nativeAccept.includes('notifyProviderAccepted('),'Provider acceptance must not send duplicate customer SMS');
 const cron=await fetch(base+'/api/cron/kapso',{signal:AbortSignal.timeout(7000)});
 assert.equal(cron.status,401,'Automated provider dispatch requires protected cron credentials');
 
