@@ -102,8 +102,10 @@ async function handleAlert(job:Alert){
  }catch{err='whatsapp_transport_uncertain_no_auto_retry'}
  await updateAlert(job.id,state,err,id);return state;
 }
-export async function dispatchProviderAlerts(limit=6,assignmentId?:string){
- const jobs=await supabasePrivate<Alert[]>('rpc/jitap_claim_provider_alerts',{method:'POST',body:JSON.stringify({p_limit:limit,p_assignment_id:assignmentId||null})});
+export async function dispatchProviderAlerts(limit=6,assignmentId?:string,channel?:'whatsapp'){
+ const endpoint=channel==='whatsapp'?'rpc/jitap_claim_provider_whatsapp':'rpc/jitap_claim_provider_alerts';
+ const payload=channel==='whatsapp'?{p_assignment_id:assignmentId}:{p_limit:limit,p_assignment_id:assignmentId||null};
+ const jobs=await supabasePrivate<Alert[]>(endpoint,{method:'POST',body:JSON.stringify(payload)});
  const results:Record<string,number>={claimed:jobs.length,submitted:0,rejected:0,unknown:0,blocked:0,skipped:0};
  for(const job of jobs){
   try{const state=await handleAlert(job);results[state]=(results[state]||0)+1}
