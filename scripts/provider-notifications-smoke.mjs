@@ -8,6 +8,17 @@ const rejected=await fetch(base+'/api/coordinator/whatsapp',{method:'POST',heade
 assert.equal(rejected.status,401,'SOC WhatsApp cannot be used without verified staff session');
 const forged=await fetch(base+'/api/coordinator/whatsapp',{method:'POST',headers:{'content-type':'application/json','origin':'https://malicious.example'},body:JSON.stringify(tokenless),signal:AbortSignal.timeout(7000)});
 assert.equal(forged.status,403,'WhatsApp endpoint requires same-origin request');
+const kapsoRead=await fetch(base+'/api/coordinator/kapso?caseId=00000000-0000-0000-0000-000000000001',{signal:AbortSignal.timeout(7000)});
+assert.equal(kapsoRead.status,401,'Booking lifecycle template statuses must require SOC authentication');
+const kapsoSend=await fetch(base+'/api/coordinator/kapso',{method:'POST',headers:{'content-type':'application/json','origin':'https://'+base.host},body:JSON.stringify({caseId:'00000000-0000-0000-0000-000000000001',action:'dispatch_due',confirm:true}),signal:AbortSignal.timeout(7000)});
+assert.equal(kapsoSend.status,401,'Manual lifecycle sends must require SOC authentication');
+const kapsoSource=readFileSync('src/app/api/coordinator/kapso/route.ts','utf8');
+const kapsoClaim=readFileSync('supabase/migrations/20261112_kapso_case_scoped_soc_dispatch.sql','utf8');
+for(const kind of ['booking','reminder','cancellation','rematch','reschedule'])
+ assert.ok(kapsoSource.includes("'"+kind+"'"),'All five approved templates must appear in SOD: '+kind);
+assert.match(kapsoClaim,/consent_confirmed=true/,'Due-only template sending must require customer consent');
+assert.match(kapsoClaim,/due_at<=now\(\)/,'Future reminders must not send early');
+assert.match(kapsoClaim,/for update skip locked/i,'SOC and cron must never double-claim the same booking event');
 const cron=await fetch(base+'/api/cron/kapso',{signal:AbortSignal.timeout(7000)});
 assert.equal(cron.status,401,'Automated provider dispatch requires protected cron credentials');
 
