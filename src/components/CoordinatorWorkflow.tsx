@@ -208,6 +208,18 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
   }catch(e){setFeedback(e instanceof Error?e.message:'Unable to dispatch approved lifecycle templates')}
   finally{setBusy(false)}
  }
+ async function sendApprovedFollowup(eventId:string){
+  if(!window.confirm('Send this real approved WhatsApp service update now? This is a paid transaction and requires the correct recipient opt-in.'))return;
+  setBusy(true);setFeedback('');
+  try{
+   const response=await fetch('/api/coordinator/service-followup',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({caseId:caseItem.id,eventId,confirm:true})});
+   const result=await response.json();await load();
+   if(!response.ok)throw Error(result.error||result.message||'WhatsApp not confirmed');
+   setFeedback(result.message||'WhatsApp submitted to Kapso.');
+  }catch(e){setFeedback(e instanceof Error?e.message:'WhatsApp submission unavailable')}
+  finally{setBusy(false)}
+ }
  async function sendProviderReminder(assignmentId:string){
   if(!window.confirm('Send one actual SOC follow-up SMS to this unanswered provider? They will be reminded to use the original secure BUZZ link.'))return;
   setBusy(true);setFeedback('');
@@ -269,6 +281,7 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
     <strong>{e.recipient_role==='provider'?'Provider':'Customer'} · WhatsApp · {e.event_type.replaceAll('_',' ')}</strong>
     <span className="coordinator-status">{e.status}</span>
     <small>{new Date(e.created_at).toLocaleString('en-KE',{timeZone:'Africa/Nairobi'})}{e.error_code?' · '+e.error_code.replaceAll('_',' '):''}</small>
+    {['pending','blocked'].includes(e.status)&&<button type="button" disabled={busy} onClick={()=>sendApprovedFollowup(e.id)}>Send eligible WhatsApp via Kapso</button>}
    </div>)}
    {!requestReceipts.length&&!lifecycle?.events.length&&!serviceFollowups.length&&<p className="coordinator-help">No notification events recorded for this request.</p>}
    {serviceFollowups.some(e=>e.status==='blocked')&&<p className="coordinator-help">Some status WhatsApp messages require separate approved Utility templates. They are recorded but not sent while approval is missing.</p>}
@@ -347,8 +360,8 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
      <strong>Provider WhatsApp follow-up</strong>
      <p className="coordinator-help">Initial contact is SMS only. Provider acceptance creates a separate WhatsApp acknowledgement event. Its status appears in Service communications; Meta approval is required for that specific utility message.</p>
      {providerAlerts.filter(n=>n.assignment_id===a.id).map(n=><small key={n.channel}>{n.channel.toUpperCase()}: <strong>{n.state}</strong>{n.last_error?' · '+n.last_error.replaceAll('_',' '):''}</small>)}
-     <button type="button" disabled={busy||!providerWhatsAppReady||!providerSmsContacts.some(p=>p.providerId===a.provider_id&&p.whatsappEnabled)||providerAlerts.some(n=>n.assignment_id===a.id&&n.channel==='whatsapp'&&['submitted','sending','rejected','unknown','skipped'].includes(n.state))||!['proposed','contacted','needs_clarification','quote_requested'].includes(a.state)} onClick={()=>sendWhatsApp('provider',a.id)}>Send legacy provider BUZZ WhatsApp (if approved)</button>
-     {!providerWhatsAppReady&&<small>Approved provider BUZZ template must be configured in Kapso/Meta before API delivery can start.</small>}
+     <small>After acceptance, use the provider WhatsApp event in the Service communications timeline. Initial BUZZes use SMS only.</small>
+     {!providerWhatsAppReady&&<small>The original initial-BUZZ WhatsApp template is not used by the new SMS-first sequence.</small>}
      {!providerSmsContacts.some(p=>p.providerId===a.provider_id&&p.whatsappEnabled)&&<small>Provider WhatsApp requires separately recorded opt-in. An SMS opt-in alone is not sufficient.</small>}
     </div>
     {!providerSmsContacts.some(p=>p.providerId===a.provider_id&&p.enabled)&&<small>Provider SMS requires documented opt-in and a private mobile number.</small>}
