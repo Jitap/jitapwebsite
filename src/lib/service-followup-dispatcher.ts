@@ -40,8 +40,10 @@ async function consentStillValid(job:Followup):Promise<boolean>{
  const contacts=await supabasePrivate<Contact[]>('provider_notification_contacts?select=phone_e164,whatsapp_opt_in,opted_out_at&provider_id=eq.'+encodeURIComponent(assignment[0].provider_id)+'&limit=1');
  return contacts[0]?.whatsapp_opt_in===true&&!contacts[0]?.opted_out_at&&phone254(contacts[0].phone_e164)===phone;
 }
-export async function dispatchServiceFollowups(limit=4){
- const jobs=await supabasePrivate<Followup[]>('rpc/jitap_claim_followup_events',{method:'POST',body:JSON.stringify({p_limit:limit})});
+export async function dispatchServiceFollowups(limit=4,eventId?:string){
+ const jobs=await supabasePrivate<Followup[]>(eventId?'rpc/jitap_claim_one_followup':'rpc/jitap_claim_followup_events',{
+  method:'POST',body:JSON.stringify(eventId?{p_event_id:eventId}:{p_limit:limit})
+ });
  const results={claimed:jobs.length,submitted:0,blocked:0,skipped:0,expired:0,failed:0,unknown:0};
  for(const job of jobs){
   try{
