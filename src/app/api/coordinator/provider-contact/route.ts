@@ -7,7 +7,8 @@ const schema=z.object({
  providerId:z.string().trim().min(1).max(120),
  phone:z.string().trim().min(10).max(25),
  consentConfirmed:z.literal(true),
- consentSource:z.string().trim().min(5).max(300)
+ consentSource:z.string().trim().min(5).max(300),
+ whatsappConsent:z.boolean().default(false)
 });
 export async function POST(req:NextRequest){
  if(!validOrigin(req))return reply({error:'Invalid origin'},403);
@@ -22,6 +23,13 @@ export async function POST(req:NextRequest){
    p_actor_email:staff.email,p_provider_id:data.providerId,
    p_phone:data.phone,p_consent_confirmed:true,p_consent_source:data.consentSource
   })});
-  return reply({ok:true,message:'Provider contact saved privately with SMS consent.'});
+  // WhatsApp is a distinct, affirmative opt-in from SMS.
+  if(data.whatsappConsent){
+   await supabasePrivate('provider_notification_contacts?provider_id=eq.'+encodeURIComponent(data.providerId),{
+    method:'PATCH',headers:{Prefer:'return=minimal'},
+    body:JSON.stringify({whatsapp_opt_in:true})
+   });
+  }
+  return reply({ok:true,message:data.whatsappConsent?'Provider contact saved with documented SMS and WhatsApp consent.':'Provider contact saved with SMS consent; WhatsApp remains off.'});
  }catch{return reply({error:'Could not save verified provider SMS contact.'},422)}
 }
