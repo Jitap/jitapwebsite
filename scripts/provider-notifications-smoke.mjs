@@ -125,6 +125,19 @@ assert.ok(socAuthCode.includes('issueSocSession(req,allowed)'),'OTP login must c
 assert.ok(socAuthCode.includes('renewSocSession(req,response)'),'SOD login session must renew with use');
 assert.ok(socMigration.includes('enable row level security'),'SOD session table must be private');
 assert.ok(socMigration.includes('revoked_at'),'Explicit logout must allow immediate session revocation');
+// Missing Didit live keys must never be interpreted as a failed applicant check.
+const diditClient=readFileSync('src/components/ProviderIdentityVerification.tsx','utf8');
+const diditProviderRoute=readFileSync('src/app/api/provider/identity/route.ts','utf8');
+const diditServer=readFileSync('src/lib/didit-server.ts','utf8');
+assert.ok(diditClient.includes('JiTap\\'s live ID verification is not available yet.'),'Provider sees setup-specific error');
+assert.ok(diditClient.includes('not a problem with your National ID'),'Provider is not incorrectly blamed');
+assert.ok(diditProviderRoute.includes("!available?'setup_pending':'not_started'"),'Disabled Didit is not Not Started');
+assert.ok(diditProviderRoute.includes("code:'DIDIT_LIVE_SETUP_PENDING'"),'Provider start action returns explicit setup error');
+assert.ok(diditServer.includes("!!process.env.DIDIT_WEBHOOK_SECRET"),'Live Didit requires verified webhook secret');
+const diditUnauth=await fetch(base+'/api/provider/identity',{method:'POST',
+ headers:{'content-type':'application/json','origin':'https://'+base.host},
+ body:JSON.stringify({consent:true}),signal:AbortSignal.timeout(7000)});
+assert.equal(diditUnauth.status,401,'KYC initiation requires provider authentication');
 const cron=await fetch(base+'/api/cron/kapso',{signal:AbortSignal.timeout(7000)});
 assert.equal(cron.status,401,'Automated provider dispatch requires protected cron credentials');
 
