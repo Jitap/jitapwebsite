@@ -1,5 +1,6 @@
 import 'server-only';
 import {NextRequest,NextResponse} from 'next/server';
+import {lookupSocSession} from '@/lib/coordinator-session';
 
 const SUPABASE_BASE_URL=process.env.SUPABASE_URL?.replace(/\/$/,'');
 const SECRET=process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -39,7 +40,9 @@ export async function isAllowedStaff(email:string):Promise<Staff|null>{
 }
 export async function requireCoordinator(req:NextRequest):Promise<Staff|null>{
  const token=req.cookies.get(accessCookie)?.value;
- if(!token||!SUPABASE_BASE_URL||!ANON)return null;
+ if(!token)return null;
+ if(token.startsWith('soc_'))return lookupSocSession(token,req);
+ if(!SUPABASE_BASE_URL||!ANON)return null;
  const response=await fetch(SUPABASE_BASE_URL+'/auth/v1/user',{headers:{apikey:ANON,Authorization:'Bearer '+token},cache:'no-store',signal:AbortSignal.timeout(8000)});
  if(!response.ok)return null;
  const user=await response.json() as {email?:string;email_confirmed_at?:string};
