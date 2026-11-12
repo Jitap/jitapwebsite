@@ -8,6 +8,7 @@ type LifecycleState={events:LifecycleEvent[];templateKinds:string[];templateIden
 type ServiceFollowup={id:string;event_type:string;recipient_role:string;status:string;error_code:string|null;created_at:string};
 type SocReminder={id:string;assignment_id:string;state:string;error_code:string|null;created_at:string};
 type RequestReceipt={id:string;event_type:string;status:string;created_at:string};
+type ProviderBookingSms={id:string;state:string;error_code:string|null;requested_at:string};
 type Provider={id:string;business_name:string;service_categories:string[];service_areas:string[];base_area:string|null};
 type Assignment={id:string;provider_id:string;state:string;quoted_amount_kes:number|null;notes:string|null;assigned_at:string;responded_at:string|null};
 type ProviderSmsDraft={id:string;assignment_id:string;message:string};
@@ -62,6 +63,7 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
  const [serviceFollowups,setServiceFollowups]=useState<ServiceFollowup[]>([]);
  const [providerReminders,setProviderReminders]=useState<SocReminder[]>([]);
  const [requestReceipts,setRequestReceipts]=useState<RequestReceipt[]>([]);
+ const [providerBookingSms,setProviderBookingSms]=useState<ProviderBookingSms[]>([]);
  const [customerWhatsAppAttempts,setCustomerWhatsAppAttempts]=useState<CustomerWhatsAppAttempt[]>([]);
  const [providerWhatsAppReady,setProviderWhatsAppReady]=useState(false);
  const [customerWhatsAppReady,setCustomerWhatsAppReady]=useState(false);
@@ -93,7 +95,7 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
   const data=await res.json();
   const kapsoResponse=await fetch('/api/coordinator/kapso?caseId='+encodeURIComponent(caseItem.id),{cache:'no-store'}).catch(()=>null);
   if(kapsoResponse?.ok){const kapso=await kapsoResponse.json();setLifecycle(kapso)}
-  setProviders(data.providers||[]);setAssignments(data.assignments||[]);setUpdates(data.updates||[]);setSmsAttempts(data.smsAttempts||[]);setProviderDrafts(data.providerDrafts||[]);setSmsEnabled(data.smsEnabled===true);setSmsReady(data.smsReady===true);setProviderSmsContacts(data.providerSmsContacts||[]);setProviderAlerts(data.providerAlerts||[]);setServiceFollowups(data.serviceFollowups||[]);setProviderReminders(data.providerReminders||[]);setRequestReceipts(data.requestReceipts||[]);setCustomerWhatsAppAttempts(data.customerWhatsAppAttempts||[]);setProviderWhatsAppReady(data.providerWhatsAppReady===true);setCustomerWhatsAppReady(data.customerWhatsAppReady===true);setIsAdmin(data.staffRole==='admin');
+  setProviders(data.providers||[]);setAssignments(data.assignments||[]);setUpdates(data.updates||[]);setSmsAttempts(data.smsAttempts||[]);setProviderDrafts(data.providerDrafts||[]);setSmsEnabled(data.smsEnabled===true);setSmsReady(data.smsReady===true);setProviderSmsContacts(data.providerSmsContacts||[]);setProviderAlerts(data.providerAlerts||[]);setServiceFollowups(data.serviceFollowups||[]);setProviderReminders(data.providerReminders||[]);setRequestReceipts(data.requestReceipts||[]);setProviderBookingSms(data.providerBookingSms||[]);setCustomerWhatsAppAttempts(data.customerWhatsAppAttempts||[]);setProviderWhatsAppReady(data.providerWhatsAppReady===true);setCustomerWhatsAppReady(data.customerWhatsAppReady===true);setIsAdmin(data.staffRole==='admin');
  },[caseItem.id]);
  useEffect(()=>{
   let alive=true;
@@ -275,6 +277,11 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
   <div className="coordinator-wa-actions" aria-label="Service communications timeline">
    <h3><MessageSquare size={19}/> Service communications</h3>
    <p className="coordinator-help">SMS for the initial request and provider BUZZ; WhatsApp for accepted bookings, ETA and travel milestones. Submitted means the gateway accepted the message, not handset delivery.</p>
+   {providerBookingSms.map(e=><div className="coordinator-update-item" key={e.id}>
+    <strong>Customer · SMS · Provider-created booking invitation</strong>
+    <span className="coordinator-status">{e.state}</span>
+    <small>{new Date(e.requested_at).toLocaleString('en-KE',{timeZone:'Africa/Nairobi'})}{e.error_code?' · '+e.error_code.replaceAll('_',' '):''}</small>
+   </div>)}
    {requestReceipts.map(e=><div className="coordinator-update-item" key={e.id}><strong>Customer · SMS · {e.event_type.replaceAll('_',' ')}</strong><span className="coordinator-status">{e.status}</span><small>{new Date(e.created_at).toLocaleString('en-KE',{timeZone:'Africa/Nairobi'})}</small></div>)}
    {lifecycle?.events.slice(0,8).map(e=><div className="coordinator-update-item" key={e.id}><strong>Customer · WhatsApp · {e.template_kind}</strong><span className="coordinator-status">{e.status}</span><small>{new Date(e.due_at).toLocaleString('en-KE',{timeZone:'Africa/Nairobi'})}{e.last_error?' · '+e.last_error.replaceAll('_',' '):''}</small></div>)}
    {serviceFollowups.map(e=><div className="coordinator-update-item" key={e.id}>
@@ -283,7 +290,7 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
     <small>{new Date(e.created_at).toLocaleString('en-KE',{timeZone:'Africa/Nairobi'})}{e.error_code?' · '+e.error_code.replaceAll('_',' '):''}</small>
     {['pending','blocked'].includes(e.status)&&<button type="button" disabled={busy} onClick={()=>sendApprovedFollowup(e.id)}>Send eligible WhatsApp via Kapso</button>}
    </div>)}
-   {!requestReceipts.length&&!lifecycle?.events.length&&!serviceFollowups.length&&<p className="coordinator-help">No notification events recorded for this request.</p>}
+   {!providerBookingSms.length&&!requestReceipts.length&&!lifecycle?.events.length&&!serviceFollowups.length&&<p className="coordinator-help">No notification events recorded for this request.</p>}
    {serviceFollowups.some(e=>e.status==='blocked')&&<p className="coordinator-help">Some status WhatsApp messages require separate approved Utility templates. They are recorded but not sent while approval is missing.</p>}
   </div>
   <div className="coordinator-contact-summary"><h3>Customer contact</h3><dl><dt>Service ID</dt><dd className="coordinator-service-id">JT-{caseItem.reference}</dd><dt>Name</dt><dd>{caseItem.name||'Not supplied (historical enquiry)'}</dd><dt>Mobile</dt><dd>{caseItem.phone||'Not supplied'}</dd><dt>Service location</dt><dd>{caseItem.locationLabel||caseItem.area||'Not supplied'}</dd><dt>SMS updates</dt><dd>{caseItem.notifyOptIn?'Opted in':'Not opted in / not recorded'}</dd></dl></div>
