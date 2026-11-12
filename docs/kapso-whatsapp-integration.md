@@ -9,7 +9,7 @@ Production environment (Vercel project `jitapwebsite`):
 - `KAPSO_PHONE_NUMBER_ID` (server-only, configured)
 - `KAPSO_WEBHOOK_SECRET` (sensitive, server-only, configured)
 - `KAPSO_API_BASE_URL=https://api.kapso.ai/meta/whatsapp`
-- `KAPSO_ENABLED=false` until Meta approves the templates below and Kapso webhook is registered
+- `KAPSO_ENABLED=false` (enabled in production once approved templates and signed webhooks were verified)
 - `KAPSO_TEMPLATE_LANGUAGE=en_US`
 - `KAPSO_TEMPLATE_BOOKING=jitap_booking_confirmed`
 - `KAPSO_TEMPLATE_REMINDER=jitap_appointment_reminder`
@@ -64,12 +64,12 @@ Select delivery events (sent, delivered, read, failed) and incoming messages. Se
 - When the customer approves rematching, a rematch notice is queued.
 - A confirmed schedule change queues a rescheduling update.
 - A verification of explicit WhatsApp consent is required at queue creation; requests without consent are saved as `skipped` for audit.
-- Vercel calls `GET /api/cron/kapso` every 5 minutes with `Authorization: Bearer <CRON_SECRET>`. Job actions additionally request immediate dispatch.
+- Supabase pg_cron calls `GET /api/cron/kapso` every 2 minutes with `Authorization: Bearer <CRON_SECRET>`. Job actions additionally request immediate dispatch.
 - The signed Kapso webhook records delivery receipts and customer replies in SOD. Failed delivery or inbound customer follow-up may flag SOC intervention.
 
 ## Enable
 
-1. Confirm all five templates show **APPROVED** in Kapso and match the four body variables.
+1. Confirm all five templates remain **APPROVED** in Kapso. Each has **three body text variables plus one dynamic URL button parameter** (the fourth item in stored queue parameters).
 2. Confirm the webhook is configured on the correct phone number, has a matching signature secret, and a signed test event succeeds.
 3. Set `KAPSO_ENABLED=true` in Vercel Production.
 4. Trigger a redeployment. Create a **consented synthetic test booking** on an authorized test WhatsApp number and verify sent, delivered, read (when read) and SOC audit.
@@ -81,3 +81,11 @@ Select delivery events (sent, delivered, read, failed) and incoming messages. Se
 - The provider calendar's own browser reminders are independent of the transactional customer WhatsApp reminders.
 - Kapso endpoints and Meta policies can evolve; check https://kapso.com/whatsapp-cloud-api for current sending requirements.
 - The SOD case details include the WhatsApp delivery audit. The queue contains no API keys.
+
+## SOD lifecycle template controls (12 Nov 2026)
+
+SOC has a five-template panel on each website request showing the latest booking, reminder, cancellation, rematch and reschedule event status. These five templates are **customer booking lifecycle messages**, not the provider BUZZ template or a generic free-form coordinator chat message.
+
+The **Send due WhatsApp now** control dispatches only queued, consented events belonging to that request whose scheduled due time has arrived. It does not create fictional lifecycle events or send the same notification twice. The automatic signed scheduler remains enabled independently.
+
+All five template types previously produced signed `read` receipts during authorized test sends on 10 November 2026. This verifies historical connectivity, **not** every future recipient's delivery or that a customer booking was made during the tests.
