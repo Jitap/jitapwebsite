@@ -1,10 +1,11 @@
 'use client';
 import {useCallback,useEffect,useState} from 'react';
 import {ShieldCheck,ScanFace,RefreshCw,ExternalLink,CheckCircle2,AlertCircle} from 'lucide-react';
-type Status={enabled:boolean;configured:boolean;status:string;identityVerified:boolean;
+type Status={enabled:boolean;configured:boolean;available?:boolean;setupPending?:boolean;status:string;identityVerified:boolean;
  identityUnderReview:boolean;verificationUrl:string|null;updatedAt:string|null};
 const statusCopy:Record<string,string>={
  not_started:'Not started',
+ setup_pending:'Verification service unavailable',
  creating:'Preparing verification',
  'Not Started':'Ready to verify',
  'In Progress':'Verification in progress',
@@ -89,9 +90,15 @@ export function ProviderIdentityVerification({onStatusChanged}:{onStatusChanged?
        <ExternalLink size={17}/> {data.verificationUrl?'Continue identity check':'Start identity verification'}
       </button>
      </>:
-     <p className="jt-didit-unavailable"><AlertCircle size={17}/> JiTap is connecting the secure identity verification service. Your profile has been saved; no additional ID upload is required while setup is pending.</p>
+     <div className="jt-didit-unavailable" role="status">
+      <AlertCircle size={20}/>
+      <div><strong>JiTap's live ID verification is not available yet.</strong>
+       <p>The connection to Didit is still being configured by JiTap. This is a setup issue—not a problem with your National ID or application. Your provider profile remains saved, and you do not need to upload ID photos to JiTap.</p>
+       <p>Once the secure verification service is activated, you can start your ID check here. Provider approval still requires completing verification.</p>
+      </div>
+     </div>
     }
-    {data?.status!=='Approved'&&<button type="button" className="jt-didit-refresh" disabled={busy} onClick={()=>void refresh()}><RefreshCw size={16}/> {busy?'Checking…':'Refresh verification status'}</button>}
+    {data?.status!=='Approved'&&<button type="button" className="jt-didit-refresh" disabled={busy} onClick={()=>void refresh()}><RefreshCw size={16}/> {busy?'Checking…':data?.setupPending?'Check if verification is available':'Refresh verification status'}</button>}
    </>}
   {error&&<p role="alert" className="jt-provider-error">{error}</p>}
  </section>;
