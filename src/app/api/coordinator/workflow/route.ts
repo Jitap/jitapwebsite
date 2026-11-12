@@ -3,6 +3,7 @@ import {z} from 'zod';
 import {reply,requireCoordinator,supabasePrivate,validOrigin} from '@/lib/coordinator-server';
 import {wasilianaSettings} from '@/lib/wasiliana';
 import {dispatchProviderAlerts} from '@/lib/provider-alerts';
+import {providerWhatsAppReady,customerSocWhatsAppReady} from '@/lib/provider-whatsapp-template';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
 const uuid=z.string().uuid();
@@ -30,11 +31,13 @@ export async function GET(req:NextRequest){
   if(!caseId)return reply({ok:true,providers});
   const contacts=await supabasePrivate<ProviderContact[]>('provider_notification_contacts?select=provider_id,phone_e164,sms_opt_in,whatsapp_opt_in,opted_out_at&limit=200');
   const providerSmsContacts=contacts.map(c=>({providerId:c.provider_id,enabled:c.sms_opt_in&&!c.opted_out_at,whatsappEnabled:c.whatsapp_opt_in&&!c.opted_out_at,maskedPhone:'••••'+c.phone_e164.slice(-4)}));
-  const [assignments,updates,smsAttempts,providerDrafts]=await Promise.all([
+  const [assignments,updates,smsAttempts,providerDrafts,providerAlerts,customerWhatsAppAttempts]=await Promise.all([
    supabasePrivate<Assignment[]>('coordinator_provider_assignments?select=id,case_id,provider_id,state,quoted_amount_kes,notes,assigned_at,responded_at,updated_at&case_id=eq.'+caseId+'&order=assigned_at.desc&limit=100'),
    supabasePrivate<CustomerUpdate[]>('coordinator_customer_updates?select=id,case_id,kind,channel,message,state,prepared_by,sent_by,sent_at,created_at&case_id=eq.'+caseId+'&order=created_at.desc&limit=100'),
    supabasePrivate<SmsAttempt[]>('coordinator_sms_attempts?select=id,customer_update_id,assignment_id,recipient_kind,gateway,state,requested_at,http_status,provider_message_id&case_id=eq.'+caseId+'&order=requested_at.desc&limit=100'),
-   supabasePrivate<ProviderDraft[]>('coordinator_provider_sms_drafts?select=id,assignment_id,message,created_at,updated_at&case_id=eq.'+caseId+'&limit=100')
+   supabasePrivate<ProviderDraft[]>('coordinator_provider_sms_drafts?select=id,assignment_id,message,created_at,updated_at&case_id=eq.'+caseId+'&limit=100'),
+   supabasePrivate<{id:string;assignment_id:string;channel:string;state:string;last_error:string|null;provider_message_id:string|null;attempted_at:string|null}[]>('jitap_provider_alerts?select=id,assignment_id,channel,state,last_error,provider_message_id,attempted_at&case_id=eq.'+caseId+'&order=requested_at.desc&limit=100'),
+   supabasePrivate<{id:string;update_id:string;state:string;last_error:string|null;provider_message_id:string|null;attempted_at:string}[]>('jitap_soc_whatsapp_sends?select=id,update_id,state,last_error,provider_message_id,attempted_at&case_id=eq.'+caseId+'&order=attempted_at.desc&limit=100')
   ]);
   // The customer intake transcript stays in the private ticket; provider alerts use the technical brief.
   const source=await supabasePrivate<{source_kind:string;source_id:string}[]>('coordinator_cases?select=source_kind,source_id&id=eq.'+encodeURIComponent(caseId)+'&limit=1');
@@ -42,7 +45,7 @@ export async function GET(req:NextRequest){
   const brief=caseSource?.source_kind==='website_request'
    ?(await supabasePrivate<TechnicalBrief[]>('jitap_request_service_briefs?select=technical_summary,proposed_scope,urgency,source&request_id=eq.'+encodeURIComponent(caseSource.source_id)+'&limit=1').catch(()=>[]))[0]||null
    :null;
-  return reply({ok:true,providers,assignments,updates,smsAttempts,providerDrafts,providerSmsContacts,technicalBrief:brief,staffRole:staff.role,smsReady:wasilianaSettings().configured&&wasilianaSettings().senderConfigured,smsEnabled:process.env.JITAP_COORDINATOR_SMS_ENABLED==='true'});
+  return reply({ok:true,providers,assignments,updates,smsAttempts,providerDrafts,providerSmsContacts,providerAlerts,customerWhatsAppAttempts,providerWhatsAppReady:providerWhatsAppReady(),customerWhatsAppReady:customerSocWhatsAppReady(),technicalBrief:brief,staffRole:staff.role,smsReady:wasilianaSettings().configured&&wasilianaSettings().senderConfigured,smsEnabled:process.env.JITAP_COORDINATOR_SMS_ENABLED==='true'});
  }catch{return reply({error:'Unable to load provider workflow'},503)}
 }
 export async function POST(req:NextRequest){
