@@ -326,7 +326,7 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
     <strong>{p?.business_name||'Provider '+a.provider_id}</strong>
     {['proposed','contacted'].includes(a.state)&&!a.responded_at&&<div className="coordinator-wa-actions">
      <strong>Provider response monitoring</strong>
-     <small>{Date.now()-Date.parse(a.assigned_at)>=5*60000?'SOC follow-up due · 5+ minutes without response':Date.now()-Date.parse(a.assigned_at)>=2*60000?'Awaiting provider response · 2+ minutes':'BUZZ response window active'}</small>
+     <small>{Date.now()-Date.parse(a.assigned_at)>=10*60000?'Escalate · 10+ minutes, consider another eligible provider':Date.now()-Date.parse(a.assigned_at)>=5*60000?'SOC follow-up due · 5+ minutes without response':Date.now()-Date.parse(a.assigned_at)>=2*60000?'Awaiting provider response · 2+ minutes':'BUZZ response window active'}</small>
      {providerReminders.filter(r=>r.assignment_id===a.id).map(r=><small key={r.id}>SOC SMS reminder: {r.state}{r.error_code?' · '+r.error_code.replaceAll('_',' '):''}</small>)}
      <button type="button" disabled={busy||Date.now()-Date.parse(a.assigned_at)<5*60000||providerReminders.some(r=>r.assignment_id===a.id)||!providerSmsContacts.some(p=>p.providerId===a.provider_id&&p.enabled)||!smsAttempts.some(t=>t.assignment_id===a.id&&t.state==='submitted')&&!providerAlerts.some(n=>n.assignment_id===a.id&&n.channel==='sms'&&n.state==='submitted')} onClick={()=>sendProviderReminder(a.id)}>Send SOC follow-up SMS</button>
     </div>}<span className="coordinator-status">{a.state.replaceAll('_',' ')}</span>
