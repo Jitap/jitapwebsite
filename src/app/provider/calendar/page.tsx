@@ -8,7 +8,7 @@ import {ProviderTravelEstimate} from '@/components/ProviderTravelEstimate';
 import {ProviderNewJob} from '@/components/ProviderNewJob';
 
 type Appointment={
- id:string;requestId:string;startsAt:string|null;endsAt:string|null;status:string;rated:boolean;
+ id:string;requestId:string;startsAt:string|null;endsAt:string|null;status:string;rated:boolean;providerEtaAt?:string|null;
  title:string;category:string;area:string;location:string;latitude:number|null;longitude:number|null;
  placeId:string;customerName:string;customerPhone:string;description:string;
  pendingReschedule:{id:string;proposed_start_at:string;proposed_end_at:string}|null
@@ -48,6 +48,7 @@ export default function ProviderCalendar(){
  const [newStart,setNewStart]=useState('09:00');
  const [newEnd,setNewEnd]=useState('10:00');
  const [reason,setReason]=useState('');
+ const [etaLocal,setEtaLocal]=useState('');
  const [busy,setBusy]=useState(false);
  const load=useCallback(async()=>{
   const res=await fetch('/api/provider/calendar',{cache:'no-store'});
@@ -115,6 +116,13 @@ export default function ProviderCalendar(){
   {value:'personal_emergency',label:'Personal emergency'},
   {value:'other',label:'Other reason'}
  ];
+ async function confirmEta(){
+  if(!detail||!etaLocal)return;
+  const date=new Date(etaLocal+':00+03:00');
+  if(!Number.isFinite(date.getTime())){setError('Choose a valid arrival time in East Africa Time.');return}
+  const result=await send({action:'confirm_eta',appointmentId:detail.id,eta:date.toISOString()});
+  if(result){setEtaLocal('');setMessage('ETA recorded. JiTap will notify the customer on WhatsApp when the approved ETA template is available.')}
+ }
  async function reschedule(e:FormEvent<HTMLFormElement>){
   e.preventDefault();if(!detail)return;
   const start=new Date(newDate+'T'+newStart+':00+03:00'),end=new Date(newDate+'T'+newEnd+':00+03:00');
@@ -134,6 +142,16 @@ export default function ProviderCalendar(){
     <ProviderTravelEstimate job={detail}/>
    </section>
    <section className="jcal-info"><h2>Schedule</h2><p><CalendarDays size={20}/>{detail.startsAt&&detail.endsAt?dateTime(detail.startsAt)+' · '+time(detail.startsAt)+' – '+time(detail.endsAt):'Confirmed · Date and time to arrange'}</p>{detail.pendingReschedule&&<p className="jcal-pending"><Clock3 size={18}/> Reschedule awaiting JiTap confirmation</p>}</section>
+   {['confirmed','on_my_way'].includes(detail.status)&&<section className="jcal-info jcal-eta">
+    <h2>Confirm estimated arrival</h2>
+    {detail.providerEtaAt&&<p><Clock3 size={18}/> Current ETA: {dateTime(detail.providerEtaAt)} · {time(detail.providerEtaAt)} EAT</p>}
+    <label htmlFor="jitap-provider-eta">Arrival date and time (EAT)</label>
+    <div className="jcal-eta-controls">
+     <input id="jitap-provider-eta" type="datetime-local" value={etaLocal} onChange={e=>setEtaLocal(e.target.value)} aria-label="Estimated arrival date and time in East Africa Time"/>
+     <button type="button" className="jcal-secondary" disabled={busy||!etaLocal} onClick={confirmEta}>Confirm ETA</button>
+    </div>
+    <small>Confirm your actual estimated arrival. JiTap sends a customer update only when the relevant WhatsApp template is approved and the customer has opted in.</small>
+   </section>}
    <section className="jcal-info jcal-service-brief"><h2>Service details</h2><p className={expandedDescription?'jcal-description-expanded':'jcal-description-clamped'}>{detail.description||'The confirmed service request is scheduled for this time.'}</p>{(detail.description||'').length>115&&<button type="button" className="jcal-description-toggle" onClick={()=>setExpandedDescription(x=>!x)}>{expandedDescription?'Show less':'Read full details'}</button>}<p className="jcal-ref">Ref: JT-{detail.requestId.slice(0,8).toUpperCase()}</p></section>
    {error&&<p role="alert" className="jcal-error">{error}</p>}{message&&<p role="status" className="jcal-success">{message}</p>}
    <div className="jcal-detail-actions"><ProviderJobAction key={detail.id} appointmentId={detail.id} status={detail.status} rated={detail.rated} onUpdated={async(nextStatus)=>{
