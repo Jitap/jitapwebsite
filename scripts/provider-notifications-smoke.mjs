@@ -56,7 +56,7 @@ assert.match(followupSql,/jitap_claim_followup_events/,'Private queue must claim
 assert.ok(smsFirstSql.includes("select new.id,new.case_id,'sms'"),'BUZZ contact starts with SMS only');
 assert.match(followupDispatcher,/consentStillValid/,'Recheck consent at send');
 assert.match(followupDispatcher,/notification_outdated/,'Do not send stale ETA updates');
-assert.match(templateSource,/KAPSO_TEMPLATE_ON_MY_WAY/,'On My Way must use a separately approved template');
+assert.match(templateSource,/KAPSO_TEMPLATE_CUSTOMER_PROGRESS/,'On My Way must use an approved customer-progress template');
 assert.ok(!nativeAccept.includes('notifyProviderAccepted('),'Provider acceptance must not send duplicate customer SMS');
 const followupUnauthenticated=await fetch(base+'/api/coordinator/service-followup',{method:'POST',
  headers:{'content-type':'application/json','origin':'https://'+base.host},
