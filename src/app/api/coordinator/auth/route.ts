@@ -1,10 +1,16 @@
 import {NextRequest} from 'next/server';
 import {accessCookie,authConfig,isAllowedStaff,reply,requireCoordinator,validOrigin} from '@/lib/coordinator-server';
+import {issueSocSession,renewSocSession,revokeSocSession,setSocCookie} from '@/lib/coordinator-session';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
 const generic={ok:true,message:'If the email is authorized, a sign-in email will be sent.'};
 export async function GET(req:NextRequest){
- try{const staff=await requireCoordinator(req);return reply(staff?{ok:true,staff}:{ok:false},staff?200:401)}
+ try{
+  const staff=await requireCoordinator(req);
+  const response=reply(staff?{ok:true,staff}:{ok:false},staff?200:401);
+  if(staff)await renewSocSession(req,response);
+  return response;
+ }
  catch{return reply({ok:false},503)}
 }
 export async function POST(req:NextRequest){
@@ -12,6 +18,8 @@ export async function POST(req:NextRequest){
  let body:{action?:string;email?:string;token?:string;accessToken?:string;next?:string}={};
  try{body=await req.json()}catch{return reply({error:'Invalid request'},400)}
  if(body.action==='logout'){
+  const existing=req.cookies.get(accessCookie)?.value||'';
+  try{await revokeSocSession(existing)}catch{return reply({error:'Unable to sign out securely right now. Try again.'},503)}
   const result=reply({ok:true});
   result.cookies.set(accessCookie,'',{httpOnly:true,secure:true,sameSite:'lax',path:'/',maxAge:0});
   return result;
@@ -30,8 +38,9 @@ export async function POST(req:NextRequest){
    if(!user.email||!user.email_confirmed_at)return reply({error:'Email verification required'},403);
    const staff=await isAllowedStaff(user.email);
    if(!staff)return reply({error:'Not authorized'},403);
+   const persistentToken=await issueSocSession(req,staff);
    const response=reply({ok:true,staff});
-   response.cookies.set(accessCookie,accessToken,{httpOnly:true,secure:true,sameSite:'lax',path:'/',maxAge:3600});
+   setSocCookie(response,persistentToken);
    return response;
   }catch{return reply({error:'Unable to verify your sign-in link'},503)}
  }
@@ -82,8 +91,9 @@ export async function POST(req:NextRequest){
    if(!data.access_token||data.user?.email?.toLowerCase()!==email||!data.user?.email_confirmed_at)return reply({error:'Account verification failed'},403);
    const allowed=await isAllowedStaff(data.user.email);
    if(!allowed)return reply({error:'Access not authorized'},403);
+   const persistentToken=await issueSocSession(req,allowed);
    const response=reply({ok:true,staff:allowed});
-   response.cookies.set(accessCookie,data.access_token,{httpOnly:true,secure:true,sameSite:'lax',path:'/',maxAge:Math.min(data.expires_in||3600,3600)});
+   setSocCookie(response,persistentToken);
    return response;
   }catch{return reply({error:'Could not verify code'},503)}
  }
