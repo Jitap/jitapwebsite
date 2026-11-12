@@ -129,7 +129,7 @@ assert.ok(socMigration.includes('revoked_at'),'Explicit logout must allow immedi
 const diditClient=readFileSync('src/components/ProviderIdentityVerification.tsx','utf8');
 const diditProviderRoute=readFileSync('src/app/api/provider/identity/route.ts','utf8');
 const diditServer=readFileSync('src/lib/didit-server.ts','utf8');
-assert.ok(diditClient.includes('JiTap\\'s live ID verification is not available yet.'),'Provider sees setup-specific error');
+assert.ok(diditClient.includes("JiTap's live ID verification is not available yet."),'Provider sees setup-specific error');
 assert.ok(diditClient.includes('not a problem with your National ID'),'Provider is not incorrectly blamed');
 assert.ok(diditProviderRoute.includes("!available?'setup_pending':'not_started'"),'Disabled Didit is not Not Started');
 assert.ok(diditProviderRoute.includes("code:'DIDIT_LIVE_SETUP_PENDING'"),'Provider start action returns explicit setup error');
