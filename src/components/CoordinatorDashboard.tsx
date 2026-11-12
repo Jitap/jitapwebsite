@@ -248,7 +248,10 @@ export function CoordinatorDashboard(){
   return()=>{alive=false;window.removeEventListener('focus',onFocus);window.clearInterval(interval)};
  },[sent,staff,load]);
  async function logout(){
-  await fetch('/api/coordinator/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'logout'})});
+  try{
+   const res=await fetch('/api/coordinator/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'logout'})});
+   if(!res.ok){setFeedback('Unable to sign out securely. Please retry.');return}
+  }catch{setFeedback('Sign-out request failed. Check your connection and retry.');return}
   previousCases.current=null;previousProviderIds.current=null;previousReadyProviderIds.current=null;setProviderQueue({pending:0,ready:0});setProviderNotice('');setStaff(null);setCases([]);setSelected(null);setActivity([]);setNotices([]);setLastSynced(null);
  }
  async function update(action:string,value?:string|null,extraNote?:string){
