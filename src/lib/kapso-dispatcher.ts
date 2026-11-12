@@ -7,15 +7,15 @@ const templateKeys:Record<string,string>={
  cancellation:'KAPSO_TEMPLATE_CANCELLATION',rematch:'KAPSO_TEMPLATE_REMATCH',
  reschedule:'KAPSO_TEMPLATE_RESCHEDULE'
 };
-export async function dispatchKapsoQueue(limit=10){
+export async function dispatchKapsoQueue(limit=10,requestId?:string){
  const config=kapsoConfiguration();
  if(!config.enabled||!config.configured||!config.signedWebhooks)
   return {ready:false,reason:'kapso_configuration_incomplete',enabled:config.enabled};
  if(Object.values(config.templates).some(v=>!v))
   return {ready:false,reason:'approved_whatsapp_templates_not_configured',templates:config.templates};
  await supabasePrivate('rpc/jitap_kapso_restore_stale_processing',{method:'POST',body:'{}'});
- const jobs=await supabasePrivate<KapsoMessage[]>('rpc/jitap_kapso_claim',{
-  method:'POST',body:JSON.stringify({p_limit:limit})
+ const jobs=await supabasePrivate<KapsoMessage[]>(requestId?'rpc/jitap_kapso_claim_case':'rpc/jitap_kapso_claim',{
+  method:'POST',body:JSON.stringify(requestId?{p_request_id:requestId,p_limit:limit}:{p_limit:limit})
  });
  let submitted=0,failed=0,skipped=0;
  for(const job of jobs){

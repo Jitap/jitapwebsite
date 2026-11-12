@@ -3,6 +3,8 @@ import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {Copy,ExternalLink,RefreshCw,MessageSquare,UserRoundCheck,AlertCircle} from 'lucide-react';
 import {providerMatchesTrade} from '@/lib/trade-categories';
 
+type LifecycleEvent={id:string;template_kind:string;status:string;due_at:string;delivered_at:string|null;read_at:string|null;last_error:string|null};
+type LifecycleState={events:LifecycleEvent[];templateKinds:string[];templateIdentifiersConfigured:Record<string,boolean>;dueCount:number;enabled:boolean;configured:boolean;signedWebhookConfigured:boolean};
 type Provider={id:string;business_name:string;service_categories:string[];service_areas:string[];base_area:string|null};
 type Assignment={id:string;provider_id:string;state:string;quoted_amount_kes:number|null;notes:string|null;assigned_at:string;responded_at:string|null};
 type ProviderSmsDraft={id:string;assignment_id:string;message:string};
@@ -46,6 +48,7 @@ function makeMessage(c:Case,kind:string,providerName?:string){
 }
 export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChanged:()=>Promise<void>}){
  const [providers,setProviders]=useState<Provider[]>([]);
+ const [lifecycle,setLifecycle]=useState<LifecycleState|null>(null);
  const [assignments,setAssignments]=useState<Assignment[]>([]);
  const [updates,setUpdates]=useState<Update[]>([]);
  const [smsAttempts,setSmsAttempts]=useState<SmsAttempt[]>([]);
@@ -82,6 +85,8 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
   const res=await fetch('/api/coordinator/workflow?caseId='+encodeURIComponent(caseItem.id),{cache:'no-store'});
   if(!res.ok)throw new Error('Unable to load workflow');
   const data=await res.json();
+  const kapsoResponse=await fetch('/api/coordinator/kapso?caseId='+encodeURIComponent(caseItem.id),{cache:'no-store'}).catch(()=>null);
+  if(kapsoResponse?.ok){const kapso=await kapsoResponse.json();setLifecycle(kapso)}
   setProviders(data.providers||[]);setAssignments(data.assignments||[]);setUpdates(data.updates||[]);setSmsAttempts(data.smsAttempts||[]);setProviderDrafts(data.providerDrafts||[]);setSmsEnabled(data.smsEnabled===true);setSmsReady(data.smsReady===true);setProviderSmsContacts(data.providerSmsContacts||[]);setProviderAlerts(data.providerAlerts||[]);setCustomerWhatsAppAttempts(data.customerWhatsAppAttempts||[]);setProviderWhatsAppReady(data.providerWhatsAppReady===true);setCustomerWhatsAppReady(data.customerWhatsAppReady===true);setIsAdmin(data.staffRole==='admin');
  },[caseItem.id]);
  useEffect(()=>{
@@ -183,8 +188,37 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
   finally{setBusy(false)}
  }
 
+ async function dispatchDueLifecycle(){
+  if(!lifecycle?.dueCount)return;
+  if(!window.confirm('Send due, consented booking lifecycle WhatsApp notifications for this request now? This will contact the customer through the approved Kapso templates.'))return;
+  setBusy(true);setFeedback('');
+  try{
+   const response=await fetch('/api/coordinator/kapso',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({caseId:caseItem.id,action:'dispatch_due',confirm:true})});
+   const data=await response.json();
+   if(!response.ok)throw Error(data.error||'Kapso dispatch failed');
+   await load();
+   setFeedback('Lifecycle WhatsApp dispatch processed: '+JSON.stringify(data.result)+'. API submission is not handset delivery.');
+  }catch(e){setFeedback(e instanceof Error?e.message:'Unable to dispatch approved lifecycle templates')}
+  finally{setBusy(false)}
+ }
  if(loading)return <section className="coordinator-workflow">Loading provider workflow…</section>;
  return <section className="coordinator-workflow">
+  {lifecycle&&<div className="coordinator-wa-actions" aria-label="Approved WhatsApp lifecycle templates">
+   <h3>WhatsApp booking notifications · 5 approved templates</h3>
+   <p className="coordinator-help">These customer notifications run automatically on real booking events. This is separate from the provider BUZZ. No messages are sent just by viewing these statuses.</p>
+   {lifecycle.templateKinds.map(kind=>{
+    const latest=lifecycle.events.find(e=>e.template_kind===kind);
+    const ready=lifecycle.templateIdentifiersConfigured[kind]===true;
+    return <div key={kind} className="coordinator-update-item">
+     <strong>{kind[0].toUpperCase()+kind.slice(1)}</strong>
+     <span className="coordinator-status">{latest?latest.status:ready?'Ready — awaiting event':'Template not configured'}</span>
+     {latest&&<small>Scheduled: {new Date(latest.due_at).toLocaleString('en-KE',{timeZone:'Africa/Nairobi'})}{latest.last_error?' · '+latest.last_error.replaceAll('_',' '):''}</small>}
+    </div>
+   })}
+   {caseItem.source_kind!=='website_request'&&<p className="coordinator-help">Lifecycle templates apply to confirmed website bookings only.</p>}
+   <button type="button" className="coordinator-send-sms" disabled={busy||!lifecycle.dueCount||!lifecycle.enabled||!lifecycle.configured||!lifecycle.signedWebhookConfigured} onClick={dispatchDueLifecycle}>Send due WhatsApp now ({lifecycle.dueCount})</button>
+   <p className="coordinator-help">Only due, consented queued events can be sent. Past, skipped, delivered and future reminders are not resent.</p>
+  </div>}
   <div className="coordinator-contact-summary"><h3>Customer contact</h3><dl><dt>Service ID</dt><dd className="coordinator-service-id">JT-{caseItem.reference}</dd><dt>Name</dt><dd>{caseItem.name||'Not supplied (historical enquiry)'}</dd><dt>Mobile</dt><dd>{caseItem.phone||'Not supplied'}</dd><dt>Service location</dt><dd>{caseItem.locationLabel||caseItem.area||'Not supplied'}</dd><dt>SMS updates</dt><dd>{caseItem.notifyOptIn?'Opted in':'Not opted in / not recorded'}</dd></dl></div>
   <h3><UserRoundCheck size={18}/> Provider assignment</h3>
   {caseItem.jobStatus&&caseItem.jobStatus!=='cancelled'&&<div className="coordinator-auto-assignment"><strong>Confirmed booking from the provider app</strong><p>{caseItem.providerName||'Assigned provider'} · {caseItem.jobStatus.replaceAll('_',' ')}</p><small>This booking was accepted directly by the provider. SOD records the milestones automatically; do not create a second assignment.</small></div>}
