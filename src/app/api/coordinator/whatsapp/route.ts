@@ -1,18 +1,20 @@
 import {NextRequest} from 'next/server';
 import {z} from 'zod';
 import {reply,requireCoordinator,supabasePrivate,validOrigin} from '@/lib/coordinator-server';
+import {dispatchProviderAlerts,phone254} from '@/lib/provider-alerts';
+import {customerSocWhatsAppReady,providerWhatsAppReady,sendKapsoSocCustomerUpdate} from '@/lib/provider-whatsapp-template';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
 const schema=z.discriminatedUnion('recipientKind',[
- z.object({caseId:z.string().uuid(),recipientKind:z.literal('provider'),assignmentId:z.string().uuid()}),
- z.object({caseId:z.string().uuid(),recipientKind:z.literal('customer'),updateId:z.string().uuid()})
+ z.object({caseId:z.string().uuid(),recipientKind:z.literal('provider'),assignmentId:z.string().uuid(),confirm:z.literal(true)}),
+ z.object({caseId:z.string().uuid(),recipientKind:z.literal('customer'),updateId:z.string().uuid(),confirm:z.literal(true)})
 ]);
 type CaseRow={id:string;source_kind:string;source_id:string};
 type Assignment={id:string;provider_id:string;state:string};
 type Contact={phone_e164:string;whatsapp_opt_in:boolean;opted_out_at:string|null};
 type Intake={payload:Record<string,unknown>};
 type Update={id:string;channel:string;state:string;message:string};
-function phone(value:string){const n=value.replace(/\D/g,'');const normalized=n.startsWith('0')?'254'+n.slice(1):n;return /^254[17]\d{8}$/.test(normalized)?normalized:null}
+
 export async function POST(req:NextRequest){
  if(!validOrigin(req))return reply({error:'Invalid origin'},403);
  const staff=await requireCoordinator(req).catch(()=>null);
@@ -28,12 +30,18 @@ export async function POST(req:NextRequest){
   if(!assignment||!['proposed','contacted','needs_clarification','quote_requested'].includes(assignment.state))return reply({error:'Provider assignment is not eligible for an alert'},409);
   const contacts=await supabasePrivate<Contact[]>('provider_notification_contacts?select=phone_e164,whatsapp_opt_in,opted_out_at&provider_id=eq.'+encodeURIComponent(assignment.provider_id)+'&limit=1');
   const contact=contacts[0];
-  if(!contact?.whatsapp_opt_in||contact.opted_out_at)return reply({error:'Provider WhatsApp consent is not recorded'},409);
-  const drafts=await supabasePrivate<{message:string}[]>('coordinator_provider_sms_drafts?select=message&case_id=eq.'+d.caseId+'&assignment_id=eq.'+d.assignmentId+'&limit=1');
-  if(!drafts.length)return reply({error:'Save and review the technical provider BUZZ before sending'},409);
-  const to=phone(contact.phone_e164);
-  if(!to)return reply({error:'Invalid provider WhatsApp contact'},409);
-  return reply({ok:true,url:'https://wa.me/'+to+'?text='+encodeURIComponent(drafts[0].message),mode:'manual'});
+  if(!contact?.whatsapp_opt_in||contact.opted_out_at||!phone254(contact.phone_e164))return reply({error:'Provider WhatsApp consent or phone is unavailable'},409);
+  if(!providerWhatsAppReady())return reply({error:'Approved JiTap provider BUZZ WhatsApp template is not configured in Kapso/Meta.'},409);
+  const existing=await supabasePrivate<{id:string;state:string;last_error:string|null}[]>('jitap_provider_alerts?select=id,state,last_error&assignment_id=eq.'+d.assignmentId+'&channel=eq.whatsapp&limit=1');
+  if(existing.length&&['submitted','sending','unknown','rejected'].includes(existing[0].state))return reply({error:'A WhatsApp notification was already attempted. Review the delivery status before sending another.',state:existing[0].state},409);
+  if(existing.length&&existing[0].state==='skipped')return reply({error:'This assignment no longer requires a WhatsApp notification.'},409);
+  if(!existing.length){
+   await supabasePrivate('jitap_provider_alerts?on_conflict=assignment_id,channel',{method:'POST',headers:{Prefer:'resolution=ignore-duplicates,return=minimal'},body:JSON.stringify({assignment_id:d.assignmentId,case_id:d.caseId,channel:'whatsapp'})});
+  }else if(existing[0].state==='blocked'){
+   await supabasePrivate('jitap_provider_alerts?id=eq.'+existing[0].id,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({state:'pending',last_error:null})});
+  }
+  const results=await dispatchProviderAlerts(1,d.assignmentId);
+  return reply({ok:results.submitted>0,status:results.submitted>0?'submitted':results.blocked?'blocked':results.unknown?'unknown':results.rejected?'rejected':'queued',message:'WhatsApp submission status is recorded in SOD. API acceptance does not guarantee handset delivery.',results},results.submitted>0?200:409);
  }
  if(c.source_kind!=='website_request')return reply({error:'Customer WhatsApp requires a verified service request'},409);
  const intakes=await supabasePrivate<Intake[]>('website_intake?select=payload&id=eq.'+c.source_id+'&limit=1');
@@ -41,7 +49,21 @@ export async function POST(req:NextRequest){
  if(!payload||payload.whatsappOptIn!==true)return reply({error:'Customer has not opted in to WhatsApp notifications'},409);
  const updates=await supabasePrivate<Update[]>('coordinator_customer_updates?select=id,channel,state,message&id=eq.'+d.updateId+'&case_id=eq.'+d.caseId+'&limit=1');
  const update=updates[0];if(!update||update.channel!=='whatsapp'||update.state!=='draft')return reply({error:'Save a WhatsApp customer update first'},409);
- const to=phone(String(payload.phone||''));
- if(!to)return reply({error:'Customer WhatsApp contact unavailable'},409);
- return reply({ok:true,url:'https://wa.me/'+to+'?text='+encodeURIComponent(update.message),mode:'manual'});
+ const to=phone254(String(payload.phone||''));
+ if(!to)return reply({error:'Customer WhatsApp number is invalid'},409);
+ if(!customerSocWhatsAppReady())return reply({error:'Approved JiTap customer-update WhatsApp template is not configured in Kapso/Meta.'},409);
+ const previous=await supabasePrivate<{id:string;state:string}[]>('jitap_soc_whatsapp_sends?select=id,state&update_id=eq.'+d.updateId+'&limit=1');
+ if(previous.length)return reply({error:'This WhatsApp update was already attempted. Check delivery status before retrying.',state:previous[0].state},409);
+ let attempt:{id:string}[];
+ try{
+  attempt=await supabasePrivate<{id:string}[]>('jitap_soc_whatsapp_sends',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({update_id:d.updateId,case_id:d.caseId,sent_by:staff.email})});
+ }catch{return reply({error:'A WhatsApp attempt is already in progress for this update.'},409)}
+ const reference='JT-'+c.source_id.slice(0,8).toUpperCase();
+ let state:'submitted'|'rejected'|'unknown'='unknown',providerMessageId:string|null=null,lastError:string|null=null;
+ try{
+  const sent=await sendKapsoSocCustomerUpdate({phone:to,reference,kind:update.kind.replaceAll('_',' '),message:update.message.slice(0,180)});
+  state=sent.accepted?'submitted':'rejected';providerMessageId=sent.messageId||null;lastError=sent.reason||null;
+ }catch{lastError='whatsapp_transport_uncertain_no_auto_retry'}
+ await supabasePrivate('jitap_soc_whatsapp_sends?id=eq.'+attempt[0].id,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({state,provider_message_id:providerMessageId,last_error:lastError,finished_at:new Date().toISOString()})}).catch(()=>{});
+ return reply({ok:state==='submitted',status:state,attemptId:attempt[0].id,message:state==='submitted'?'Kapso accepted the WhatsApp message; handset delivery is not yet confirmed.':'WhatsApp was not confirmed. Review status before retrying.'},state==='submitted'?200:502);
 }
