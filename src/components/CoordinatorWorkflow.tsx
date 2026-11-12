@@ -188,7 +188,7 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
   <div className="coordinator-contact-summary"><h3>Customer contact</h3><dl><dt>Service ID</dt><dd className="coordinator-service-id">JT-{caseItem.reference}</dd><dt>Name</dt><dd>{caseItem.name||'Not supplied (historical enquiry)'}</dd><dt>Mobile</dt><dd>{caseItem.phone||'Not supplied'}</dd><dt>Service location</dt><dd>{caseItem.locationLabel||caseItem.area||'Not supplied'}</dd><dt>SMS updates</dt><dd>{caseItem.notifyOptIn?'Opted in':'Not opted in / not recorded'}</dd></dl></div>
   <h3><UserRoundCheck size={18}/> Provider assignment</h3>
   {caseItem.jobStatus&&caseItem.jobStatus!=='cancelled'&&<div className="coordinator-auto-assignment"><strong>Confirmed booking from the provider app</strong><p>{caseItem.providerName||'Assigned provider'} · {caseItem.jobStatus.replaceAll('_',' ')}</p><small>This booking was accepted directly by the provider. SOD records the milestones automatically; do not create a second assignment.</small></div>}
-  <p className="coordinator-help">Manual proposals are for requests without an active booking. Provider acceptance in the JiTap app immediately confirms the customer booking.</p>
+  <p className="coordinator-help">Assigning a provider automatically queues the short JiTap BUZZ by SMS and WhatsApp according to their recorded opt-ins. SOD shows each gateway submission status. Existing confirmed bookings should not be reassigned.</p>
   <label>Choose verified provider
    <select value={providerId} onChange={e=>setProviderId(e.target.value)} disabled={busy||caseItem.status==='incomplete'}>
     <option value="">Select a verified provider…</option>
@@ -258,8 +258,8 @@ export function CoordinatorWorkflow({caseItem,onChanged}:{caseItem:Case;onChange
      {!providerSmsContacts.some(p=>p.providerId===a.provider_id&&p.whatsappEnabled)&&<small>Provider WhatsApp requires separately recorded opt-in. An SMS opt-in alone is not sufficient.</small>}
     </div>
     {!providerSmsContacts.some(p=>p.providerId===a.provider_id&&p.enabled)&&<small>Provider SMS requires documented opt-in and a private mobile number.</small>}
-    {!providerDrafts.some(d=>d.assignment_id===a.id)&&!smsAttempts.some(s=>s.assignment_id===a.id)&&<small>Save the provider BUZZ draft to unlock SMS sending.</small>}
-    {!smsEnabled&&<small>Coordinator SMS sending is not activated.</small>}
+    {!providerDrafts.some(d=>d.assignment_id===a.id)&&!smsAttempts.some(s=>s.assignment_id===a.id)&&!providerAlerts.some(n=>n.assignment_id===a.id&&n.channel==='sms')&&<small>For an exceptional manual SMS, save a reviewed draft first. Automatic assignment alerts do not require a draft.</small>}
+    {!smsEnabled&&<small>Manual coordinator SMS sending is disabled. Automatic provider SMS uses the configured Wasiliana gateway independently.</small>}
    </div>
   })}</div>:<p className="coordinator-help">No separate manual provider proposal. If the booking is already confirmed above, SOC can monitor its progress here; otherwise the request remains available for manual sourcing.</p>}
   <h3><MessageSquare size={18}/> Customer updates</h3>
