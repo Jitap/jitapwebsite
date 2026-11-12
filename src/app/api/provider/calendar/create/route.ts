@@ -4,6 +4,7 @@ import {z} from 'zod';
 import {getProviderSession} from '@/lib/provider-session-server';
 import {sameOrigin} from '@/lib/jitap-auth';
 import {supabasePrivate} from '@/lib/coordinator-server';
+import {sendProviderCreatedBookingSms} from '@/lib/provider-booking-acquisition';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
 const headers={'Cache-Control':'private,no-store','X-Robots-Tag':'noindex'};
@@ -23,7 +24,8 @@ const schema=z.object({
  count:z.number().int().min(1).max(24).default(1),
  reminderMinutes:z.union([z.literal(0),z.literal(5),z.literal(15),z.literal(30),z.literal(60),z.literal(1440),z.null()]).default(30),
  reminderChannel:z.enum(['in_app','whatsapp_manual']).default('in_app'),
- whatsappOptIn:z.boolean().default(false)
+ whatsappOptIn:z.boolean().default(false),
+ smsNotificationConsent:z.literal(true)
 }).strict();
 export async function POST(req:NextRequest){
  if(!sameOrigin(req))return send({error:'Invalid request origin'},403);
@@ -53,8 +55,16 @@ export async function POST(req:NextRequest){
    cache:'no-store',signal:AbortSignal.timeout(20000)
   });
   if(!response.ok)return send({error:'Could not save this booking. Check your schedule, location and contact details.'},422);
-  const created=await response.json();
+  const created=await response.json() as {requestId?:string;reference?:string;count?:number};
+  if(!created.requestId)return send({error:'Booking saved but the tracking reference was not returned. Contact JiTap support before attempting another booking.'},502);
+  // A series of up to 24 bookings receives one introductory SMS, rather than 24 texts.
+  // A reserved database attempt prevents duplicate SMS sends on network retries.
+  const sms=await sendProviderCreatedBookingSms({
+   requestId:created.requestId,providerUserId:session.userId,customerPhone:d.phone,
+   customerName:d.customerName,jobTitle:d.title,count:created.count||1,
+   consentConfirmed:d.smsNotificationConsent
+  }).catch(()=>({status:'unknown' as const,reason:'sms_dispatch_unavailable'}));
   after(async()=>{await dispatchKapsoQueue(5).catch(()=>{})});
-  return send({ok:true,...created});
+  return send({ok:true,...created,smsStatus:sms.status,smsReason:'reason' in sms?sms.reason:undefined});
  }catch{return send({error:'Booking could not be saved. Please retry.'},503)}
 }
