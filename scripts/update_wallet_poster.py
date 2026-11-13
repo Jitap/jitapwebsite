@@ -34,21 +34,14 @@ def find_line(pattern):
             return txt,box,words
     return None
 targets=[
-    (r"12\s*[, .]\s*000|12000","KES 1,500"),
-    (r"pending\s+payments?","Free Credit"),
-    (r"pending\s+withdrawal","Balance"),
+    (r"KES\\s+[O0](?!\\d)","KES 1,500"),
+    (r"KES\\s+500(?!\\d)","KES 1,500"),
 ]
 hits=[]
 for pattern,new in targets:
     found=find_line(pattern)
-    if not found: sys.exit(f"SAFE ABORT: missing original label matching {pattern}")
+    if not found: sys.exit(f"SAFE ABORT: missing amount matching {pattern}")
     hits.append((found,new))
-# Replace amount values in all occurrences of the three relevant areas.
-for txt,box,words in entries:
-    if re.search(r"12\s*[, .]\s*000|12000",txt,re.I) and all(box!=h[0][1] for h in hits):
-        hits.append(((txt,box,words),"KES 1,500"))
-# Track the two summary card amounts (they may have other old values).
-# Source image is a coming-soon poster: only replace text validated above.
 mask=np.zeros(pixels.shape[:2],dtype=np.uint8)
 for (txt,(l,t,r,b),words),new in hits:
     pad=7
