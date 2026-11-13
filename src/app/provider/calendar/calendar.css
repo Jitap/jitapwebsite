@@ -127,3 +127,15 @@
 .jcal-eta-controls input{flex:1 1 205px;min-width:0;border:1px solid #b6ddc7;border-radius:12px;padding:11px 12px;background:#fff;color:#173d2c;font:inherit}
 .jcal-eta-controls button{flex:0 0 auto}
 .jcal-eta small{display:block;margin-top:8px;line-height:1.4;color:#5e796a}
+
+/* Three-stage provider booking: compact green progress bars and one stage at a time. */
+.jcal-new-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:0 0 5px}
+.jcal-new-step{display:grid;gap:7px;color:#8896a5;font-size:11px;font-weight:650;text-align:center;white-space:nowrap}
+.jcal-new-step-bar{height:5px;border-radius:5px;background:#dce8e2}
+.jcal-new-step.active,.jcal-new-step.done{color:#087e46}
+.jcal-new-step.active .jcal-new-step-bar,.jcal-new-step.done .jcal-new-step-bar{background:#00c65c}
+.jcal-new-stage{display:grid;gap:12px;align-content:start}
+.jcal-new-consent{padding:10px 0 4px}
+.jcal-new-consent>p:first-child{font-size:14px;line-height:1.5;color:#526d80;margin:0}
+.jcal-new-consent .jcal-new-checkbox{margin:6px 0 2px}
+.jcal-new-sheet .jcal-new-actions{margin-top:1px}
