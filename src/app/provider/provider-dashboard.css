@@ -416,3 +416,9 @@
 .jt-didit-refresh:disabled{opacity:.55}
 .jt-didit-unavailable{display:flex;gap:8px;align-items:flex-start;border:1px solid #f0dcac;border-radius:10px;background:#fff9ed;padding:11px}
 .jt-didit-unavailable svg{flex:none}
+
+/* Compact provider KYC: progress follows greeting, not a duplicate navigation panel. */
+.jt-provider-id-progress-top{margin:0 0 14px}
+.jt-provider-identity-stage{padding-top:18px}
+.jt-provider-verification-heading{margin:0 0 14px}
+@media(max-width:540px){.jt-provider-id-progress-top{margin-bottom:12px}.jt-provider-identity-stage{padding-top:14px}}
