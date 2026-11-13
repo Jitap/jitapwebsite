@@ -1,21 +1,28 @@
-import Image from 'next/image';
 import type {Metadata} from 'next';
 import './wallet.css';
 
 export const metadata:Metadata={
- title:'Wallet Coming Soon | JiTap',
- description:'JiTap Wallet is launching soon. Payments, balances and withdrawals are not yet available.'
+ title:'JiTap Wallet | Coming Soon',
+ description:'Preview the JiTap provider wallet. Wallet features are launching soon.'
 };
+
+const previewAmount='KES 1,500';
 
 export default function ProviderWalletComingSoon(){
  return <main className="jt-wallet-coming-soon" aria-labelledby="jt-wallet-title">
-  <h1 id="jt-wallet-title" className="jt-wallet-screen-reader-only">JiTap Wallet coming soon</h1>
-  <div className="jt-wallet-poster">
-   <Image src="/images/JiTap%20Wallet%20Launching%20Soon.png"
-    alt="JiTap Wallet Coming Soon — illustrative wallet with a future KES balance and withdrawal feature, marked Launching soon. The figures are mockups, not actual balances."
-    width={896} height={1792} sizes="(max-width: 680px) 100vw, 560px"
-    priority unoptimized className="jt-wallet-poster-image"/>
-  </div>
-  <p className="jt-wallet-disclaimer">Wallet balances and withdrawals are not available yet. Amounts in the preview are illustrative.</p>
+  <section className="jt-wallet-preview" aria-label="JiTap wallet preview">
+   <div className="jt-wallet-topline"><span className="jt-wallet-brand">JiTap <span>Wallet</span></span><span className="jt-wallet-soon">Launching soon</span></div>
+   <div className="jt-wallet-hero">
+    <p className="jt-wallet-eyebrow">Wallet preview</p>
+    <h1 id="jt-wallet-title">{previewAmount}</h1>
+    <p className="jt-wallet-caption">Free Credit</p>
+   </div>
+   <div className="jt-wallet-summary">
+    <div className="jt-wallet-summary-card"><span>Free Credit</span><strong>{previewAmount}</strong></div>
+    <div className="jt-wallet-summary-card"><span>Balance</span><strong>{previewAmount}</strong></div>
+   </div>
+   <div className="jt-wallet-launch"><span className="jt-wallet-launch-icon" aria-hidden="true">✦</span><div><strong>JiTap Wallet is coming soon</strong><p>More wallet features are on the way.</p></div></div>
+  </section>
+  <p className="jt-wallet-disclaimer">This is a preview only. The displayed amounts are illustrative, not available credit or a withdrawable balance.</p>
  </main>;
 }
