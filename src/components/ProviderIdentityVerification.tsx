@@ -65,7 +65,7 @@ export function ProviderIdentityVerification({onStatusChanged}:{onStatusChanged?
  return <section className="jt-didit-box" aria-label="Identity verification with Didit">
   <div className="jt-didit-heading"><ShieldCheck size={25}/><div>
    <strong>Verify your identity securely</strong>
-   <p>Powered by Didit · National ID, selfie liveness and face matching</p>
+   <p>Powered by Didit · Identity document, selfie liveness and face matching</p>
   </div></div>
   {loading?<p role="status">Checking your verification status…</p>:
    <>
@@ -81,9 +81,9 @@ export function ProviderIdentityVerification({onStatusChanged}:{onStatusChanged?
      <p>Your verification was not approved. Contact JiTap Service Operations for a review or instructions on a new attempt.</p>:
      data?.enabled&&data?.configured?
      <>
-      <p>Didit securely captures your Kenyan ID and selfie. JiTap stores the verification decision and reference, not copies of the images. Authorized JiTap administrators may securely view your ID number, date of birth and verification selfie from Didit for provider vetting, with access recorded.</p>
+      <p>JiTap securely captures your Kenyan identity document and selfie through Didit. JiTap securely stores the verification decision and reference.</p>
       <label className="jt-didit-consent"><input type="checkbox" checked={consent} onChange={e=>setConsent(e.target.checked)}/>
-       <span>I consent to Didit processing my identity document and selfie for identity verification and to restricted JiTap administrators viewing the ID number, date of birth and verification selfie from Didit for provider vetting. I have read JiTap's <a href="/privacy" target="_blank" rel="noopener noreferrer">privacy information</a>.</span>
+       <span>I consent to JiTap processing my identity document and selfie for identity verification. I have read JiTap's <a href="/privacy" target="_blank" rel="noopener noreferrer">privacy information</a>.</span>
       </label>
       <button type="button" className="jt-provider-primary jt-didit-start" disabled={busy||(!data.verificationUrl&&!consent)}
        onClick={()=>{if(data.verificationUrl)window.location.assign(data.verificationUrl);else void start()}}>
