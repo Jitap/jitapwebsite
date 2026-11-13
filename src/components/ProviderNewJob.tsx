@@ -17,8 +17,8 @@ export function ProviderNewJob({date,onClose,onCreated}:{date:string;onClose:()=
  async function submit(e:FormEvent<HTMLFormElement>){
   e.preventDefault();setError('');setSuccess('');
   if(form.startTime>=form.endTime){setError('End time must be after start time.');return}
-  if(form.reminderChannel==='whatsapp_manual'&&!form.whatsappOptIn){setError('Confirm customer permission before using WhatsApp reminders.');return}
-  if(!form.smsNotificationConsent){setError('Confirm that your customer agreed to a JiTap booking SMS before continuing.');return}
+  if(form.reminderChannel==='whatsapp_manual'&&!form.whatsappOptIn){setError('Confirm customer consent for JiTap SMS & WhatsApp booking updates.');return}
+  if(!form.smsNotificationConsent){setError('Confirm customer consent for JiTap SMS & WhatsApp booking updates.');return}
   setBusy(true);
   try{
    const response=await fetch('/api/provider/calendar/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(form)});
@@ -49,8 +49,7 @@ export function ProviderNewJob({date,onClose,onCreated}:{date:string;onClose:()=
       <label>Number of appointments<input type="number" min={2} max={24} value={form.count} onChange={e=>put('count',Number(e.target.value))}/></label><small>Creates up to 24 separately tracked bookings, within the next 12 months. Each visit gets its own Service ID.</small>
     </div>}
     <div className="jcal-new-pair"><label>Reminder<select value={form.reminderMinutes} onChange={e=>put('reminderMinutes',Number(e.target.value))}><option value={0}>At start</option><option value={5}>5 minutes before</option><option value={15}>15 minutes before</option><option value={30}>30 minutes before</option><option value={60}>1 hour before</option><option value={1440}>1 day before</option></select></label><label>Reminder method<select value={form.reminderChannel} onChange={e=>put('reminderChannel',e.target.value as 'in_app'|'whatsapp_manual')}><option value="in_app">JiTap notification</option><option value="whatsapp_manual">WhatsApp (send yourself)</option></select></label></div>
-    <label className="jcal-new-checkbox"><input type="checkbox" required checked={form.smsNotificationConsent} onChange={e=>put('smsNotificationConsent',e.target.checked)}/>The customer agreed to receive one JiTap SMS with the booking reference and tracking link. Required before creating this booking.</label>
-    <label className="jcal-new-checkbox"><input type="checkbox" checked={form.whatsappOptIn} onChange={e=>put('whatsappOptIn',e.target.checked)}/>The customer explicitly agreed to receive JiTap WhatsApp appointment reminders and service progress updates (ETA, On My Way, arrival, completion and changes). Optional; WhatsApp is not sent without consent and an approved template.</label>
+    <label className="jcal-new-checkbox"><input type="checkbox" required checked={form.smsNotificationConsent&&form.whatsappOptIn} onChange={e=>setForm(current=>({...current,smsNotificationConsent:e.target.checked,whatsappOptIn:e.target.checked}))}/>Customer agreed to receive JiTap SMS &amp; WhatsApp booking updates.</label>
     <label>Job description / notes<textarea rows={3} maxLength={2000} placeholder="e.g. Sink model, part number, replacement parts or additional customer instructions" value={form.description} onChange={e=>put('description',e.target.value)}/></label>
     <p className="jcal-new-explain">Saving confirms your direct customer booking, creates a trackable JiTap Service ID, and records it in SOD.</p>
     {error&&<p role="alert" className="jcal-new-error">{error}</p>}
