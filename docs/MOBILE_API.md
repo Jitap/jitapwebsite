@@ -24,3 +24,12 @@ Protected routes use `resolveAccessSession`: a valid Bearer is preferred; if Bea
 ## Endpoints
 
 See JiTap backend `docs/PILOT_API.md` for the full route inventory.
+
+## Testing
+
+| Layer | Command | Secrets |
+|-------|---------|---------|
+| Unit | `npm run test:auth` | None |
+| Live HTTP | `./scripts/pilot-auth-smoke.sh` | `PILOT_API_BASE`, test phone, OTP from SMS |
+
+Full credential list: `jiTap-backend/docs/PILOT_AUTH_TESTING.md`.
