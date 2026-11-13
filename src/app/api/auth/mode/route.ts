@@ -3,12 +3,13 @@ import {NextRequest,NextResponse} from 'next/server';
 import {getProviderSession} from '@/lib/provider-session-server';
 import {getCustomerIdentity} from '@/lib/customer-session-server';
 import {sameOrigin,setAuthCookies} from '@/lib/jitap-auth';
+import {parseBearerAuthorization} from '@/lib/jitap-session';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
 const headers={'Cache-Control':'private, no-store'};
 const error=(message:string,status:number)=>NextResponse.json({error:message},{status,headers});
 export async function POST(req:NextRequest){
- if(!sameOrigin(req))return error('Invalid origin',403);
+ if(!parseBearerAuthorization(req)&&!sameOrigin(req))return error('Invalid origin',403);
  if(Number(req.headers.get('content-length')||0)>600)return error('Request too large',413);
  const data=await req.json().catch(()=>null) as {mode?:unknown}|null;
  const mode=data?.mode;

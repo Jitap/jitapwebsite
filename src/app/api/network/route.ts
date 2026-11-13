@@ -11,11 +11,7 @@ type Json=Record<string,unknown>;
 type Role='customer'|'provider';
 async function identity(req:NextRequest):Promise<{token:string;role:Role;rotated?:{access:string;refresh:string;expires:number}}|null>{
  const provider=await getProviderSession(req);
- if(provider){
-  if(req.cookies.get('jt_mode')?.value==='customer')
-   return {token:provider.accessToken,role:'customer',rotated:provider.rotated};
-  return {token:provider.accessToken,role:'provider',rotated:provider.rotated};
- }
+ if(provider)return {token:provider.accessToken,role:'provider',rotated:provider.rotated};
  const customer=await getCustomerIdentity(req);
  return customer.kind==='customer'?{token:customer.identity.accessToken,role:'customer',rotated:customer.identity.rotated}:null;
 }
