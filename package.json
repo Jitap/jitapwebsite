@@ -8,7 +8,9 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "test:routing": "node scripts/test-service-routing.cjs",
-    "prebuild": "npm run test:routing"
+    "test:session": "node scripts/test-jitap-session.cjs",
+    "test:auth": "npm run test:session",
+    "prebuild": "npm run test:routing && npm run test:session"
   },
   "dependencies": {
     "next": "^15.5.0",

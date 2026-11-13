@@ -9,12 +9,7 @@ export async function GET(req:NextRequest){
  if(reviewer)return NextResponse.json({authenticated:true,reviewer:true,accountType:reviewer.role,primaryAccountType:'provider',phone:'Not required',fullName:'Sena · Design Reviewer'},{headers:noStore});
  const resolved=await resolveAccessSession(req);
  if(!resolved)return NextResponse.json({authenticated:false},{status:401,headers:noStore});
- const access=resolved.accessToken;
- const user=await goTrue('user',undefined,access,'GET');
- if(!user?.ok)return NextResponse.json({authenticated:false},{status:401,headers:noStore});
- const data=user.data as {id?:string;phone?:string};
- if(!data.id)return NextResponse.json({authenticated:false},{status:401,headers:noStore});
- const lookup=await accountQuery(access,'?user_id=eq.'+encodeURIComponent(data.id)+'&select=account_type,phone,full_name');
+ const lookup=await accountQuery(resolved.accessToken,'?user_id=eq.'+encodeURIComponent(resolved.userId)+'&select=account_type,phone,full_name');
  if(!lookup.ok||!Array.isArray(lookup.data)||!lookup.data[0])return NextResponse.json({authenticated:false,error:'Account profile unavailable'},{status:503,headers:noStore});
  const profile=lookup.data[0];
  const activeMode=profile.account_type==='provider'&&actingAsCustomer(req)?'customer':profile.account_type;
