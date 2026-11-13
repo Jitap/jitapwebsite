@@ -1,4 +1,5 @@
 name: Update JiTap Wallet Poster Text
+# Final pass: correct Free Credit and Balance values in original image
 on:
   push:
     paths:
