@@ -236,13 +236,14 @@ export default function ProviderDashboardPage(){
     </div>}
     {approved?<div className="jt-provider-home-greeting">
        <h1>Hello, <span>{firstName}</span></h1><p>{online?'You’re online and available':'You’re currently offline'}</p>
-      </div>:<div className="jt-provider-greeting"><div><p>JITAP FOR PROVIDERS</p><h1>Habari, <span>{firstName}!</span></h1><div className="jt-provider-subtext">{!submitted?'Complete onboarding to get started.':'Your provider profile is awaiting JiTap review.'}</div></div>
+      </div>:<div className="jt-provider-greeting"><div><p>JITAP FOR PROVIDERS</p><h1>Habari, <span>{firstName}!</span></h1>{tab!=='verification'&&<div className="jt-provider-subtext">{!submitted?'Complete onboarding to get started.':'Your provider profile is awaiting JiTap review.'}</div>}</div>
      <button type="button" className="jt-provider-avatar" onClick={()=>setTab('profile')} aria-label="Add profile photo">{dashboard?.uploadedMedia?.some(m=>m.kind==='profile_photo')?<img src={'/api/provider/media?kind=profile_photo&v='+encodeURIComponent(dashboard.uploadedMedia.find(m=>m.kind==='profile_photo')?.uploadedAt||'')} alt="Your profile photo"/>:<UserRound size={32}/>}</button>
     </div>}
-    {!approved&&<nav className="jt-provider-tabs" aria-label="Provider dashboard">
+    {!approved&&tab!=='verification'&&<nav className="jt-provider-tabs" aria-label="Provider dashboard">
      {(['home','requests','profile','verification'] as Tab[]).map(t=><button key={t} aria-current={tab===t?'page':undefined} className={tab===t?'selected':''} onClick={()=>{setTab(t);setError('');setSuccess('')}}>{t==='home'?<Radio size={18}/>:t==='requests'?<ClipboardList size={18}/>:t==='verification'?<ShieldCheck size={18}/>:<UserRound size={18}/>} {t==='home'?'Home':t==='requests'?'Requests':t==='verification'?'Verification':'My Profile'}</button>)}
     </nav>}
-    {error&&<div className="jt-provider-error" role="alert">{error}</div>}
+    {!approved&&tab==='verification'&&<div className="jt-provider-id-progress jt-provider-id-progress-top" aria-label="Onboarding progress"><span className="done">✓ Phone</span><span className="done">✓ OTP</span><span className="done">✓ Profile</span><span className="current">4 Verification</span></div>}
+     {error&&<div className="jt-provider-error" role="alert">{error}</div>}
     {success&&<div className="jt-provider-success" role="status">{success}</div>}
     {approved&&tab==='profile'?<section className="jt-provider-card jt-verified-profile" aria-label="Verified provider profile">
      <div className="jt-verified-stamp"><CheckCircle2 size={27}/><div><h2>Verified provider</h2><p>Your account, professional profile and ID verification are approved by JiTap.</p></div></div>
@@ -284,9 +285,7 @@ export default function ProviderDashboardPage(){
      </form>
     </section>:tab==='verification'?
     <section className="jt-provider-card jt-provider-identity-stage" aria-labelledby="jt-verify-title">
-     <div className="jt-provider-id-progress"><span className="done">✓ Phone</span><span className="done">✓ OTP</span><span className="done">✓ Profile</span><span className="current">4 Verification</span></div>
-     <h2 id="jt-verify-title">Identity verification</h2>
-     <p className="jt-provider-muted">Confirm your identity securely with Didit before JiTap Service Operations completes your provider review. You no longer need to upload ID photos to JiTap.</p>
+     <h2 id="jt-verify-title" className="jt-provider-verification-heading">Verify your identity securely</h2>
      <ProviderIdentityVerification onStatusChanged={refresh}/>
     </section>:
     <div className="jt-provider-main">
@@ -351,7 +350,7 @@ export default function ProviderDashboardPage(){
      </section>}
      {tab==='requests'&&<section className="jt-provider-card jt-provider-response-history"><h2>Your recent BUZZ responses</h2>{dashboard?.recentResponses.length?dashboard.recentResponses.map(r=><div key={r.request_id}><span>JT-{r.request_id.slice(0,8).toUpperCase()}</span><strong>{r.decision.replaceAll('_',' ')}</strong></div>):<p className="jt-provider-muted">No responses recorded yet.</p>}</section>}
     </div>}
-    <div className="jt-provider-footer-note">JiTap · Local services in Kenya · Provider registration and BUZZ. Payment and wallet features are not available in this release.</div>
+    <div className="jt-provider-footer-note">JiTap · Local services in Kenya · Provider registration and BUZZ. </div>
    </>}
   </div>
  </main>;
