@@ -34,8 +34,8 @@ def find_line(pattern):
             return txt,box,words
     return None
 targets=[
-    (r"KES\\s+[O0](?!\\d)","KES 1,500"),
-    (r"KES\\s+500(?!\\d)","KES 1,500"),
+    (r"KES\s+[O0](?!\d)","KES 1,500"),
+    (r"KES\s+500(?!\d)","KES 1,500"),
 ]
 hits=[]
 for pattern,new in targets:
