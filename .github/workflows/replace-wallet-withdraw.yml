@@ -1,0 +1,28 @@
+name: Replace Wallet Withdraw Label
+on:
+  push:
+    paths:
+      - '.github/workflows/replace-wallet-withdraw.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  replace-label:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq tesseract-ocr fonts-dejavu-core
+          python -m pip install --quiet pillow pytesseract opencv-python-headless numpy
+      - name: Replace only Withdraw label on existing PNG
+        run: python scripts/replace_wallet_withdraw.py
+      - name: Commit corrected original artwork
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "public/images/JiTap Wallet Launching Soon.png"
+          if git diff --cached --quiet; then echo "No image change" && exit 1; fi
+          git commit -m "Replace Withdraw with Use Credits on original JiTap wallet image"
+          git push
