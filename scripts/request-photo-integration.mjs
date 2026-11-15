@@ -24,4 +24,13 @@ assert.equal(uploaded.requestId,data.reference);
 const unauth=await fetch(origin+'/api/request/photos',{method:'POST',headers:{Origin:origin,'x-jitap-request-id':data.reference,'x-jitap-photo-token':'invalid'},body:new FormData(),signal:AbortSignal.timeout(8000)});
 assert.equal(unauth.status,403,'Tokenless photo upload must be forbidden');
 console.log('PASS synthetic QA photo stored privately and linked to '+data.reference+'; invalid token refused');
+// Photos must never be accessible without owner authentication or a live BUZZ invitation.
+const privateList=await fetch(origin+'/api/request/photos/access?requestId='+encodeURIComponent(data.reference),{signal:AbortSignal.timeout(8000)});
+assert.equal(privateList.status,401,'Private photo list must require signed-in request owner');
+const wrongBuzz=await fetch(origin+'/api/request/photos/access',{
+ method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},
+ body:JSON.stringify({token:'X'.repeat(43)}),signal:AbortSignal.timeout(8000)
+});
+assert.equal(wrongBuzz.status,403,'An unrecognized BUZZ token cannot retrieve private photos');
+console.log('PASS photo access denies unauthenticated customers and invalid BUZZ tokens');
 // Do not log or persist the temporary photo-upload token.
