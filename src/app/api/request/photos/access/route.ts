@@ -10,11 +10,11 @@ const headers={'Cache-Control':'private, no-store','Referrer-Policy':'no-referre
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const buzzToken=/^[A-Za-z0-9_-]{43}$/;
 const bucket='jitap-request-private';
-type Photo={object_path:string;mime_type:string};
+type Photo={object_path:string;mime_type:string;ai_observation:string|null};
 function response(payload:unknown,status=200){return NextResponse.json(payload,{status,headers})}
 
 async function photosForRequest(requestId:string){
- const rows=await supabasePrivate<Photo[]>('jitap_request_photos?select=object_path,mime_type&request_id=eq.'+encodeURIComponent(requestId)+'&order=created_at.asc&limit=4');
+ const rows=await supabasePrivate<Photo[]>('jitap_request_photos?select=object_path,mime_type,ai_observation&request_id=eq.'+encodeURIComponent(requestId)+'&order=created_at.asc&limit=4');
  const base=process.env.SUPABASE_URL?.replace(/\/$/,'');
  const key=process.env.SUPABASE_SERVICE_ROLE_KEY;
  if(!base||!key)throw Error('Storage unavailable');
@@ -28,7 +28,8 @@ async function photosForRequest(requestId:string){
   if(!result.ok)throw Error('Photo access unavailable');
   const signed=await result.json() as {signedURL?:string};
   if(!signed.signedURL||!signed.signedURL.startsWith('/'))throw Error('Invalid signed photo');
-  return {id:i+1,url:base+signed.signedURL,type:row.mime_type};
+  const signedPath=signed.signedURL.startsWith('/storage/v1/')?signed.signedURL:'/storage/v1'+signed.signedURL;
+  return {id:i+1,url:base+signedPath,type:row.mime_type,observation:row.ai_observation||null};
  }));
  return response({images});
 }
