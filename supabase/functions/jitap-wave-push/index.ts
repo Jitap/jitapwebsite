@@ -1,6 +1,11 @@
 // JiTap Wave Buzz native push dispatcher for Expo / EAS (FCM + APNs).
 // Deployed in Supabase Edge Functions. No push tokens or customer information
 // are written to logs; the caller secret lives only in Supabase Vault.
+// Supabase Edge runs on Deno; website CI compiles this source with DOM types.
+declare const Deno:{
+ env:{get:(key:string)=>string|undefined};
+ serve:(handler:(request:Request)=>Response|Promise<Response>)=>void;
+};
 type QueueJob={id:string;expo_push_token:string;platform:'android'|'ios';request_id:string;provider_user_id:string;expires_at:string;category:string};
 type ReceiptJob={id:string;expo_ticket_id:string};
 type ExpoTicket={status:'ok'|'error';id?:string;message?:string;details?:{error?:string}};
@@ -120,7 +125,7 @@ async function reconcile(token:string){
  }
  return {checked:rows.length,confirmedByProvider:confirmed,failed};
 }
-Deno.serve(async(req)=>{
+Deno.serve(async(req:Request)=>{
  if(req.method!=='POST')return json({error:'Method not allowed'},405);
  if(!supabaseUrl||!serviceKey)return json({error:'Server configuration incomplete'},503);
  const token=req.headers.get('x-jitap-push-dispatch')||'';
