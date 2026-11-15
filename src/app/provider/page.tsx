@@ -9,6 +9,7 @@ import {canonicalTrade} from '@/lib/provider-ranking';
 import {ProviderMediaFields,type MediaKind} from '@/components/ProviderMediaFields';
 import './provider-dashboard.css';
 import {ProviderJobAction} from '@/components/ProviderJobAction';
+import {WaveBuzzIncoming} from '@/components/WaveBuzzIncoming';
 import {ProviderTravelEstimate} from '@/components/ProviderTravelEstimate';
 import {ProviderIdentityVerification} from '@/components/ProviderIdentityVerification';
 
@@ -228,6 +229,7 @@ export default function ProviderDashboardPage(){
         <button className={'jt-provider-toggle '+(online?'active':'')} type="button" role="switch" aria-label="Available for requests" aria-checked={online} disabled={busy} onClick={()=>void act({action:'availability',online:!online})}><span/></button>
       </div></div>
      </header>:<header className="jt-provider-app-header"><span className="jt-provider-workspace-heading">Provider dashboard</span><div className="jt-provider-header-actions"><div className="jt-provider-badge"><ShieldCheck size={17}/> Provider workspace</div><button type="button" onClick={switchCustomer} disabled={busy} className="jt-provider-logout">Switch to Customer</button><button type="button" onClick={logout} className="jt-provider-logout">Log out</button></div></header>}
+    <WaveBuzzIncoming enabled={!!approved&&!!online&&!reviewMode}/>
     {approved&&notificationsOpen&&<aside className="jt-provider-notification-panel" id="jt-provider-notification-panel" aria-label="Unread provider notifications">
       <div className="jt-provider-notification-title"><strong>Notifications <span className="jt-provider-notification-total">{unreadCount} unread</span></strong><button type="button" onClick={()=>setNotificationsOpen(false)} aria-label="Close notifications">×</button></div>
       {notificationError&&<p className="jt-provider-notification-error" role="alert">{notificationError}</p>}
