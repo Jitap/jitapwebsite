@@ -64,9 +64,9 @@ export default function ProviderBuzzPage(){
      </dl>
      <h2>Your response</h2>
      <div className="jt-buzz-choices" role="group" aria-label="Respond to opportunity">
-      <button type="button" className={selection==='accepted'?'selected':''} onClick={()=>setSelection('accepted')}>✓ Accept</button>
-      <button type="button" className={selection==='declined'?'selected':''} onClick={()=>setSelection('declined')}>✕ Decline</button>
-      <button type="button" className={selection==='needs_clarification'?'selected':''} onClick={()=>setSelection('needs_clarification')}>? Ask a question</button>
+      <button type="button" className={'jt-buzz-choice-accept'+(selection==='accepted'?' selected':'')} aria-pressed={selection==='accepted'} onClick={()=>setSelection('accepted')}>Accept</button>
+      <button type="button" className={'jt-buzz-choice-decline'+(selection==='declined'?' selected':'')} aria-pressed={selection==='declined'} onClick={()=>setSelection('declined')}>Decline</button>
+      <button type="button" className={'jt-buzz-choice-question'+(selection==='needs_clarification'?' selected':'')} aria-pressed={selection==='needs_clarification'} onClick={()=>setSelection('needs_clarification')}>Ask a question</button>
      </div>
      {selection==='needs_clarification'&&<label className="jt-buzz-question">What would you like JiTap to clarify?<textarea maxLength={500} rows={4} value={note} onChange={e=>setNote(e.target.value)} placeholder="e.g. What laptop model is it? Is the customer available tomorrow?"/></label>}
      {error&&<p className="jt-buzz-error" role="alert">{error}</p>}
