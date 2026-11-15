@@ -10,6 +10,7 @@ import {getProviderMedia} from '@/lib/provider-media-server';
 import {supabasePrivate} from '@/lib/coordinator-server';
 import {saveServiceBrief} from '@/lib/service-brief-server';
 import {inferService} from '@/lib/data';
+import {canonicalTrade} from '@/lib/provider-ranking';
 import {dispatchKapsoQueue} from '@/lib/kapso-dispatcher';
 import {providerResponseToken} from '@/lib/provider-alerts';
 
@@ -73,9 +74,9 @@ async function directProviderInvitations(verifiedPhone:string):Promise<DirectInv
  const assignments=await supabasePrivate<{id:string;case_id:string;provider_id:string}[]>(
   'coordinator_provider_assignments?select=id,case_id,provider_id&provider_id=in.('+ids.join(',')+')&state=in.(proposed,contacted,needs_clarification,quote_requested)&order=assigned_at.desc&limit=20');
  if(!assignments.length)return [];
- const links=await supabasePrivate<{assignment_id:string;token_hash:string;used_at:string|null;expires_at:string}[]>(
-  'provider_response_links?select=assignment_id,token_hash,used_at,expires_at&assignment_id=in.('+assignments.map(a=>a.id).join(',')+')');
- const validLinks=new Map(links.filter(l=>!l.used_at&&Date.parse(l.expires_at)>Date.now()).map(l=>[l.assignment_id,l]));
+ const links=await supabasePrivate<{assignment_id:string;token_hash:string;used_at:string|null;expires_at:string;opened_at:string|null}[]>(
+  'provider_response_links?select=assignment_id,token_hash,used_at,expires_at,opened_at&assignment_id=in.('+assignments.map(a=>a.id).join(',')+')');
+ const validLinks=new Map(links.filter(l=>!l.used_at&&Date.parse(l.expires_at)>Date.now()&&(!l.opened_at||Date.parse(l.opened_at)+59000>Date.now())).map(l=>[l.assignment_id,l]));
  const cases=await supabasePrivate<{id:string;source_id:string;source_kind:string;status:string}[]>(
   'coordinator_cases?select=id,source_id,source_kind,status&id=in.('+assignments.map(a=>a.case_id).join(',')+')');
  const liveCases=new Map(cases.filter(c=>c.source_kind==='website_request'&&!['cancelled','closed','completed'].includes(c.status)).map(c=>[c.id,c]));
@@ -119,21 +120,27 @@ export async function GET(req:NextRequest){
   // A clear conflicting task classification is also excluded (for example a
   // request filed under plumbing but explicitly describing laptop repair).
   const workspace=Array.isArray(profileResult.data)?profileResult.data[0]||null:null;
-  const approvedCategories=new Set<string>(Array.isArray(workspace?.categories)?workspace.categories:[]);
+  const approvedCategories=new Set<string>((Array.isArray(workspace?.categories)?workspace.categories:[]).map(canonicalTrade));
   const coverage=new Set<string>(Array.isArray(workspace?.service_areas)?workspace.service_areas:[]);
+  // Fetch after the offer-issuing RPC. The timestamp comes from Postgres, not
+  // the handset clock, and is never renewed by refresh or repeated polling.
+  const offerRecords=await dbRequest(session.accessToken,
+   'jitap_provider_offer_windows?select=request_id,expires_at&provider_user_id='+id+'&expires_at=gt.'+encodeURIComponent(new Date().toISOString())+'&limit=200');
+  if(!offerRecords.ok)throw Error('Offer expiry state unavailable');
+  const expirationById=new Map<string,string>((Array.isArray(offerRecords.data)?offerRecords.data:[])
+   .map((o:{request_id:string;expires_at:string})=>[o.request_id,o.expires_at]));
   type Buzz={request_id:string;category:string;area:string;technical_summary?:string};
-  const matchingOpportunities=(Array.isArray(opportunities.data)?opportunities.data:[]).filter((candidate:unknown):candidate is Buzz=>{
-   if(!candidate||typeof candidate!=='object')return false;
-   const item=candidate as Partial<Buzz>;
-   if(typeof item.request_id!=='string'||typeof item.category!=='string'||typeof item.area!=='string')return false;
-   if(!approvedCategories.has(item.category)||!coverage.has(item.area))return false;
-   const inferred=typeof item.technical_summary==='string'?inferService(item.technical_summary):undefined;
-   // If there is no confident classification, preserve the actual category
-   // submitted by the customer rather than guessing a different trade.
-   const equivalent=(inferred==='it-repairs'&&item.category==='computer-phone-repair')||
-    (inferred==='computer-phone-repair'&&item.category==='it-repairs');
-   return !inferred||inferred===item.category||equivalent;
-  });
+  const matchingOpportunities=(Array.isArray(opportunities.data)?opportunities.data:[])
+   .filter((candidate:unknown):candidate is Buzz=>{
+    if(!candidate||typeof candidate!=='object')return false;
+    const item=candidate as Partial<Buzz>;
+    if(typeof item.request_id!=='string'||typeof item.category!=='string'||typeof item.area!=='string')return false;
+    if(!approvedCategories.has(canonicalTrade(item.category))||!coverage.has(item.area))return false;
+    const inferred=typeof item.technical_summary==='string'?inferService(item.technical_summary):undefined;
+    return !inferred||canonicalTrade(inferred)===canonicalTrade(item.category);
+   })
+   .filter(o=>expirationById.has(o.request_id))
+   .map(o=>({...o,offer_expires_at:expirationById.get(o.request_id)!}));
   // Lazily organize older, customer-reported requests into professional
   // briefs in small batches. This runs after the response and never blocks BUZZ.
   const oldBriefs=(matchingOpportunities as unknown[])
