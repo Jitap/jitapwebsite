@@ -275,7 +275,7 @@ export function GuidedRequest(){
     const observations:string[]=[];
     for(const photo of askPhotos.slice(0,2)){
      try{
-      const body=new FormData();body.append('photo',photo.file);
+      const body=new FormData();body.append('photo',photo.file);body.append('description',typed.slice(0,450));
       const result=await fetch('/api/ai/service-photo',{method:'POST',body,cache:'no-store',signal:AbortSignal.timeout(14000)});
       if(!result.ok)continue;
       const data=await result.json() as {observation?:string};
