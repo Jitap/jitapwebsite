@@ -5,6 +5,7 @@ import {useRouter} from 'next/navigation';
 import {Bell,BriefcaseBusiness,CheckCircle2,ChevronRight,ClipboardList,Clock3,MapPin,Radio,ShieldCheck,UserRound,UsersRound,Wifi,WifiOff,Wrench,ArrowRight} from 'lucide-react';
 import {KENYAN_SERVICE_AREAS,SERVICE_OPTIONS} from '@/lib/provider-options';
 import {providerPreferredDate,providerPreferredTime} from '@/lib/provider-schedule';
+import {canonicalTrade} from '@/lib/provider-ranking';
 import {ProviderMediaFields,type MediaKind} from '@/components/ProviderMediaFields';
 import './provider-dashboard.css';
 import {ProviderJobAction} from '@/components/ProviderJobAction';
@@ -15,7 +16,7 @@ type ProviderProfile={
  full_name:string;business_name:string;categories:string[];service_areas:string[];
  base_area:string;experience_years:number;skills:string;is_online:boolean;submitted_at:string|null;
 };
-type Opportunity={request_id:string;category:string;area:string;preferred_date:string;preferred_time:string;created_at:string;technical_summary:string;proposed_scope:string;urgency:'high'|'normal'|'low'|'unspecified';brief_source:'ai'|'reported';requested_timing:string;job_location:string};
+type Opportunity={offer_expires_at?:string;request_id:string;category:string;area:string;preferred_date:string;preferred_time:string;created_at:string;technical_summary:string;proposed_scope:string;urgency:'high'|'normal'|'low'|'unspecified';brief_source:'ai'|'reported';requested_timing:string;job_location:string};
 type PastResponse={request_id:string;decision:string;created_at:string};
 type ConfirmedJob={id:string;requestId:string;status:string;customerName:string;customerPhone:string;location:string;service:string;latitude:number|null;longitude:number|null;placeId:string;rated:boolean};
 type DirectInvitation={requestId:string;serviceId:string;category:string;area:string;url:string};
@@ -26,6 +27,8 @@ const empty={full_name:'',business_name:'',categories:[] as string[],service_are
 export default function ProviderDashboardPage(){
  const router=useRouter();
  const [dashboard,setDashboard]=useState<Dashboard|null>(null);
+ const [offerClock,setOfferClock]=useState(Date.now());
+ useEffect(()=>{const handle=window.setInterval(()=>setOfferClock(Date.now()),1000);return()=>window.clearInterval(handle)},[]);
  const [reviewMode,setReviewMode]=useState(false);
  const referralClaimInFlight=useRef(false);
  const [reviewOnline,setReviewOnline]=useState(true);
@@ -201,9 +204,11 @@ export default function ProviderDashboardPage(){
  // Use the same filtered list for the badge, notifications and visible cards.
  // Keep locally handled IDs excluded across periodic refreshes, so a declined
  // request cannot briefly reappear while the server updates.
+ const approvedTrades=new Set((dashboard?.profile?.categories||[]).map(canonicalTrade));
  const liveOpportunities=(dashboard?.opportunities||[]).filter(o=>
-  !!dashboard?.profile?.categories.includes(o.category)&&
+  approvedTrades.has(canonicalTrade(o.category))&&
   !!dashboard?.profile?.service_areas.includes(o.area)&&
+  (!o.offer_expires_at||Date.parse(o.offer_expires_at)>offerClock)&&
   !dismissedIds.includes(o.request_id)
  );
  const readNotificationIds=new Set([...(dashboard?.readNotificationIds||[]),...locallyReadNotifications]);
@@ -342,6 +347,9 @@ export default function ProviderDashboardPage(){
         <div className="jt-provider-request-top"><span className="jt-provider-request-tag"><Wrench size={15}/> {SERVICE_OPTIONS.find(x=>x.value===o.category)?.label||o.category}</span><span className={'jt-buzz-urgency '+o.urgency}>Urgency: {o.urgency==='unspecified'?'Not specified':o.urgency==='normal'?'Normal':o.urgency==='high'?'High':'Low'}</span></div>
         <h3>{SERVICE_OPTIONS.find(x=>x.value===o.category)?.label||'Service'} <span className="jt-provider-request-area">· {o.area}</span></h3>
         <div className="jt-buzz-reference">Service ID: JT-{o.request_id.slice(0,8).toUpperCase()}</div>
+        {o.offer_expires_at&&<div role="timer" aria-label="Time remaining to respond" style={{fontSize:13,fontWeight:750,color:'#047b46',margin:'9px 0'}}>
+         BUZZ expires in 0:{String(Math.max(0,Math.ceil((Date.parse(o.offer_expires_at)-offerClock)/1000))).padStart(2,'0')}secs
+        </div>}
 
         <div className="jt-buzz-schedule">
          <div><MapPin size={17}/><span><strong>Job location</strong>{o.job_location||o.area}{(o.job_location||o.area).toLowerCase().includes('mombasa')?'':' · Mombasa'} · Exact directions shared when you accept</span></div>
