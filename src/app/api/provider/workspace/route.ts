@@ -1,15 +1,17 @@
 import {getReviewSession} from '@/lib/jitap-review-session';
 import {reviewerProviderDashboard} from '@/lib/jitap-review-fixtures';
 import {NextRequest,NextResponse,after} from 'next/server';
+import {createHash} from 'node:crypto';
 import {z} from 'zod';
 import {getProviderSession} from '@/lib/provider-session-server';
-import {sameOrigin,setAuthCookies} from '@/lib/jitap-auth';
+import {sameOrigin,setAuthCookies,normalizeKenyanPhone} from '@/lib/jitap-auth';
 import {SERVICE_OPTIONS,KENYAN_SERVICE_AREAS} from '@/lib/provider-options';
 import {getProviderMedia} from '@/lib/provider-media-server';
 import {supabasePrivate} from '@/lib/coordinator-server';
 import {saveServiceBrief} from '@/lib/service-brief-server';
 import {inferService} from '@/lib/data';
 import {dispatchKapsoQueue} from '@/lib/kapso-dispatcher';
+import {providerResponseToken} from '@/lib/provider-alerts';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -52,6 +54,49 @@ function responseWithSession(data:unknown,session:NonNullable<Awaited<ReturnType
  const response=NextResponse.json(data,{status,headers:noStore});
  if(session.rotated)setAuthCookies(response,session.rotated.access,session.rotated.refresh,session.rotated.expires);
  return response;
+}
+type DirectInvitation={requestId:string;serviceId:string;category:string;area:string;url:string};
+async function directProviderInvitations(verifiedPhone:string):Promise<DirectInvitation[]>{
+ // This fallback is restricted to an OTP-verified provider account whose mobile
+ // number exactly matches the notification contact registered for the provider ID.
+ // Neither provider IDs nor BUZZ links can be requested from the browser.
+ const contacts=await supabasePrivate<{provider_id:string;phone_e164:string;opted_out_at:string|null}[]>(
+  'provider_notification_contacts?select=provider_id,phone_e164,opted_out_at&limit=500');
+ const providerIds=contacts
+  .filter(c=>!c.opted_out_at&&normalizeKenyanPhone(c.phone_e164)===verifiedPhone)
+  .map(c=>c.provider_id);
+ if(!providerIds.length)return [];
+ const verified=await supabasePrivate<{id:string}[]>(
+  'provider_profiles?select=id&id=in.('+providerIds.map(encodeURIComponent).join(',')+')&verified_at=not.is.null&is_public=eq.true');
+ if(!verified.length)return [];
+ const ids=verified.map(p=>p.id);
+ const assignments=await supabasePrivate<{id:string;case_id:string;provider_id:string}[]>(
+  'coordinator_provider_assignments?select=id,case_id,provider_id&provider_id=in.('+ids.join(',')+')&state=in.(proposed,contacted,needs_clarification,quote_requested)&order=assigned_at.desc&limit=20');
+ if(!assignments.length)return [];
+ const links=await supabasePrivate<{assignment_id:string;token_hash:string;used_at:string|null;expires_at:string}[]>(
+  'provider_response_links?select=assignment_id,token_hash,used_at,expires_at&assignment_id=in.('+assignments.map(a=>a.id).join(',')+')');
+ const validLinks=new Map(links.filter(l=>!l.used_at&&Date.parse(l.expires_at)>Date.now()).map(l=>[l.assignment_id,l]));
+ const cases=await supabasePrivate<{id:string;source_id:string;source_kind:string;status:string}[]>(
+  'coordinator_cases?select=id,source_id,source_kind,status&id=in.('+assignments.map(a=>a.case_id).join(',')+')');
+ const liveCases=new Map(cases.filter(c=>c.source_kind==='website_request'&&!['cancelled','closed','completed'].includes(c.status)).map(c=>[c.id,c]));
+ if(!liveCases.size)return [];
+ const requests=await supabasePrivate<{id:string;payload:Record<string,unknown>}[]>(
+  'website_intake?select=id,payload&id=in.('+Array.from(new Set([...liveCases.values()].map(c=>c.source_id))).join(',')+')');
+ const byRequest=new Map(requests.map(r=>[r.id,r.payload]));
+ return assignments.flatMap(a=>{
+  const l=validLinks.get(a.id),c=liveCases.get(a.case_id);
+  if(!l||!c)return [];
+  const token=providerResponseToken(a.id);
+  if(createHash('sha256').update(token).digest('hex')!==l.token_hash)return [];
+  const payload=byRequest.get(c.source_id);
+  if(!payload)return [];
+  return [{
+   requestId:c.source_id,serviceId:'JT-'+c.source_id.slice(0,8).toUpperCase(),
+   category:typeof payload.category==='string'?payload.category.slice(0,80):'Service',
+   area:typeof payload.area==='string'?payload.area.slice(0,80):'Mombasa',
+   url:'/buzz#'+token
+  }];
+ });
 }
 export async function GET(req:NextRequest){
  const review=getReviewSession(req);
@@ -133,7 +178,10 @@ export async function GET(req:NextRequest){
     longitude:typeof p.locationLng==='number'?p.locationLng:null,
     placeId:clean(p.locationPlaceId),rated:ratings.some(r=>r.appointment_id===a.id)};
   });
+  // A missing carrier SMS must not prevent an authenticated provider from responding.
+  const directInvitations=await directProviderInvitations(session.phone).catch(()=>[] as DirectInvitation[]);
   return responseWithSession({
+   directInvitations,
    confirmedJobs,
    onboardingName:session.fullName||'',
    readNotificationIds:Array.isArray(notificationReads.data)?notificationReads.data.map((r:{request_id:string})=>r.request_id):[],
