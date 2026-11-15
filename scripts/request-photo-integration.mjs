@@ -15,12 +15,22 @@ const analysis=await analyzed.json();
 assert.equal(analyzed.status,200,'AI photo analysis endpoint should respond: '+JSON.stringify({status:analyzed.status,error:analysis.error}));
 assert.ok(typeof analysis.observation==='string'&&analysis.observation.length>2,'AI must produce an observation');
 console.log('PASS photo AI analysis returned an observation (non-diagnostic)');
+// Simulate an initial rejected upload, then retry with a valid scoped token.
+const initialFailureBody=new FormData();
+initialFailureBody.append('file',new Blob([bytes],{type:'image/png'}),'jitap-synthetic-qa.png');
+const rejectedUpload=await fetch(origin+'/api/request/photos',{
+ method:'POST',headers:{Origin:origin,'x-jitap-request-id':data.reference,'x-jitap-photo-token':'invalid'},
+ body:initialFailureBody,signal:AbortSignal.timeout(10000)
+});
+assert.equal(rejectedUpload.status,403,'Invalid authorization must reject initial photo upload');
+// Retry the same image for the same saved request using the valid token.
 const body=new FormData();body.append('file',new Blob([bytes],{type:'image/png'}),'jitap-synthetic-qa.png');
 const upload=await fetch(origin+'/api/request/photos',{method:'POST',headers:{Origin:origin,'x-jitap-request-id':data.reference,'x-jitap-photo-token':data.photoUploadToken},body,signal:AbortSignal.timeout(25000)});
 const uploaded=await upload.json();
 assert.equal(upload.status,201,'Photo must be saved in private storage and linked to request: '+JSON.stringify({status:upload.status,error:uploaded.error}));
 assert.equal(uploaded.ok,true);
 assert.equal(uploaded.requestId,data.reference);
+console.log('PASS simulated failed upload followed by successful retry on the same request');
 const unauth=await fetch(origin+'/api/request/photos',{method:'POST',headers:{Origin:origin,'x-jitap-request-id':data.reference,'x-jitap-photo-token':'invalid'},body:new FormData(),signal:AbortSignal.timeout(8000)});
 assert.equal(unauth.status,403,'Tokenless photo upload must be forbidden');
 console.log('PASS synthetic QA photo stored privately and linked to '+data.reference+'; invalid token refused');
