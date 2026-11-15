@@ -115,4 +115,33 @@ const profileB={id:'fund-101',categories:['Plumbing'],areas:['Bamburi']};
 assert.ok(providerRankScore(profileA,'plumbing','Bamburi')>providerRankScore(profileB,'plumbing','Bamburi'));
 assert.equal(rankProviders([profileB,profileA],'plumbing','Bamburi')[0].id,'fund-100');
 passed+=9;
+const waveModule=load('src/lib/wave-buzz.ts',{'@/lib/provider-ranking':{canonicalTrade}});
+const {haversineKm,waveForDistance,waveAtElapsed,rankWaveCandidates}=waveModule;
+assert.equal(waveForDistance(0),1);
+assert.equal(waveForDistance(1.999),1);
+assert.equal(waveForDistance(2),2);
+assert.equal(waveForDistance(4.999),2);
+assert.equal(waveForDistance(5),3);
+assert.equal(waveForDistance(10),3);
+assert.equal(waveForDistance(10.001),null);
+assert.equal(waveAtElapsed(0),1);
+assert.equal(waveAtElapsed(14999),1);
+assert.equal(waveAtElapsed(15000),2);
+assert.equal(waveAtElapsed(29999),2);
+assert.equal(waveAtElapsed(30000),3);
+assert.equal(waveAtElapsed(45000),'ended');
+assert.ok(haversineKm({lat:-4.0025,lng:39.7066},{lat:-4.0025,lng:39.7066})<.001);
+const now=Date.now();
+const fakeWaveProviders=[
+ {id:'good',categories:['computer-phone-repair'],online:true,verified:true,latitude:-4.0025,longitude:39.7066,locationUpdatedAt:new Date(now-5000).toISOString(),rating:4.9,reviewCount:10},
+ {id:'wrong-trade',categories:['plumbing'],online:true,verified:true,latitude:-4.0025,longitude:39.7066,locationUpdatedAt:new Date(now-5000).toISOString()},
+ {id:'offline',categories:['it-repairs'],online:false,verified:true,latitude:-4.0025,longitude:39.7066,locationUpdatedAt:new Date(now-5000).toISOString()},
+ {id:'stale',categories:['it-repairs'],online:true,verified:true,latitude:-4.0025,longitude:39.7066,locationUpdatedAt:new Date(now-20*60*1000).toISOString()},
+ {id:'missing',categories:['it-repairs'],online:true,verified:true,latitude:null,longitude:null,locationUpdatedAt:null}
+];
+const waveRanks=rankWaveCandidates(fakeWaveProviders,'it-repairs',{lat:-4.0025,lng:39.7066},now);
+assert.equal(waveRanks.length,1);
+assert.equal(waveRanks[0].id,'good');
+assert.equal(waveRanks[0].wave,1);
+passed+=18;
 console.log('JiTap routing regression: '+passed+' checks passed.');
