@@ -8,6 +8,7 @@ import {after} from 'next/server';
 import {saveServiceBrief} from '@/lib/service-brief-server';
 import {issuePhotoToken} from '@/lib/request-photo-token';
 import {supabasePrivate} from '@/lib/coordinator-server';
+import {dispatchProviderAlerts} from '@/lib/provider-alerts';
 import {fundiListings} from '@/lib/fundis-public';
 
 export const runtime = 'nodejs';
@@ -215,12 +216,33 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{kind
         area:requestDetails.area,timing:requestDetails.timing
       }));
     }
+    // Preserve the accepted request even when BUZZ notification cannot be delivered.
+    // Consent-verified selected providers get an idempotent SOD assignment and SMS link.
+    let providerBuzzStatus:string|undefined;
+    if(requestDetails?.preferredProviderId&&!isSyntheticQA){
+      try{
+        const outcome=await supabasePrivate<{status:string;assignmentId?:string}>('rpc/jitap_assign_selected_provider',{
+          method:'POST',body:JSON.stringify({p_request_id:identifier})});
+        providerBuzzStatus=outcome.status;
+        if(outcome.status==='sms_queued'&&outcome.assignmentId){
+          const delivery=await dispatchProviderAlerts(1,outcome.assignmentId);
+          if(delivery.submitted>0)providerBuzzStatus='sms_submitted';
+          else if(delivery.blocked>0)providerBuzzStatus='sms_blocked';
+          else if(delivery.rejected>0)providerBuzzStatus='sms_rejected';
+          else if(delivery.unknown>0)providerBuzzStatus='sms_pending_reconciliation';
+        }
+      }catch{
+        providerBuzzStatus='manual_review_required';
+        console.error('Selected provider BUZZ routing could not be confirmed',{requestId:identifier});
+      }
+    }
     const receipt=respond({
       ok: true,
       reference: identifier,
       ...(kind==='request'?{serviceId:serviceReference(identifier),photoUploadToken:issuePhotoToken(identifier),smsAcknowledgement:smsState==='submitted'?'submitted':smsState}:{}),
       linkedToAccount:customer.kind === 'customer' && kind === 'request',
       emailNotificationAccepted: emailAccepted,
+      ...(providerBuzzStatus?{providerBuzzStatus}:{}),
       message: kind === 'provider' ? 'Your provider application has been received successfully. JiTap will review it and contact you.' : 'Thank you for contacting JiTap. Your enquiry has been received successfully. Our team will review it and get back to you.'
     }, 201);
     if(customer.kind === 'customer' && customer.identity.rotated){
