@@ -102,10 +102,25 @@ export function listenForJiTapPush(options:WavePushOptions){
    options.openOffer(data.requestId);
  };
  const sub=Notifications.addNotificationResponseReceivedListener(handle);
+ // Expo may rotate device push tokens while the app is running.
+ const rotated=Notifications.addPushTokenListener(token=>{
+  const next=String(token.data||'');
+  if(!/^Expo(?:nent)?PushToken\\[[A-Za-z0-9_-]{8,192}\\]$/.test(next))return;
+  void (async()=>{
+   const response=await fetch(API+'/api/mobile/push-devices',{
+    method:'POST',headers:await bearer(options.getAccessToken),
+    body:JSON.stringify({
+     action:'register',deviceId:await getDeviceId(),
+     expoPushToken:next,platform:Platform.OS
+    })
+   });
+   if(!response.ok)throw Error('Token rotation registration failed');
+  })().catch(()=>{/* Retry registration on next authenticated launch. */});
+ });
  void Notifications.getLastNotificationResponseAsync().then(last=>{
   if(last){handle(last);void Notifications.clearLastNotificationResponseAsync()}
  }).catch(()=>{});
- return ()=>sub.remove();
+ return ()=>{sub.remove();rotated.remove()};
 }
 // Example in app/_layout.tsx:
 // configureJiTapForegroundNotifications();
