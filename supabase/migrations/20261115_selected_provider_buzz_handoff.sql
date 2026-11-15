@@ -63,7 +63,7 @@ begin
  end if;
 
  insert into public.coordinator_provider_assignments(case_id,provider_id,assigned_by,notes)
- values(v_case.id,v_provider_id,'jitap-website-intake','Customer selected this provider in JiTap.')
+ values(v_case.id,v_provider_id,'soc@jitap.app','Customer selected this provider in JiTap.')
  on conflict(case_id,provider_id) do nothing
  returning * into v_assignment;
  v_inserted:=found;
