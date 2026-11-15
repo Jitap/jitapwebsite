@@ -31,7 +31,10 @@ const profile=z.object({
  skills:z.string().trim().max(1200).default(''),
  submit:z.boolean().default(false)
 }).strict().refine(d=>d.areas.includes(d.baseArea),{message:'Base area must be one of your service areas'});
-const availability=z.object({action:z.literal('availability'),online:z.boolean()}).strict();
+const availability=z.discriminatedUnion('online',[
+ z.object({action:z.literal('availability'),online:z.literal(true),latitude:z.number().finite().min(-90).max(90),longitude:z.number().finite().min(-180).max(180)}).strict(),
+ z.object({action:z.literal('availability'),online:z.literal(false)}).strict()
+]);
 function config(){
  const url=process.env.SUPABASE_URL?.replace(/\/$/,'');
  const key=process.env.SUPABASE_ANON_KEY;
@@ -231,13 +234,30 @@ export async function POST(req:NextRequest){
    return responseWithSession({saved:true,submitted:!!row.submitted_at},session);
   }
   if((input as {action?:string}).action==='availability'){
-   const parsed=availability.safeParse(input);if(!parsed.success)return error('Invalid availability setting',422);
-   const r=await dbRequest(session.accessToken,
+   const parsed=availability.safeParse(input);
+   if(!parsed.success)return error('Allow precise location to go online and receive nearby requests.',422);
+   const d=parsed.data;
+   const gpsPath='jitap_wave_provider_locations?provider_user_id=eq.'+encodeURIComponent(session.userId);
+   if(d.online){
+    const review=await dbRequest(session.accessToken,
+     'jitap_provider_reviews?select=status&user_id=eq.'+encodeURIComponent(session.userId));
+    if(!review.ok||!Array.isArray(review.data)||review.data[0]?.status!=='approved')
+     return error('JiTap verification is required before you can go online.',403);
+    await supabasePrivate('jitap_wave_provider_locations?on_conflict=provider_user_id',{
+     method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},
+     body:JSON.stringify({provider_user_id:session.userId,latitude:d.latitude,longitude:d.longitude,
+      observed_at:new Date().toISOString(),sharing_enabled:true})
+    });
+   }
+   const changed=await dbRequest(session.accessToken,
     'jitap_provider_workspaces?user_id=eq.'+encodeURIComponent(session.userId),
-    'PATCH',{is_online:parsed.data.online});
-   if(!r.ok)return error(parsed.data.online?'Your profile must be verified by JiTap before you can go online.':'Unable to change availability.',403);
-   if(!Array.isArray(r.data)||!r.data.length)return error('Complete provider onboarding first.',409);
-   return responseWithSession({online:r.data[0].is_online===true},session);
+    'PATCH',{is_online:d.online});
+   if(!changed.ok||!Array.isArray(changed.data)||!changed.data.length){
+    if(d.online)await supabasePrivate(gpsPath,{method:'DELETE',headers:{Prefer:'return=minimal'}}).catch(()=>{});
+    return error('Unable to update availability. Please try again.',503);
+   }
+   if(!d.online)await supabasePrivate(gpsPath,{method:'DELETE',headers:{Prefer:'return=minimal'}});
+   return responseWithSession({online:changed.data[0].is_online===true,locationEnabled:d.online},session);
   }
   if((input as {action?:string}).action==='read_notification'){
    const parsed=z.object({action:z.literal('read_notification'),requestId:z.string().uuid()}).strict().safeParse(input);
