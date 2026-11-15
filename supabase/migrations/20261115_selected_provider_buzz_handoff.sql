@@ -36,11 +36,11 @@ begin
  where id=v_provider_id and is_public=true and verified_at is not null;
  if not found then return pg_catalog.jsonb_build_object('status','provider_review_required');end if;
 
- v_area := pg_catalog.lower(pg_catalog.trim(v_intake.payload->>'area'));
- v_trade := pg_catalog.lower(pg_catalog.trim(v_intake.payload->>'category'));
+ v_area := pg_catalog.lower(pg_catalog.btrim(v_intake.payload->>'area'));
+ v_trade := pg_catalog.lower(pg_catalog.btrim(v_intake.payload->>'category'));
  v_eligible := (
    exists (select 1 from pg_catalog.unnest(v_provider.service_areas) a
-           where pg_catalog.lower(pg_catalog.trim(a))=v_area)
+           where pg_catalog.lower(pg_catalog.btrim(a))=v_area)
    and exists (
     select 1 from pg_catalog.unnest(v_provider.service_categories) c
     where
