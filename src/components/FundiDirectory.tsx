@@ -5,7 +5,8 @@ import {ArrowRight,MapPin,Search,SlidersHorizontal} from 'lucide-react';
 import {areas,categories} from '@/lib/data';
 import {tradeLabels,providerMatchesTrade} from '@/lib/trade-categories';
 import {fundiListings} from '@/lib/fundis-public';
-import {ProviderShowcase} from '@/components/ProviderShowcase';
+import {ProviderShowcase,type Profile} from '@/components/ProviderShowcase';
+import {rankProviders,canonicalTrade} from '@/lib/provider-ranking';
 
 const filters=['All services',...categories.filter(c=>c.slug!=='other-services').map(c=>c.name)];
 export const slugFor=(cats:string[]):string=>{
@@ -58,19 +59,39 @@ export function FundiDirectory(){
  </section>;
 }
 
-export function matchesFor(category:string,area:string,specialty?:string){
- if(specialty==='tv-mounting')return fundiListings.filter(p=>p.areas.includes(area)&&/\b(?:tv\s*mount|television\s*mount|tv\s*installation)\b/i.test([p.name,...p.categories].join(' ')));
- if(specialty==='computer-services')return fundiListings.filter(p=>p.id==='fund-036'&&p.areas.includes(area));
- if(specialty==='vehicle-mechanic')return fundiListings.filter(p=>p.areas.includes(area)&&/mechanic|garage|vehicle repair|auto repair/i.test([p.name,...p.categories].join(' ')));
- const names=tradeLabels[category]||[];
- if(!names.length)return [];
- return fundiListings.filter(p=>p.areas.includes(area)&&providerMatchesTrade(category,p.categories));
+export function matchesFor(category:string,area:string,specialty?:string,live:Profile[]=[]){
+ const providers=fundiListings.map(p=>{
+  const actual=live.find(x=>x.id===p.id);
+  return {...p,base_area:actual?.base_area,is_online:actual?.is_online,
+   verified_at:actual?.verified_at,rating:actual?.rating,review_count:actual?.review_count,
+   years_experience:actual?.years_experience,similar_jobs_completed:actual?.similar_jobs_completed};
+ });
+ // Match by trade and service area first, then rank by verified signals.
+ const eligible=rankProviders(providers,canonicalTrade(category),area);
+ const narrowed=()=>{
+  if(specialty==='tv-mounting')return eligible.filter(p=>/\\b(?:tv\\s*mount|television\\s*mount|tv\\s*installation)\\b/i.test([p.name,...p.categories].join(' ')));
+  if(specialty==='computer-services')return eligible.filter(p=>p.id==='fund-036'||/computer|phone|it/i.test(p.categories.join(' ')));
+  if(specialty==='vehicle-mechanic')return eligible.filter(p=>/mechanic|garage|vehicle repair|auto repair/i.test([p.name,...p.categories].join(' ')));
+  return eligible;
+ };
+ const specialist=narrowed();
+ // Never show zero merely because an optional specialty alias did not match.
+ return specialist.length?specialist:eligible;
 }
 export function MatchedFundis({category,area,onQuotes,specialty}:{category:string;area:string;onQuotes:()=>void;specialty?:string}){
- const matched=matchesFor(category,area,specialty);
+ const [live,setLive]=useState<Profile[]>([]);
+ useEffect(()=>{
+  const controller=new AbortController();
+  fetch('/api/providers/public',{signal:controller.signal,cache:'no-store'})
+   .then(r=>r.ok?r.json():null)
+   .then(data=>{if(Array.isArray(data?.profiles))setLive(data.profiles)})
+   .catch(()=>{});
+  return()=>controller.abort();
+ },[]);
+ const matched=matchesFor(category,area,specialty,live);
  const visible=matched.slice(0,4);
  return <section className="jt-matches" aria-label="Matching local service providers">
-  <div className="jt-matches-title"><span className="th-overline">LOCAL SERVICE MATCHES</span><h2>{matched.length} {matched.length===1?'matching profile':'matching profiles'} in {area}</h2><p>Based on listed services and service areas. Availability and quotations are confirmed after a request is submitted.</p></div>
+  <div className="jt-matches-title"><span className="th-overline">LOCAL SERVICE MATCHES</span><h2>{matched.length} {matched.length===1?'matching profile':'matching profiles'} in {area}</h2><p>Ranked by service fit and coverage, with verified profile signals where available. Listed profiles are not guaranteed available; JiTap confirms availability after you request.</p></div>
   {matched.length>0?<><div className="jt-matches-quote"><div><strong>Connect with local fundis</strong><p>Share your service brief with JiTap to coordinate the next steps and check provider availability.</p></div><button type="button" className="td-outline-button" onClick={onQuotes}>Request</button></div>
   <div className="td-pro-list">{visible.map((p,i)=>(p.id==='fund-022'||p.id==='fund-036')?<ProviderShowcase key={p.id} profileId={p.id} fromMatch/>:<article className="td-pro-card" key={p.id}>
    <div className={'td-pro-avatar td-avatar-'+(i%5)} aria-hidden="true">{p.name.split(/\s+/).map(w=>w[0]||'').slice(0,2).join('').toUpperCase()}</div>
