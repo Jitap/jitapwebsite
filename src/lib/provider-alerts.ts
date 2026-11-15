@@ -25,7 +25,7 @@ export function shortFault(raw:string){
 export function providerBuzz(ref:string,category:string,description:string){
  return 'JiTap BUZZ | JT-'+ref+'\nService: '+category.replaceAll('-',' ').replace(/\b\w/g,c=>c.toUpperCase())+'\nReported issue: '+shortFault(description);
 }
-function responseToken(assignmentId:string){
+export function providerResponseToken(assignmentId:string){
  const secret=process.env.PROVIDER_BUZZ_LINK_SECRET||process.env.SUPABASE_SERVICE_ROLE_KEY;
  if(!secret||secret.length<32)throw Error('provider_link_secret_missing');
  return createHmac('sha256',secret).update('jitap:auto-provider-buzz:v1:'+assignmentId).digest('base64url');
@@ -71,7 +71,7 @@ async function handleAlert(job:Alert){
  const category=String(payload.category||'other-services').slice(0,75);
  const ref=c.source_id.slice(0,8).toUpperCase();
  const brief=providerBuzz(ref,category,description);
- const token=responseToken(a.id),tokenHash=createHash('sha256').update(token).digest('hex');
+ const token=providerResponseToken(a.id),tokenHash=createHash('sha256').update(token).digest('hex');
  // A provider has one secure response token shared by SMS and WhatsApp. Never replace an existing manually issued link.
  const links=await supabasePrivate<Link[]>('provider_response_links?select=token_hash&assignment_id=eq.'+a.id+'&limit=1');
  if(links.length&&links[0].token_hash!==tokenHash){
