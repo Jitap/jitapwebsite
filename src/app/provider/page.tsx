@@ -105,6 +105,27 @@ export default function ProviderDashboardPage(){
   },5000);
   return()=>window.clearInterval(id);
  },[dashboard?.profile?.is_online,tab,refresh]);
+ async function toggleOnlineAvailability(){
+  if(online){await act({action:'availability',online:false});return}
+  if(reviewMode){await act({action:'availability',online:true});return}
+  if(!navigator.geolocation){setError('Location is required to receive nearby jobs. Enable location services in your phone settings.');return}
+  setBusy(true);setError('');
+  try{
+   const position=await new Promise<GeolocationPosition>((resolve,reject)=>
+    navigator.geolocation.getCurrentPosition(resolve,reject,{enableHighAccuracy:true,maximumAge:0,timeout:15000}));
+   // Provider explicitly opts in via the Online switch and device location prompt.
+   const res=await fetch('/api/provider/workspace',{method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({action:'availability',online:true,latitude:position.coords.latitude,longitude:position.coords.longitude})});
+   const data=await res.json().catch(()=>({}));
+   if(!res.ok)throw Error(data.error||'Unable to enable JiTap location.');
+   await refresh();
+   setSuccess('You’re online. JiTap uses your location for nearby job matching while you are available.');
+  }catch(e){
+   const denied=typeof e==='object'&&e!==null&&'code' in e&&(e as {code:number}).code===1;
+   setError(denied?'Allow precise location in your phone settings to go online and receive jobs.':e instanceof Error?e.message:'Could not access your location. Check GPS and try again.');
+  }finally{setBusy(false)}
+ }
  async function switchCustomer(){
   setBusy(true);setError('');
   try{
@@ -226,9 +247,10 @@ export default function ProviderDashboardPage(){
       <div className="jt-provider-home-header-right"><button type="button" className="jt-provider-notification-trigger" onClick={()=>setNotificationsOpen(v=>!v)} aria-expanded={notificationsOpen} aria-controls="jt-provider-notification-panel" aria-label={unreadCount+' unread notifications'}><Bell size={25}/>{unreadCount>0&&<span className="jt-provider-unread-count">{unreadCount>99?'99+':unreadCount}</span>}</button>
       <button type="button" className="jt-provider-home-avatar" onClick={()=>reviewMode?setTab('profile'):router.push('/provider/profile')} aria-label="Open your provider profile">{dashboard?.uploadedMedia?.some(m=>m.kind==='profile_photo')?<img src={'/api/provider/media?kind=profile_photo&v='+encodeURIComponent(dashboard.uploadedMedia.find(m=>m.kind==='profile_photo')?.uploadedAt||'')} alt="Provider profile"/>:<UserRound size={24}/>}</button><div className="jt-provider-header-online" aria-label="Provider availability">
         <span className={online?'is-online':'is-offline'}><span className="jt-provider-live-dot"/>{online?'Online':'Offline'}</span>
-        <button className={'jt-provider-toggle '+(online?'active':'')} type="button" role="switch" aria-label="Available for requests" aria-checked={online} disabled={busy} onClick={()=>void act({action:'availability',online:!online})}><span/></button>
+        <button className={'jt-provider-toggle '+(online?'active':'')} type="button" role="switch" aria-label="Available for requests" aria-checked={online} disabled={busy} onClick={()=>void toggleOnlineAvailability()}><span/></button>
       </div></div>
      </header>:<header className="jt-provider-app-header"><span className="jt-provider-workspace-heading">Provider dashboard</span><div className="jt-provider-header-actions"><div className="jt-provider-badge"><ShieldCheck size={17}/> Provider workspace</div><button type="button" onClick={switchCustomer} disabled={busy} className="jt-provider-logout">Switch to Customer</button><button type="button" onClick={logout} className="jt-provider-logout">Log out</button></div></header>}
+    {approved&&!reviewMode&&!online&&<p style={{margin:'6px 12px 10px',fontSize:12,color:'#536b62'}}><MapPin size={13} style={{verticalAlign:'middle',marginRight:5}}/>To receive nearby jobs, tap the Online switch and allow precise location. You can go offline at any time.</p>}
     <WaveBuzzIncoming enabled={!!approved&&!!online&&!reviewMode}/>
     {approved&&notificationsOpen&&<aside className="jt-provider-notification-panel" id="jt-provider-notification-panel" aria-label="Unread provider notifications">
       <div className="jt-provider-notification-title"><strong>Notifications <span className="jt-provider-notification-total">{unreadCount} unread</span></strong><button type="button" onClick={()=>setNotificationsOpen(false)} aria-label="Close notifications">×</button></div>
