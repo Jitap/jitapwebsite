@@ -52,9 +52,9 @@ export async function POST(req:NextRequest){
   const {token}=await req.json() as {token?:string};
   if(!token||!buzzToken.test(token))return response({error:'Invalid invitation'},403);
   const hash=createHash('sha256').update(token).digest('hex');
-  const links=await supabasePrivate<{case_id:string;expires_at:string;used_at:string|null;assignment_id:string}[]>('provider_response_links?select=case_id,expires_at,used_at,assignment_id&token_hash=eq.'+hash+'&limit=1');
+  const links=await supabasePrivate<{case_id:string;expires_at:string;used_at:string|null;opened_at:string|null;assignment_id:string}[]>('provider_response_links?select=case_id,expires_at,used_at,opened_at,assignment_id&token_hash=eq.'+hash+'&limit=1');
   const link=links[0];
-  if(!link||link.used_at||Date.parse(link.expires_at)<=Date.now())return response({error:'Invitation unavailable'},403);
+  if(!link||link.used_at||Date.parse(link.expires_at)<=Date.now()||!link.opened_at||Date.parse(link.opened_at)+59000<=Date.now())return response({error:'Invitation unavailable'},403);
   const assignment=await supabasePrivate<{id:string;state:string}[]>('coordinator_provider_assignments?select=id,state&id=eq.'+link.assignment_id+'&case_id=eq.'+link.case_id+'&limit=1');
   if(!assignment[0]||!['proposed','contacted','needs_clarification','quote_requested'].includes(assignment[0].state))return response({error:'Invitation unavailable'},403);
   const cases=await supabasePrivate<{source_id:string;source_kind:string;status:string}[]>('coordinator_cases?select=source_id,source_kind,status&id=eq.'+link.case_id+'&limit=1');
