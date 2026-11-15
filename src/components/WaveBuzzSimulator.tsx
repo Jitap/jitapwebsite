@@ -65,7 +65,18 @@ export function WaveBuzzSimulator(){
   if(pingBucket>0&&lastPing.current!==pingBucket){lastPing.current=pingBucket;playPing()}
  },[elapsed,state,wave,playPing]);
  useEffect(()=>()=>{void audio.current?.close()},[]);
- const accept=(id:string)=>{
+ const decline=(id:string)=>{
+  if(state!=='dispatching'||wave==='ended')return;
+  const declinedNext=[...new Set([...declined,id])];
+  setDeclined(declinedNext);
+  const remainingInRing=providers.some(p=>p.wave===wave&&!declinedNext.includes(p.id));
+  if(!remainingInRing){
+   // Simulate the same immediate next-wave promotion as the live dispatch backend.
+   if(wave===3)setState('unmatched');
+   else{setStartAt(Date.now()-wave*15000);setNow(Date.now())}
+  }
+ };
+  const accept=(id:string)=>{
   // Simulation-only first-accept lock; real dispatch uses a database transaction.
   if(state!=='dispatching'||wave==='ended')return;
   const candidate=active.find(x=>x.id===id);
@@ -101,7 +112,7 @@ export function WaveBuzzSimulator(){
      <p className="jt-wave-ref">JT-F8F814D8 · Simulation only</p>
      {state==='dispatching'&&active.length>0?<div className="jt-wave-actions">
        <button type="button" className="jt-wave-accept" onClick={()=>accept(active[0].id)}>Accept Job</button>
-       <button type="button" className="jt-wave-decline" onClick={()=>setDeclined(x=>[...x,active[0].id])}>Decline this offer</button>
+       <button type="button" className="jt-wave-decline" onClick={()=>decline(active[0].id)}>Decline this offer</button>
       </div>:state==='matched'?<div className="jt-wave-done"><CheckCircle2 size={24}/> Accepted by {providers.find(p=>p.id===winner)?.name||'provider'} · Other offers dismissed</div>:
       <div className="jt-wave-waiting">{state==='unmatched'?'No eligible provider accepted. Customer request remains open for JiTap Service Operations.':state==='idle'?'Start simulation to view the incoming job card.':'No available providers in this wave. Expanding automatically…'}</div>}
     </div>
