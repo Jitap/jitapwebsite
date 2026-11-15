@@ -116,3 +116,11 @@ body:has(.jt-match-page) #main{padding:0!important}
 .jt-request-nav-links a.jt-request-nav-primary{width:49px;justify-self:center;background:linear-gradient(140deg,#008a3e,#10b981);color:#fff;border-radius:50%;box-shadow:0 5px 13px #008a3e36}
 .jt-request-nav-reveal.is-open .jt-request-nav-links a.jt-request-nav-primary{height:49px}
 @media(prefers-reduced-motion:reduce){.jt-request-nav-panel{transition:none}}
+
+/* Photo-source picker lives above, not inside, the clipped animated composer. */
+.jt-chat-composer-dock{position:relative;z-index:7}
+.jt-chat-photo-source-menu{position:absolute;left:clamp(13px,3.5vw,32px);bottom:calc(100% - 7px);z-index:30;display:grid;gap:5px;min-width:190px;padding:8px;background:#fff;border:1px solid #dce8e4;border-radius:13px;box-shadow:0 12px 29px #103c352e}
+.jt-chat-photo-source-menu button{display:block;min-height:46px;padding:10px 14px;border:0;border-radius:9px;text-align:left;color:#104632;background:#f0faf4;font:inherit;font-weight:650;cursor:pointer}
+.jt-chat-photo-source-menu button:focus-visible{outline:2px solid #00c853;outline-offset:2px}
+/* Hidden but still programmatically activatable by mobile file pickers. */
+.jt-chat-file-input{display:block;position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none;clip-path:inset(50%)}
