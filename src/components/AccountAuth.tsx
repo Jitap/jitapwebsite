@@ -30,6 +30,8 @@ export function AccountAuth(){
  const [notice,setNotice]=useState('');
  const [cooldown,setCooldown]=useState(0);
  const codeInput=useRef<HTMLInputElement>(null);
+ const otpForm=useRef<HTMLFormElement>(null);
+ const lastAutoAttempt=useRef('');
  const phoneInput=useRef<HTMLInputElement>(null);
  const submitting=useRef(false);
  const [nextUrl,setNextUrl]=useState('');
@@ -87,6 +89,7 @@ export function AccountAuth(){
   if(!res.ok)throw Error(data.error||'Could not send the verification code');
   setVerifiedPhone(phone);
   setCode('');
+  lastAutoAttempt.current='';
   setStage('otp');
   setCooldown(45);
   setNotice('We sent a six-digit SMS verification code to your number.');
@@ -118,6 +121,14 @@ export function AccountAuth(){
   }catch(e){setError(e instanceof Error?e.message:'Something went wrong. Try again.')}
   finally{setBusy(false);submitting.current=false}
  }
+ // Automatically submit a complete OTP, including autofilled or pasted codes.
+ // Remember the attempted value to avoid repeated requests after an invalid code.
+ useEffect(()=>{
+  if(stage!=='otp'||existing||busy||submitting.current||!/^\\d{6}$/.test(code))return;
+  if(lastAutoAttempt.current===code)return;
+  lastAutoAttempt.current=code;
+  otpForm.current?.requestSubmit();
+ },[code,stage,existing,busy]);
  async function resend(){
   if(busy||cooldown>0||submitting.current)return;
   submitting.current=true;setBusy(true);setError('');setNotice('');
@@ -193,7 +204,7 @@ export function AccountAuth(){
      <h1 id="jt-auth-heading">Verify Your Mobile Number</h1>
      <p className="jt-auth-verify-subtitle">Enter the 6-digit code sent to your number.</p>
      <p className="jt-auth-code-destination">{fmtPhone(verifiedPhone)}</p>
-     <form className="jt-auth-form jt-auth-code-form" onSubmit={e=>void submit(e)}>
+     <form ref={otpForm} className="jt-auth-form jt-auth-code-form" onSubmit={e=>void submit(e)}>
       <div className="jt-auth-code-holder" onClick={()=>codeInput.current?.focus()}>
        <input ref={codeInput} className="jt-auth-code-native" type="text" inputMode="numeric"
         autoComplete="one-time-code" name="one-time-code" value={code}
