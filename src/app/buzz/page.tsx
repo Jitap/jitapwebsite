@@ -2,6 +2,7 @@
 import {useEffect,useState} from 'react';
 import Link from 'next/link';
 import './provider-buzz.css';
+import {PrivateRequestPhotos} from '@/components/PrivateRequestPhotos';
 
 type Opportunity={status:string;business?:string;ref?:string;category?:string;description?:string;area?:string;preferredDate?:string;preferredTime?:string;decision?:string};
 type Choice='accepted'|'declined'|'needs_clarification';
@@ -62,6 +63,7 @@ export default function ProviderBuzzPage(){
       <dt>Location</dt><dd>{opportunity.area||'To be confirmed'}</dd>
       {(opportunity.preferredDate||opportunity.preferredTime)&&<><dt>Preferred time</dt><dd>{[opportunity.preferredDate,opportunity.preferredTime].filter(Boolean).join(' · ')}</dd></>}
      </dl>
+     <PrivateRequestPhotos buzzToken={token}/>
      <h2>Your response</h2>
      <div className="jt-buzz-choices" role="group" aria-label="Respond to opportunity">
       <button type="button" className={'jt-buzz-choice-accept'+(selection==='accepted'?' selected':'')} aria-pressed={selection==='accepted'} onClick={()=>setSelection('accepted')}>Accept</button>
