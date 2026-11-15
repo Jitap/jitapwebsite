@@ -7,10 +7,12 @@ import {SERVICE_OPTIONS} from '@/lib/provider-options';
 import {providerPreferredDate,providerPreferredTime} from '@/lib/provider-schedule';
 import '../request-detail.css';
 
-type Opportunity={request_id:string;category:string;area:string;preferred_date:string;preferred_time:string;technical_summary:string;proposed_scope:string;urgency:string;brief_source:string;requested_timing:string;job_location:string};
+type Opportunity={offer_expires_at?:string;request_id:string;category:string;area:string;preferred_date:string;preferred_time:string;technical_summary:string;proposed_scope:string;urgency:string;brief_source:string;requested_timing:string;job_location:string};
 type Workspace={opportunities:Opportunity[];recentResponses:{request_id:string;decision:string}[]};
 export default function ProviderRequestView(){
  const router=useRouter(),params=useParams<{id:string}>();
+ const [clock,setClock]=useState(Date.now());
+ useEffect(()=>{const timer=window.setInterval(()=>setClock(Date.now()),1000);return()=>window.clearInterval(timer)},[]);
  const [opportunity,setOpportunity]=useState<Opportunity|null>(null),[loading,setLoading]=useState(true),[error,setError]=useState(''),[note,setNote]=useState(''),[busy,setBusy]=useState(false),[done,setDone]=useState('');
  useEffect(()=>{let active=true;
   async function load(){
@@ -22,6 +24,7 @@ export default function ProviderRequestView(){
   void load();return()=>{active=false}
  },[params.id,router]);
  async function respond(decision:'accepted'|'declined'|'needs_clarification'){
+  if(opportunity?.offer_expires_at&&Date.parse(opportunity.offer_expires_at)<=Date.now()){setError('Your BUZZ offer has expired. JiTap Service Operations can rematch the customer.');return}
   if(decision==='needs_clarification'&&note.trim().length<3){setError('Write your question before sending.');return}
   setError('');setBusy(true);
   try{const response=await fetch('/api/provider/workspace',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'respond',requestId:params.id,decision,note:decision==='needs_clarification'?note.trim():''})});
@@ -33,6 +36,8 @@ export default function ProviderRequestView(){
   finally{setBusy(false)}
  }
  const title=opportunity?SERVICE_OPTIONS.find(c=>c.value===opportunity.category)?.label||opportunity.category:'Service request';
+ const remaining=opportunity?.offer_expires_at?Math.max(0,Math.ceil((Date.parse(opportunity.offer_expires_at)-clock)/1000)):null;
+ const expired=remaining===0;
  return <main className="jt-request-detail-page">
   <header className="jt-request-detail-header"><Link href="/provider?view=requests" aria-label="Back to requests"><ArrowLeft size={23}/></Link><h1>Service Request</h1><span/></header>
   {loading?<div className="jt-provider-loading" role="status" aria-label="Loading service request"><span/><span/><span/><span className="jt-provider-loading-label">Loading request…</span></div>:
@@ -41,6 +46,7 @@ export default function ProviderRequestView(){
    <article className="jt-request-detail-content">
     <div className="jt-request-detail-category"><Wrench size={17}/>{title}</div>
     <h2>{title}</h2><p className="jt-request-detail-reference">Service ID: JT-{opportunity.request_id.slice(0,8).toUpperCase()}</p>
+    {remaining!==null&&<p role="timer" style={{fontSize:14,fontWeight:700,color:expired?'#bb3035':'#0b8651'}}>{expired?'BUZZ expired — customer request remains active':'BUZZ expires in 0:'+String(remaining).padStart(2,'0')+'secs'}</p>}
     <div className="jt-request-detail-schedule"><div><MapPin size={19}/><span><strong>Job location</strong>{opportunity.job_location||opportunity.area}{opportunity.job_location?'':' · Exact directions shared after acceptance'}</span></div>
      <div><Clock3 size={19}/><span><strong>Requested date</strong>{providerPreferredDate(opportunity.preferred_date)}</span></div>
      <div><Clock3 size={19}/><span><strong>Requested time</strong>{providerPreferredTime(opportunity.preferred_time)}</span></div>
@@ -52,9 +58,9 @@ export default function ProviderRequestView(){
     <div className="jt-request-detail-note"><ShieldCheck size={19}/> Customer phone and exact location are shared immediately after you accept.</div>
     {error&&<p className="jt-provider-error" role="alert">{error}</p>}
     {done?<p className="jt-provider-success" role="status">{done}</p>:<>
-     <div className="jt-request-detail-actions"><button className="jt-detail-accept" disabled={busy} onClick={()=>respond('accepted')}>Accept</button><button className="jt-detail-decline" disabled={busy} onClick={()=>respond('declined')}>Decline</button></div>
+     <div className="jt-request-detail-actions"><button className="jt-detail-accept" disabled={busy||expired} onClick={()=>respond('accepted')}>Accept</button><button className="jt-detail-decline" disabled={busy||expired} onClick={()=>respond('declined')}>Decline</button></div>
      <label className="jt-request-detail-clarify">Need clarification?<textarea value={note} onChange={e=>setNote(e.target.value)} maxLength={500} rows={3} placeholder="Write your question for JiTap Service Operations…"/></label>
-     <button className="jt-detail-question" disabled={busy||note.trim().length<3} onClick={()=>respond('needs_clarification')}>Send question to JiTap</button>
+     <button className="jt-detail-question" disabled={busy||expired||note.trim().length<3} onClick={()=>respond('needs_clarification')}>Send question to JiTap</button>
     </>}
    </article>}
  </main>;
