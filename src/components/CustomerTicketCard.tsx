@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import {useState} from 'react';
 import {PrivateRequestPhotos} from '@/components/PrivateRequestPhotos';
+import {customerProgressStage,customerProgressSteps} from '@/lib/customer-progress';
 import {CalendarDays,Clock3,MapPin,UserRoundCheck,ClipboardList,ArrowUpRight} from 'lucide-react';
 
 export type CustomerTicket={
@@ -22,6 +23,27 @@ export function CustomerTicketCard({ticket,detail=false}:{ticket:CustomerTicket;
  const reasons:Record<string,string>={schedule_conflict:'Scheduling conflict',unavailable:'No longer available',too_far:'Unable to travel to the location',tools_or_skills:'Required equipment or skills unavailable',scope_changed:'Job scope changed',personal_emergency:'Personal emergency',other:'Other reason'};
  return <article className={'jt-ticket-structured'+(detail?' jt-ticket-detail':'')}>
   <div className="jt-ticket-top"><div><span className="jt-ticket-kicker">SERVICE REQUEST</span><h2>{ticket.category.replaceAll('-',' ')}</h2></div><span className="jt-ticket-status">{ticket.statusLabel}</span></div>
+  {detail&&<section className="jt-tracking-progress" aria-label="Service progress">
+   <div className="jt-tracking-progress-heading"><strong>Service progress</strong><span>{ticket.statusLabel}</span></div>
+   <ol className="jt-tracking-progress-steps">
+    {customerProgressSteps.map((step,i)=>{
+     const current=customerProgressStage(ticket.status);
+     const done=i<current;
+     const reached=i===current;
+     return <li key={step} className={done?'jt-tracking-progress-done':reached?'jt-tracking-progress-current':''}
+       aria-current={reached?'step':undefined}>
+      <span className="jt-tracking-progress-dot" aria-hidden="true">{done?'✓':i+1}</span>
+      <small>{step}</small>
+     </li>;
+    })}
+   </ol>
+   {['cancelled','closed','rematch_approval','rematching'].includes(ticket.status)&&
+    <p className="jt-tracking-progress-note" role="status">
+     {ticket.status==='rematch_approval'?'Your approval is needed before matching continues.':
+      ticket.status==='rematching'?'JiTap is looking for another eligible provider.':
+      'This request is no longer progressing.'}
+    </p>}
+  </section>}
   <dl className="jt-ticket-fields">
    <div><dt><ClipboardList size={16}/> Reference</dt><dd>{ticket.serviceId}</dd></div>
    <div><dt><CalendarDays size={16}/> Date</dt><dd>{dateText(ticket.date)}</dd></div>
