@@ -323,7 +323,7 @@ export default function ProviderDashboardPage(){
        </div>
       </article>)}
      </section>}
-     {approved&&(tab==='home'||tab==='requests')&&!!dashboard?.directInvitations?.length&&<section className="jt-provider-card" aria-label="Direct provider invitations" style={{marginBottom:16,padding:16}}>
+     {(tab==='home'||tab==='requests')&&!!dashboard?.directInvitations?.length&&<section className="jt-provider-card" aria-label="Direct provider invitations" style={{marginBottom:16,padding:16}}>
       <h2 style={{fontSize:18,margin:'0 0 8px'}}>Your BUZZ invitations</h2>
       <p style={{fontSize:13,color:'#60727a',margin:'0 0 12px'}}>Review requests sent directly to you, even if an SMS is delayed.</p>
       <div style={{display:'grid',gap:9}}>
