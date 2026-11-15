@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import {useState} from 'react';
+import {PrivateRequestPhotos} from '@/components/PrivateRequestPhotos';
 import {CalendarDays,Clock3,MapPin,UserRoundCheck,ClipboardList,ArrowUpRight} from 'lucide-react';
 
 export type CustomerTicket={
@@ -39,6 +40,7 @@ export function CustomerTicketCard({ticket,detail=false}:{ticket:CustomerTicket;
    </div>{error&&<p role="alert" style={{color:'#b62632',fontSize:13}}>{error}</p>}
   </section>}
   <div className="jt-ticket-brief"><strong>Service brief</strong><p>{ticket.brief}</p>{ticket.scope&&<p className="jt-ticket-scope"><b>Preliminary scope:</b> {ticket.scope}</p>}</div>
+  <PrivateRequestPhotos requestId={ticket.reference}/>
   <div className="jt-ticket-bottom"><small>Last updated {new Date(ticket.updatedAt).toLocaleString('en-KE',{dateStyle:'medium',timeStyle:'short',timeZone:'Africa/Nairobi'})}</small>
    {!detail&&<Link href={'/track?ref='+encodeURIComponent(ticket.serviceId)}>Track progress <ArrowUpRight size={16}/></Link>}
   </div>
