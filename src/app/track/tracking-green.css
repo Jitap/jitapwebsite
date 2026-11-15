@@ -25,3 +25,19 @@ body:has(.jt-tracking-page) #main{background:#f5faf7!important;padding:0!importa
 .jt-tracking-acquisition .jt-tracking-action{display:flex;align-items:center;justify-content:center;gap:9px;padding:15px 17px;margin-top:3px}
 .jt-tracking-page .jt-tracking-muted{font-size:12px;color:#698471;line-height:1.5}
 .jt-tracking-discover{text-align:center;display:block;padding:9px;color:#087d45;font-weight:700;text-decoration:underline;text-underline-offset:4px}
+
+/* Compact five-stage customer progress, shared with the existing status model. */
+.jt-tracking-progress{margin:14px 0 18px;padding:13px 12px 15px;background:#f6fbf8;border:1px solid #dcece2;border-radius:14px}
+.jt-tracking-progress-heading{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:7px;margin-bottom:13px;font-size:13px;color:#183f2b}
+.jt-tracking-progress-heading>span{font-size:12px;font-weight:700;color:#07874c}
+.jt-tracking-progress-steps{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;list-style:none;padding:0;margin:0}
+.jt-tracking-progress-steps li{position:relative;text-align:center;min-width:0;color:#789187;display:flex;flex-direction:column;align-items:center;gap:7px;font-size:11px}
+.jt-tracking-progress-steps li:not(:last-child):before{content:"";position:absolute;top:11px;left:calc(50% + 13px);width:calc(100% - 26px);height:3px;background:#dce9e1}
+.jt-tracking-progress-steps li.jt-tracking-progress-done:before{background:#00c853}
+.jt-tracking-progress-dot{display:grid;place-items:center;width:25px;height:25px;border-radius:50%;border:2px solid #cadbd1;background:#fff;color:#6b8a77;font-weight:800;font-size:11px;position:relative;z-index:1}
+.jt-tracking-progress-done .jt-tracking-progress-dot,.jt-tracking-progress-current .jt-tracking-progress-dot{background:#008a3e;border-color:#008a3e;color:#fff}
+.jt-tracking-progress-current small{color:#008a3e;font-weight:800}
+.jt-tracking-progress-done small{color:#37634b;font-weight:650}
+.jt-tracking-progress-steps small{font-size:10px;line-height:1.25;max-width:100%;overflow-wrap:break-word}
+.jt-tracking-progress-note{font-size:12px;color:#556e5d;margin:12px 0 0}
+@media(max-width:420px){.jt-tracking-progress{padding:12px 7px}.jt-tracking-progress-steps small{font-size:9px}.jt-tracking-progress-heading{font-size:12px}}
