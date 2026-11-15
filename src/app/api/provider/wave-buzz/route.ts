@@ -83,6 +83,10 @@ export async function POST(req:NextRequest){
   const result=await supabasePrivate<{status:string;requestId?:string}>('rpc/jitap_wave_respond',{
    method:'POST',body:JSON.stringify({p_request_id:body.requestId,p_provider_user_id:session.userId,p_decision:body.decision})
   });
+  if(result.status==='declined'){
+   // Immediately fan out the next eligible ring if everyone declined.
+   await supabasePrivate('rpc/jitap_wave_dispatch_tick',{method:'POST',body:JSON.stringify({p_limit:10})}).catch(()=>{});
+  }
   return respond(result);
  }catch{return respond({error:'Unable to process Wave BUZZ. Please try again.'},503)}
 }
