@@ -99,4 +99,20 @@ for(const [slug,cats,expected] of [
  assert.equal(providerMatchesTrade(slug,cats),expected,'Provider trade match failed: '+slug+' / '+cats);
  passed++;
 }
+const trade=load('src/lib/trade-categories.ts');
+const {rankProviders,canonicalTrade,eligibleForProvider,providerRankScore}=load('src/lib/provider-ranking.ts',{'@/lib/trade-categories':trade});
+assert.equal(canonicalTrade('Plumber'),'plumbing');
+assert.equal(canonicalTrade('Plumbing'),'plumbing');
+assert.equal(canonicalTrade('Computer & Phone Repair'),'it-repairs');
+const bamburiPlumbers=rankProviders(fundiListings.filter(p=>p.id==='fund-032'), 'plumbing','Bamburi');
+assert.equal(bamburiPlumbers.length,1,'Known Bamburi plumber must appear in matching');
+assert.equal(bamburiPlumbers[0].id,'fund-032');
+assert.equal(eligibleForProvider(bamburiPlumbers[0],'plumbing','Nyali'),true);
+assert.equal(eligibleForProvider(bamburiPlumbers[0],'plumbing','Likoni'),false);
+assert.equal(eligibleForProvider(bamburiPlumbers[0],'electrical','Likoni'),false);
+const profileA={id:'fund-100',categories:['Plumbing'],areas:['Bamburi'],base_area:'Bamburi',is_online:true,verified_at:'2026-11-10',years_experience:10,similar_jobs_completed:10,rating:5,review_count:10};
+const profileB={id:'fund-101',categories:['Plumbing'],areas:['Bamburi']};
+assert.ok(providerRankScore(profileA,'plumbing','Bamburi')>providerRankScore(profileB,'plumbing','Bamburi'));
+assert.equal(rankProviders([profileB,profileA],'plumbing','Bamburi')[0].id,'fund-100');
+passed+=9;
 console.log('JiTap routing regression: '+passed+' checks passed.');
