@@ -1,0 +1,99 @@
+// Copy into Aly's Expo project and mount at app/provider/buzz/[requestId].tsx.
+// Import shared functions from the native-notifications.ts module in this folder.
+// Inject getAccessToken from the already-authenticated Expo Supabase client.
+// This is a provider-only screen, never a public route to customer contact details.
+import {useEffect,useState,useCallback} from 'react';
+import {ActivityIndicator,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {fetchNativeWaveOffer,respondToNativeWaveOffer,type NativeOffer} from './native-wave-buzz';
+
+type Props={requestId:string;getAccessToken:()=>Promise<string|null>;onMatched:()=>void;onClose:()=>void};
+export function WaveBuzzOfferScreen({requestId,getAccessToken,onMatched,onClose}:Props){
+ const [offer,setOffer]=useState<NativeOffer|null>(null);
+ const [status,setStatus]=useState<'loading'|'open'|'expired'|'matched'|'error'>('loading');
+ const [now,setNow]=useState(Date.now());
+ const [clockOffset,setClockOffset]=useState(0);
+ const [error,setError]=useState('');
+ const [working,setWorking]=useState(false);
+ const remain=offer?Math.max(0,Math.ceil((Date.parse(offer.expiresAt)-(now+clockOffset))/1000)):0;
+ const refresh=useCallback(async()=>{
+  try{
+   const result=await fetchNativeWaveOffer(requestId,getAccessToken);
+   if(result.serverNow)setClockOffset(Date.parse(result.serverNow)-Date.now());
+   if(result.status==='open'&&result.offer){setOffer(result.offer);setStatus('open')}
+   else{setOffer(null);setStatus('expired')}
+  }catch{setStatus('error');setError('Unable to check this JiTap opportunity. Try again.')}
+ },[requestId,getAccessToken]);
+ useEffect(()=>{void refresh();const timer=setInterval(()=>setNow(Date.now()),200);return()=>clearInterval(timer)},[refresh]);
+ useEffect(()=>{if(status==='open'&&remain===0)setStatus('expired')},[status,remain]);
+ const answer=async(decision:'accepted'|'declined')=>{
+  if(working||status!=='open'||remain===0)return;
+  setWorking(true);setError('');
+  try{
+   const result=await respondToNativeWaveOffer(requestId,decision,getAccessToken);
+   if(result.status==='matched'){setStatus('matched');onMatched()}
+   else if(result.status==='declined')onClose();
+   else{setStatus('expired');setError('This offer is no longer available.')}
+  }catch{setError('Could not submit your response. Recheck the offer before trying again.');void refresh()}
+  finally{setWorking(false)}
+ };
+ if(status==='loading')return <View style={styles.center}><ActivityIndicator color="#008a3e"/><Text>Checking JiTap BUZZ…</Text></View>;
+ if(status==='expired'||status==='matched')return <View style={styles.center}>
+  <Text style={styles.title}>{status==='matched'?'Job accepted':'BUZZ ended'}</Text>
+  <Text style={styles.body}>{status==='matched'?'Your request was recorded.':'This individual offer expired or another provider accepted. The customer request remains with JiTap.'}</Text>
+  <Pressable accessibilityRole="button" style={styles.button} onPress={onClose}><Text style={styles.buttonText}>Return to JiTap</Text></Pressable>
+ </View>;
+ if(status==='error'||!offer)return <View style={styles.center}><Text>{error||'Unable to open BUZZ'}</Text><Pressable onPress={()=>void refresh()}><Text>Retry</Text></Pressable></View>;
+ return <ScrollView contentContainerStyle={styles.container}>
+  <Text style={styles.kicker}>JiTap BUZZ · Wave {offer.wave}</Text>
+  <Text accessibilityRole="timer" style={styles.clock}>{remain}s</Text>
+  <View style={styles.progress}><View style={[styles.fill,{width:(remain/15*100)+'%'}]}/></View>
+  <Text style={styles.title}>{offer.category.replaceAll('-',' ')}</Text>
+  <Text style={styles.body}>{offer.summary}</Text>
+  <Text style={styles.fact}>Area: {offer.area}</Text>
+  <Text style={styles.fact}>Distance: {offer.distanceKm.toFixed(1)} km (straight line)</Text>
+  {offer.requestedDate?<Text style={styles.fact}>Requested: {offer.requestedDate} {offer.requestedTime}</Text>:null}
+  <Text style={styles.reference}>{offer.ref}</Text>
+  {error?<Text style={styles.error}>{error}</Text>:null}
+  <Pressable accessibilityRole="button" disabled={working||remain===0} style={[styles.button,(working||remain===0)&&styles.disabled]} onPress={()=>void answer('accepted')}>
+   <Text style={styles.buttonText}>{working?'Responding…':'Accept Job'}</Text>
+  </Pressable>
+  <Pressable accessibilityRole="button" disabled={working||remain===0} style={styles.decline} onPress={()=>void answer('declined')}>
+   <Text style={styles.declineText}>Decline</Text>
+  </Pressable>
+  <Text style={styles.privacy}>Customer contact details are shared only at the authorized matching stage.</Text>
+ </ScrollView>;
+}
+const styles=StyleSheet.create({
+ center:{flex:1,alignItems:'center',justifyContent:'center',padding:24,gap:14,backgroundColor:'#fff'},
+ container:{flexGrow:1,padding:24,paddingTop:48,backgroundColor:'#fff'},
+ kicker:{fontSize:14,color:'#008a3e',fontWeight:'800',textTransform:'uppercase'},
+ clock:{fontSize:58,fontWeight:'900',textAlign:'center',color:'#008a3e',marginVertical:15},
+ progress:{height:9,borderRadius:8,backgroundColor:'#dcebe2',overflow:'hidden',marginBottom:22},
+ fill:{height:'100%',backgroundColor:'#10b981'},
+ title:{fontSize:27,fontWeight:'800',color:'#122e28',textTransform:'capitalize',marginBottom:12},
+ body:{fontSize:16,lineHeight:24,color:'#435c53',marginBottom:18},
+ fact:{fontSize:14,color:'#315447',marginBottom:9},
+ reference:{fontSize:12,color:'#687a74',marginTop:9,marginBottom:22},
+ button:{minHeight:56,backgroundColor:'#008a3e',alignItems:'center',justifyContent:'center',borderRadius:13},
+ buttonText:{fontSize:18,color:'#fff',fontWeight:'800'},
+ disabled:{opacity:.55},
+ decline:{marginTop:13,alignItems:'center',padding:14,borderWidth:1,borderColor:'#c7464e',borderRadius:12},
+ declineText:{color:'#bd3842',fontWeight:'700'},
+ privacy:{marginTop:25,fontSize:12,lineHeight:18,color:'#73847d'},
+ error:{fontSize:14,color:'#bb3035',marginBottom:12}
+});
+// Expo Router wrapper in app/provider/buzz/[requestId].tsx:
+//
+// import {useLocalSearchParams,useRouter} from 'expo-router';
+// import {WaveBuzzOfferScreen} from '<relative path>/WaveBuzzOfferScreen';
+// import {supabase} from '<Aly mobile auth client>';
+// export default function ProviderBuzzRoute(){
+//   const {requestId}=useLocalSearchParams<{requestId:string}>();
+//   const router=useRouter();
+//   return <WaveBuzzOfferScreen
+//      requestId={requestId||''}
+//      getAccessToken={async()=> (await supabase.auth.getSession()).data.session?.access_token||null}
+//      onMatched={()=>router.replace('/provider')}
+//      onClose={()=>router.replace('/provider')}
+//   />;
+// }
