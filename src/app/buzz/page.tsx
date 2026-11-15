@@ -3,7 +3,7 @@ import {useEffect,useState} from 'react';
 import './provider-buzz.css';
 import {PrivateRequestPhotos} from '@/components/PrivateRequestPhotos';
 
-type Opportunity={status:string;business?:string;ref?:string;category?:string;description?:string;area?:string;preferredDate?:string;preferredTime?:string;decision?:string};
+type Opportunity={status:string;business?:string;ref?:string;category?:string;description?:string;area?:string;preferredDate?:string;preferredTime?:string;decision?:string;offerExpiresAt?:string};
 type Choice='accepted'|'declined'|'needs_clarification';
 
 export default function ProviderBuzzPage(){
@@ -13,6 +13,8 @@ export default function ProviderBuzzPage(){
  const [note,setNote]=useState('');
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState('');
+ const [clock,setClock]=useState(Date.now());
+ useEffect(()=>{const timer=window.setInterval(()=>setClock(Date.now()),1000);return()=>window.clearInterval(timer)},[]);
  useEffect(()=>{
   const value=window.location.hash.replace(/^#/,'');
   // URL fragments are not sent to the web server; remove immediately
@@ -29,7 +31,7 @@ export default function ProviderBuzzPage(){
   return()=>controller.abort();
  },[]);
  async function submit(){
-  if(!selection||busy)return;
+  if(!selection||busy||!opportunity||opportunity.status!=='open'||(opportunity.offerExpiresAt&&Date.parse(opportunity.offerExpiresAt)<=Date.now()))return;
   if(selection==='needs_clarification'&&note.trim().length<3){setError('Please explain what you need clarified.');return}
   setBusy(true);setError('');
   try{
@@ -41,7 +43,8 @@ export default function ProviderBuzzPage(){
   }catch(e){setError(e instanceof Error?e.message:'Unable to save your response')}
   finally{setBusy(false)}
  }
- const status=opportunity?.status;
+ const remaining=opportunity?.offerExpiresAt?Math.max(0,Math.ceil((Date.parse(opportunity.offerExpiresAt)-clock)/1000)):null;
+ const status=opportunity?.status==='open'&&remaining===0?'expired':opportunity?.status;
  return <main className="jt-buzz-page">
 
   <div className="jt-buzz-panel">
@@ -49,9 +52,10 @@ export default function ProviderBuzzPage(){
     status==='recorded'||status==='responded'||status==='already_responded'
     ?<div className="jt-buzz-result" role="status"><span className="jt-buzz-symbol">✓</span><h1>Response recorded</h1><p>Your response ({String(opportunity.decision||selection||'received').replaceAll('_',' ')}) is now available to JiTap Service Operations.</p><p>JiTap will coordinate any next steps. No booking is confirmed by this response alone.</p></div>
     :status!=='open'
-    ?<div className="jt-buzz-result" role="status"><h1>Invitation unavailable</h1><p>This opportunity link is invalid, expired, already assigned, or no longer active. Please contact JiTap Service Operations for a fresh invitation.</p></div>
+    ?<div className="jt-buzz-result" role="status"><h1>Invitation unavailable</h1><p>Your individual BUZZ offer may have expired, been handled, or become unavailable. The customer's request remains open for JiTap Service Operations and rematching.</p></div>
     :<>
      <div className="jt-buzz-eyebrow">NEW SERVICE OPPORTUNITY</div>
+     {remaining!==null&&<p role="timer" aria-label="Time left to respond" style={{fontWeight:750,color:'#087e46',margin:'9px 0'}}>BUZZ expires in 0:{String(remaining).padStart(2,'0')}secs</p>}
      <h1>Respond to a JiTap BUZZ</h1>
      <p className="jt-buzz-desc">Review the service brief and tell JiTap whether you can take this request.</p>
      <dl className="jt-buzz-facts">
@@ -72,7 +76,7 @@ export default function ProviderBuzzPage(){
      {selection==='needs_clarification'&&<label className="jt-buzz-question">What would you like JiTap to clarify?<textarea maxLength={500} rows={4} value={note} onChange={e=>setNote(e.target.value)} placeholder="e.g. What laptop model is it? Is the customer available tomorrow?"/></label>}
      {error&&<p className="jt-buzz-error" role="alert">{error}</p>}
      <button className="jt-buzz-submit" type="button" disabled={!selection||busy} onClick={submit}>{busy?'Submitting…':'Send response to JiTap'}</button>
-     <p className="jt-buzz-hint">This link is private and expires 72 hours after it is issued. The customer’s contact number is not shared. Accepting signals interest; JiTap must still confirm the booking.</p>
+     <p className="jt-buzz-hint">This invitation can be opened within 72 hours of issue. Once opened, you have 59 seconds to respond. The customer’s contact number is not shared. Accepting signals interest; JiTap must still confirm the booking.</p>
     </>}
   </div>
  </main>;
