@@ -1,7 +1,7 @@
 'use client';
 import {useCallback,useEffect,useRef,useState} from 'react';
 import Link from 'next/link';
-import {BellRing,MapPin,Volume2,VolumeX,LocateFixed,X,Zap} from 'lucide-react';
+import {BellRing,MapPin,Volume2,VolumeX,LocateFixed,Zap} from 'lucide-react';
 import './wave-buzz.css';
 
 type LiveOffer={requestId:string;ref:string;category:string;brief:string;location:string;preferredTime:string;distanceKm:number;wave:number;expiresAt:string};
@@ -68,28 +68,46 @@ export function WaveBuzzIncoming({enabled}:{enabled:boolean}){
   }
  },[enabled,offer,muted,remaining,play]);
  useEffect(()=>()=>{void audio.current?.close()},[]);
- async function shareLocation(){
-  if(!navigator.geolocation){setError('Location is not supported by this browser.');return}
-  setBusy(true);setError('');
-  navigator.geolocation.getCurrentPosition(async pos=>{
-   try{
-    const r=await fetch('/api/provider/wave-buzz',{
-     method:'POST',headers:{'Content-Type':'application/json'},
-     body:JSON.stringify({action:'location',sharing:true,latitude:pos.coords.latitude,longitude:pos.coords.longitude})
-    });
-    if(!r.ok)throw Error('Location sharing was not saved.');
-    setLocationShared(true);setLastOutcome('Location shared for 15 minutes while you are online.');void poll();
-   }catch(e){setError(e instanceof Error?e.message:'Location unavailable')}
-   finally{setBusy(false)}
-  },()=>{setBusy(false);setError('Location permission was not granted. You can still use normal JiTap requests.')},
-  {enableHighAccuracy:true,maximumAge:0,timeout:12000});
- }
- async function stopSharing(){
-  setBusy(true);
+ const shareLocation=useCallback(async(silent=false)=>{
+  if(!navigator.geolocation){if(!silent)setError('Location is unavailable on this device.');return}
+  if(!silent)setBusy(true);
+  if(!silent)setError('');
   try{
-   const r=await fetch('/api/provider/wave-buzz',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'location',sharing:false})});
-   if(!r.ok)throw Error('Unable to stop location sharing');
-   setLocationShared(false);setLastOutcome('Precise Wave Buzz location sharing stopped.');
+   const position=await new Promise<GeolocationPosition>((resolve,reject)=>
+    navigator.geolocation.getCurrentPosition(resolve,reject,
+     {enableHighAccuracy:true,maximumAge:0,timeout:12000}));
+   const res=await fetch('/api/provider/wave-buzz',{method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({action:'location',sharing:true,latitude:position.coords.latitude,longitude:position.coords.longitude})});
+   if(!res.ok)throw Error('Precise location was not refreshed.');
+   setLocationShared(true);
+   if(!silent)setLastOutcome('Location refreshed for nearby Wave Buzz matching.');
+  }catch{
+   setLocationShared(false);
+   if(!silent)setError('Please enable precise location in your phone settings to receive nearby jobs.');
+  }finally{if(!silent)setBusy(false)}
+ },[]);
+ useEffect(()=>{
+  if(!enabled){setLocationShared(false);return}
+  // The Online switch already obtained explicit GPS permission. Refresh only
+  // while the app is visible; closed apps require Aly's native location service.
+  setLocationShared(true);
+  const timer=window.setInterval(()=>{
+   if(document.visibilityState==='visible')void shareLocation(true);
+  },4*60*1000);
+  const onVisible=()=>{if(document.visibilityState==='visible')void shareLocation(true)};
+  document.addEventListener('visibilitychange',onVisible);
+  return()=>{window.clearInterval(timer);document.removeEventListener('visibilitychange',onVisible)};
+ },[enabled,shareLocation]);
+ async function stopSharing(){
+  setBusy(true);setError('');
+  try{
+   // Offline removes stored coordinates server-side and stops dispatch.
+   const r=await fetch('/api/provider/workspace',{method:'POST',
+    headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'availability',online:false})});
+   if(!r.ok)throw Error('Unable to switch offline');
+   setLocationShared(false);setOffer(null);
+   window.location.reload();
   }catch(e){setError(e instanceof Error?e.message:'Please try again.')}
   finally{setBusy(false)}
  }
@@ -111,7 +129,8 @@ export function WaveBuzzIncoming({enabled}:{enabled:boolean}){
  return <>
   <div className="jt-wave-live-controls" aria-label="JiTap Wave Buzz controls">
    <span><Zap size={17}/> Wave Buzz</span>
-   {!locationShared?<button type="button" onClick={shareLocation} disabled={busy}><LocateFixed size={17}/> Enable precise location</button>:<button type="button" onClick={stopSharing} disabled={busy}>Stop sharing location</button>}
+   <button type="button" onClick={()=>void shareLocation()} disabled={busy}><LocateFixed size={17}/> {locationShared?'Refresh GPS':'Enable GPS'}</button>
+   <button type="button" onClick={stopSharing} disabled={busy}>Go offline</button>
    <button type="button" onClick={()=>{setMuted(x=>!x);if(muted){try{audio.current||(audio.current=new AudioContext());void audio.current.resume()}catch{}}}} aria-pressed={!muted}>{muted?<VolumeX size={17}/>:<Volume2 size={17}/>} {muted?'Enable chime':'Mute'}</button>
    <Link href="/provider/wave-buzz">Test Wave Buzz</Link>
   </div>
