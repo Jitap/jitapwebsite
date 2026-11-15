@@ -1,0 +1,119 @@
+// Copy into Aly's Expo app as src/lib/native-wave-buzz.ts
+// Install (using versions selected by the Expo SDK):
+// npx expo install expo-notifications expo-constants expo-crypto expo-secure-store
+// Configure expo-notifications in app.json plugins and EAS FCM/APNs credentials.
+// The server never gives native apps service-role credentials.
+import {Platform} from 'react-native';
+import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
+import * as Crypto from 'expo-crypto';
+import * as SecureStore from 'expo-secure-store';
+
+const API='https://jitap.app';
+const deviceKey='jitap:native-push-device-id';
+export type NativeOffer={requestId:string;ref:string;category:string;summary:string;area:string;distanceKm:number;wave:number;expiresAt:string;requestedDate:string;requestedTime:string};
+type GetSession=()=>Promise<string|null>;
+export type WavePushOptions={
+ getAccessToken:GetSession;
+ openOffer:(requestId:string)=>void; // integrate with Expo Router
+};
+const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export async function getDeviceId():Promise<string>{
+ let id=await SecureStore.getItemAsync(deviceKey);
+ if(!id){id=Crypto.randomUUID();await SecureStore.setItemAsync(deviceKey,id);}
+ return id;
+}
+async function bearer(getAccessToken:GetSession){
+ const access=await getAccessToken();
+ if(!access)throw Error('Sign in as an approved JiTap provider first');
+ return {'Authorization':'Bearer '+access,'Content-Type':'application/json'};
+}
+export async function registerForJiTapPush({getAccessToken}:WavePushOptions){
+ // Invoke after the verified provider elects to enable notifications.
+ const permission=await Notifications.getPermissionsAsync();
+ let status=permission.status;
+ if(status!=='granted'){
+  const requested=await Notifications.requestPermissionsAsync();
+  status=requested.status;
+ }
+ if(status!=='granted')return {registered:false,reason:'notification_permission_denied'};
+ if(Platform.OS==='android'){
+  await Notifications.setNotificationChannelAsync('jitap-buzz',{
+   name:'Incoming JiTap jobs',
+   importance:Notifications.AndroidImportance.MAX,
+   vibrationPattern:[0,300,150,300,150,500],
+   lightColor:'#008a3e',
+   sound:'default'
+  });
+ }
+ const projectId=Constants.easConfig?.projectId??Constants.expoConfig?.extra?.eas?.projectId;
+ if(typeof projectId!=='string'||!projectId)throw Error('Configure the EAS project ID before push registration');
+ const token=(await Notifications.getExpoPushTokenAsync({projectId})).data;
+ const response=await fetch(API+'/api/mobile/push-devices',{
+  method:'POST',headers:await bearer(getAccessToken),
+  body:JSON.stringify({action:'register',deviceId:await getDeviceId(),expoPushToken:token,platform:Platform.OS})
+ });
+ if(!response.ok)throw Error('JiTap push registration unavailable');
+ return {registered:true};
+}
+export async function revokeJiTapPush(getAccessToken:GetSession){
+ const deviceId=await SecureStore.getItemAsync(deviceKey);
+ if(!deviceId)return;
+ const response=await fetch(API+'/api/mobile/push-devices',{
+  method:'POST',headers:await bearer(getAccessToken),
+  body:JSON.stringify({action:'revoke',deviceId})
+ });
+ if(!response.ok)throw Error('Push device could not be revoked');
+}
+// Revalidate a tapped notification: neither notification text nor its timer
+// can approve an offer. Expiry/first-accept is enforced in Postgres.
+export async function fetchNativeWaveOffer(requestId:string,getAccessToken:GetSession){
+ if(!uuid.test(requestId))throw Error('Invalid JiTap reference');
+ const response=await fetch(API+'/api/mobile/wave-buzz?requestId='+encodeURIComponent(requestId),{
+  headers:await bearer(getAccessToken)
+ });
+ if(!response.ok&&response.status!==404)throw Error('Unable to load the job');
+ return await response.json() as {status:string;serverNow?:string;offer?:NativeOffer};
+}
+export async function respondToNativeWaveOffer(requestId:string,decision:'accepted'|'declined',getAccessToken:GetSession){
+ const response=await fetch(API+'/api/mobile/wave-buzz',{
+  method:'POST',headers:await bearer(getAccessToken),
+  body:JSON.stringify({requestId,decision})
+ });
+ if(!response.ok)throw Error('Unable to respond to JiTap BUZZ');
+ return response.json() as Promise<{status:string;requestId?:string}>;
+}
+export function configureJiTapForegroundNotifications(){
+ Notifications.setNotificationHandler({
+  handleNotification:async()=>({
+   shouldShowBanner:true,shouldShowList:true,shouldPlaySound:true,shouldSetBadge:false
+  })
+ });
+}
+/** Call in Expo root layout AFTER mounting authenticated provider mode.
+ * A notification may be delayed; opening always loads the actual offer from JiTap.
+ * This listener handles both warm-state and cold-start notification taps.
+ */
+export function listenForJiTapPush(options:WavePushOptions){
+ const handle=(response:Notifications.NotificationResponse)=>{
+  if(response.actionIdentifier!==Notifications.DEFAULT_ACTION_IDENTIFIER)return;
+  const data=response.notification.request.content.data as Record<string,unknown>;
+  if(data.type==='jitap_wave_buzz'&&typeof data.requestId==='string'&&uuid.test(data.requestId))
+   options.openOffer(data.requestId);
+ };
+ const sub=Notifications.addNotificationResponseReceivedListener(handle);
+ void Notifications.getLastNotificationResponseAsync().then(last=>{
+  if(last){handle(last);void Notifications.clearLastNotificationResponseAsync()}
+ }).catch(()=>{});
+ return ()=>sub.remove();
+}
+// Example in app/_layout.tsx:
+// configureJiTapForegroundNotifications();
+// useEffect(()=>listenForJiTapPush({
+//   getAccessToken:async()=> (await supabase.auth.getSession()).data.session?.access_token??null,
+//   openOffer:id=>router.push({pathname:'/provider/buzz/[requestId]',params:{requestId:id}}),
+// }),[router]);
+// On verified provider enable/first Online:
+// await registerForJiTapPush({getAccessToken,openOffer});
+// On logout: await revokeJiTapPush(getAccessToken), then sign out.
+// Also listen to Notifications.addPushTokenListener to re-register rotated tokens.
