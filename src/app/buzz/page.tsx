@@ -1,6 +1,5 @@
 'use client';
 import {useEffect,useState} from 'react';
-import Link from 'next/link';
 import './provider-buzz.css';
 import {PrivateRequestPhotos} from '@/components/PrivateRequestPhotos';
 
@@ -44,7 +43,7 @@ export default function ProviderBuzzPage(){
  }
  const status=opportunity?.status;
  return <main className="jt-buzz-page">
-  <header className="jt-buzz-header"><Link href="/" aria-label="JiTap home"><strong>JiTap</strong></Link><span>Provider opportunity</span></header>
+
   <div className="jt-buzz-panel">
    {!opportunity?<div role="status">Checking your invitation…</div>:
     status==='recorded'||status==='responded'||status==='already_responded'
