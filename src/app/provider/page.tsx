@@ -18,7 +18,8 @@ type ProviderProfile={
 type Opportunity={request_id:string;category:string;area:string;preferred_date:string;preferred_time:string;created_at:string;technical_summary:string;proposed_scope:string;urgency:'high'|'normal'|'low'|'unspecified';brief_source:'ai'|'reported';requested_timing:string;job_location:string};
 type PastResponse={request_id:string;decision:string;created_at:string};
 type ConfirmedJob={id:string;requestId:string;status:string;customerName:string;customerPhone:string;location:string;service:string;latitude:number|null;longitude:number|null;placeId:string;rated:boolean};
-type Dashboard={profile:ProviderProfile|null;onboardingName?:string;reviewStatus:string;confirmedJobs:ConfirmedJob[];readNotificationIds:string[];opportunities:Opportunity[];recentResponses:PastResponse[];uploadedMedia:{kind:MediaKind;uploadedAt:string}[]};
+type DirectInvitation={requestId:string;serviceId:string;category:string;area:string;url:string};
+type Dashboard={directInvitations?:DirectInvitation[];profile:ProviderProfile|null;onboardingName?:string;reviewStatus:string;confirmedJobs:ConfirmedJob[];readNotificationIds:string[];opportunities:Opportunity[];recentResponses:PastResponse[];uploadedMedia:{kind:MediaKind;uploadedAt:string}[]};
 type Tab='home'|'profile'|'requests'|'verification';
 const empty={full_name:'',business_name:'',categories:[] as string[],service_areas:[] as string[],
  base_area:'Bamburi',experience_years:0,skills:'',is_online:false,submitted_at:null};
@@ -321,6 +322,16 @@ export default function ProviderDashboardPage(){
         <button type="button" className="jt-confirmed-view" onClick={()=>router.push('/provider/calendar?job='+encodeURIComponent(job.requestId))}>View <ChevronRight size={16}/></button>
        </div>
       </article>)}
+     </section>}
+     {approved&&(tab==='home'||tab==='requests')&&!!dashboard?.directInvitations?.length&&<section className="jt-provider-card" aria-label="Direct provider invitations" style={{marginBottom:16,padding:16}}>
+      <h2 style={{fontSize:18,margin:'0 0 8px'}}>Your BUZZ invitations</h2>
+      <p style={{fontSize:13,color:'#60727a',margin:'0 0 12px'}}>Review requests sent directly to you, even if an SMS is delayed.</p>
+      <div style={{display:'grid',gap:9}}>
+       {dashboard.directInvitations.map(item=><div key={item.requestId} style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:12,flexWrap:'wrap',border:'1px solid #e0e9e4',borderRadius:12,padding:12}}>
+        <div><strong style={{display:'block',color:'#153e32'}}>{item.category.replaceAll('-',' ')}</strong><small style={{color:'#64748b'}}>{item.serviceId} · {item.area}</small></div>
+        <Link href={item.url} style={{background:'#00c853',color:'#fff',padding:'10px 16px',borderRadius:10,fontWeight:700,textDecoration:'none'}}>View / Respond</Link>
+       </div>)}
+      </div>
      </section>}
      {(tab==='home'||tab==='requests')&&<section className="jt-provider-requests">
       <div className="jt-provider-requests-heading"><div><ClipboardList size={20}/><h2>{tab==='home'?'Live Requests':'Requests'}</h2></div><span>{liveOpportunities.length>=100?'100+':liveOpportunities.length}</span></div>
