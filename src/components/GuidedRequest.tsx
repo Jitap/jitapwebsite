@@ -333,18 +333,16 @@ export function GuidedRequest(){
     </div>}
   </div>
   {!chatIntake&&<div className="jt-chat-composer-dock">
+   {photoChooserOpen&&<div id="jt-chat-photo-source-menu" className="jt-chat-photo-source-menu" role="group" aria-label="Choose photo source">
+    <button type="button" onClick={()=>{setPhotoChooserOpen(false);askCameraRef.current?.click()}}>Take photo</button>
+    <button type="button" onClick={()=>{setPhotoChooserOpen(false);askPhotosRef.current?.click()}}>Choose from gallery</button>
+   </div>}
    <form className="jt-chat-composer" onSubmit={beginAsk} aria-label="Describe your service request">
     {askPhotos.length>0&&<div className="jt-chat-photo-previews" aria-label="Selected images">{askPhotos.map((photo,i)=><div className="jt-chat-photo" key={photo.preview}><img src={photo.preview} alt={'Selected service photo '+(i+1)}/><button type="button" aria-label={'Remove photo '+(i+1)} onClick={()=>{URL.revokeObjectURL(photo.preview);photoPreviewsRef.current.delete(photo.preview);setAskPhotos(items=>items.filter(x=>x!==photo))}}><X size={15}/></button></div>)}</div>}
     <div className="jt-chat-input-row">
      <input ref={askPhotosRef} className="jt-chat-file-input" type="file" accept="image/jpeg,image/png,image/webp" multiple aria-label="Choose photos from gallery" onChange={e=>{const files=Array.from(e.currentTarget.files||[]);e.currentTarget.value='';void addServicePhotos(files)}}/>
      <input ref={askCameraRef} className="jt-chat-file-input" type="file" accept="image/*" capture="environment" aria-label="Take a service photo" onChange={e=>{const files=Array.from(e.currentTarget.files||[]);e.currentTarget.value='';void addServicePhotos(files)}}/>
-     <div style={{position:'relative',flexShrink:0}}>
-      <button type="button" className="jt-chat-add-photo" aria-expanded={photoChooserOpen} aria-label="Add photos to service brief" title="Add photos" onClick={()=>setPhotoChooserOpen(v=>!v)}><Plus size={28}/></button>
-      {photoChooserOpen&&<div role="group" aria-label="Choose photo source" style={{position:'absolute',bottom:'calc(100% + 10px)',left:0,zIndex:12,background:'#fff',border:'1px solid #dce8e4',boxShadow:'0 7px 22px #0b39351f',padding:7,borderRadius:12,minWidth:174,display:'grid',gap:4}}>
-       <button type="button" style={{padding:'11px 12px',border:0,background:'#f0faf4',borderRadius:8,textAlign:'left',color:'#104632',fontWeight:650}} onClick={()=>{setPhotoChooserOpen(false);askCameraRef.current?.click()}}>Take photo</button>
-       <button type="button" style={{padding:'11px 12px',border:0,background:'#f0faf4',borderRadius:8,textAlign:'left',color:'#104632',fontWeight:650}} onClick={()=>{setPhotoChooserOpen(false);askPhotosRef.current?.click()}}>Choose from gallery</button>
-      </div>}
-     </div>
+     <button type="button" className="jt-chat-add-photo" aria-expanded={photoChooserOpen} aria-label="Add photos to service brief" aria-controls="jt-chat-photo-source-menu" title="Add photos" onClick={()=>setPhotoChooserOpen(v=>!v)}><Plus size={28}/></button>
      <label className="jt-chat-input-label"><textarea aria-label="Describe the service you need" rows={1} value={chatIntake?"":description} disabled={chatIntake} onChange={e=>{if(chatIntake)return;setDescription(e.target.value);if(askError)setAskError('');e.target.style.height='auto';e.target.style.height=Math.min(e.target.scrollHeight,144)+'px'}} placeholder="How can I help you..." maxLength={1500} required onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.nativeEvent.isComposing){e.preventDefault();e.currentTarget.form?.requestSubmit()}}}/></label>
      <button type="submit" className="jt-chat-send" disabled={!description.trim()||chatIntake||processingPhotos}>{processingPhotos?"Adding photos...":"Ask JiTap"}</button>
     </div>
