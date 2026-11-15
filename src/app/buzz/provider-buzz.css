@@ -29,3 +29,7 @@
 .jt-buzz-result p{color:#526875;line-height:1.65}
 .jt-buzz-symbol{display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:#e3f7ec;color:#148758;width:62px;height:62px;font-size:33px}
 @media(max-width:530px){.jt-buzz-page{padding:0 10px 35px}.jt-buzz-panel{margin-top:12px;padding:20px;border-radius:16px}.jt-buzz-facts{grid-template-columns:100px minmax(0,1fr);gap:10px}.jt-buzz-choices{grid-template-columns:1fr}.jt-buzz-choices button{min-height:47px}}
+
+/* Main JiTap site header is already present: no duplicate BUZZ header. */
+.jt-buzz-panel{margin-top:16px}
+@media(max-width:530px){.jt-buzz-panel{margin-top:10px}}
