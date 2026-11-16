@@ -63,7 +63,15 @@ export function inferService(query:string):string|undefined {
     /\b(?:house|home|furniture|wardrobe|sofa|bed|truck|delivery|relocation|moving|office|items|goods|kuhama|nihame)\b/.test(t))return 'moving';
  // Appliance names override mentions of a door, handle, motor or pipe.
  if(/\b(?:fridge|refrigerator|freezer|friji|washing machine|washer|dishwasher|cooker|oven|appliance repair)\b/.test(t))return 'appliance-repair';
- if(/\b(?:plumb(?:er|ing|ers)?|fundi wa maji|bomba|mabomba|tap|faucet|sink|drain|pipe|leak(?:ing|age)?|dripping|imeziba|imevuja|inavuja|choo imeziba)\b/.test(t))return 'plumbing';
+ // A broken shower or shower fitting is normally a plumbing request.
+ // Explicit heater/electrical faults go to an electrician instead.
+ if(/\b(?:shower|bafu|shawa|showerhead|shower head|shower mixer|shower tap)\b/.test(t)){
+  if(/\b(?:electric|electrical|heater|heating element|not heating|no hot water|tripping|breaker|wiring|stima|instant shower)\b/.test(t)
+   &&!/\b(?:leak|leaking|drain|blocked|clogged|pressure|no water|pipe|tap|plumber)\b/.test(t))
+    return 'electrical';
+  return 'plumbing';
+ }
+  if(/\b(?:plumb(?:er|ing|ers)?|fundi wa maji|bomba|mabomba|tap|faucet|sink|drain|pipe|leak(?:ing|age)?|dripping|imeziba|imevuja|inavuja|choo imeziba)\b/.test(t))return 'plumbing';
  if(/\b(?:electrician|fundi wa stima|stima|electric(?:al)?|wiring|socket|soketi|switch|power fault|circuit breaker)\b/.test(t))return 'electrical';
  if(/\b(?:paint(?:er|ing)?|kupaka rangi|rangi ya nyumba)\b/.test(t))return 'painting';
  if(/\b(?:mama[ -]*fua|mamafua|kufua|laundry|laundering|housekeeper|house cleaner|house cleaning|clean my house|clean my home|cleaning|ironing|folding clothes|wash clothes|wash duvets?|wash blankets?|duvet washing)\b/.test(t))return 'cleaning';
