@@ -29,7 +29,7 @@ export async function GET(req:NextRequest){
   if(!position||!position.sharing_enabled||Date.now()-Date.parse(position.observed_at)>120000)
    return reply({available:false,reason:'Waiting for a current provider GPS update'});
   const {locationLat,locationLng}=record.payload;
-  if(!valid(locationLat,locationLng)||!valid(position.latitude,position.longitude))
+  if(typeof locationLat!=='number'||typeof locationLng!=='number'||!valid(locationLat,locationLng)||!valid(position.latitude,position.longitude))
    return reply({available:false,reason:'Route coordinates unavailable'});
   const key=process.env.GOOGLE_MAPS_API_KEY;
   if(!key)return reply({available:false,reason:'Route estimates unavailable'});
