@@ -87,8 +87,7 @@ export function ProviderCalendarInvitations({onUpdated}:{onUpdated?:()=>void}){
      </div>
      {proposing===inv.id&&<div className="jt-invite-reschedule">
       <strong>Propose a different time</strong>
-      <label>Start (EAT)<input type="datetime-local" value={start} onChange={e=>setStart(e.target.value)}/></label>
-      <label>End (EAT)<input type="datetime-local" value={end} onChange={e=>setEnd(e.target.value)}/></label>
+      <label>Proposed arrival (EAT)<input type="datetime-local" value={start} onChange={e=>setStart(e.target.value)}/></label>
       <label>Reason (optional)<textarea rows={2} maxLength={500} value={note} onChange={e=>setNote(e.target.value)}/></label>
       <div><button type="button" disabled={busy} onClick={()=>void respond(inv,inv.status==='change_requested'?'propose_change':'propose')}>Send new time</button>
        <button type="button" onClick={()=>setProposing(null)}>Cancel</button></div>
