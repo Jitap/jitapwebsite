@@ -11,7 +11,7 @@ import './provider-dashboard.css';
 import {ProviderJobAction} from '@/components/ProviderJobAction';
 import {WaveBuzzIncoming} from '@/components/WaveBuzzIncoming';
 import {armProviderBuzzAudio} from '@/lib/provider-buzz-audio';
-import {ProviderTravelEstimate} from '@/components/ProviderTravelEstimate';
+import {ProviderActiveJobStack} from '@/components/ProviderActiveJobStack';
 import {ProviderIdentityVerification} from '@/components/ProviderIdentityVerification';
 
 type ProviderProfile={
@@ -354,28 +354,17 @@ export default function ProviderDashboardPage(){
        <strong>{completedJobs.length}</strong><small>View work history</small>
       </button>
      </section>}
-     {approved&&(tab==='home'||tab==='requests')&&inProgressJobs.length>0&&<section className="jt-confirmed-jobs">
-      <h2><CheckCircle2 size={21}/> Active Jobs <span>{inProgressJobs.length}</span></h2>
-      {inProgressJobs.map(job=><article key={job.id} className="jt-confirmed-job">
-       <div className="jt-confirmed-job-meta"><strong>{SERVICE_OPTIONS.find(c=>c.value===job.service)?.label||job.service}</strong><small>JT-{job.requestId.slice(0,8).toUpperCase()}</small></div>
-       <p><UserRound size={17}/> {job.customerName}</p>{job.customerRequestedJobs!==undefined&&job.customerRequestedJobs!==null&&<p className="jt-confirmed-job-trust" aria-label="Customer rating and number of service requests"><span>{job.customerRating!==null&&job.customerRating!==undefined?'★ '+job.customerRating.toFixed(1)+' ('+(job.customerRatingCount||0)+' ratings)':'☆ New · No ratings yet'}</span><span>{job.customerRequestedJobs} {job.customerRequestedJobs===1?'job requested':'jobs requested'}</span></p>}
-       {job.customerPhone&&<p><a href={'tel:'+job.customerPhone.replace(/[^+0-9]/g,'')}>{job.customerPhone} · Call customer</a></p>}
-       <ProviderTravelEstimate job={job}/>
-       <div className="jt-confirmed-job-actions">
-        <ProviderJobAction key={job.id} appointmentId={job.id} status={job.status} rated={job.rated}
-         onUpdated={async(nextStatus)=>{
-          if(nextStatus)setDashboard(current=>current?{...current,confirmedJobs:current.confirmedJobs.map(item=>
-           item.id===job.id?{...item,...(nextStatus==='rated'?{rated:true}:{status:nextStatus})}:item)}:current);
-          if(nextStatus==='completed'){
-           router.push('/provider/calendar?job='+encodeURIComponent(job.requestId));
-           return;
-          }
-          await refresh();
-         }}/>
-        <button type="button" className="jt-confirmed-view" onClick={()=>router.push('/provider/calendar?job='+encodeURIComponent(job.requestId))}>View <ChevronRight size={16}/></button>
-       </div>
-      </article>)}
-     </section>}
+     {approved&&(tab==='home'||tab==='requests')&&inProgressJobs.length>0&&
+      <ProviderActiveJobStack jobs={inProgressJobs} onUpdated={async(job,nextStatus)=>{
+       if(nextStatus)setDashboard(current=>current?{...current,confirmedJobs:current.confirmedJobs.map(item=>
+        item.id===job.id?{...item,...(nextStatus==='rated'?{rated:true}:{status:nextStatus})}:item)}:current);
+       if(nextStatus==='completed'){
+        router.push('/provider/calendar?job='+encodeURIComponent(job.requestId));
+        return;
+       }
+       await refresh();
+      }}/>
+     }
      {(tab==='home'||tab==='requests')&&!!dashboard?.directInvitations?.length&&<section className="jt-provider-card" aria-label="Direct provider invitations" style={{marginBottom:16,padding:16}}>
       <h2 style={{fontSize:18,margin:'0 0 8px'}}>Your BUZZ invitations</h2>
       <p style={{fontSize:13,color:'#60727a',margin:'0 0 12px'}}>Review requests sent directly to you, even if an SMS is delayed.</p>
