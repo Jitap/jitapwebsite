@@ -67,25 +67,6 @@ export default function ProviderProfilePage(){
   }catch(e){setError(e instanceof Error?e.message:'Unable to update availability')}
   finally{setSaving(false)}
  }
- useEffect(()=>{
-  if(!profile?.is_online||!navigator.geolocation)return;
-  let active=true;
-  const refreshGps=()=>{
-   if(!active||document.visibilityState!=='visible')return;
-   navigator.geolocation.getCurrentPosition(position=>{
-    if(!active)return;
-    void fetch('/api/provider/wave-buzz',{method:'POST',
-     headers:{'Content-Type':'application/json'},
-     body:JSON.stringify({action:'location',sharing:true,
-      latitude:position.coords.latitude,longitude:position.coords.longitude})
-    }).catch(()=>{});
-   },()=>{}, {enableHighAccuracy:true,maximumAge:0,timeout:12000});
-  };
-  const timer=window.setInterval(refreshGps,20000);
-  const onVisible=()=>{if(document.visibilityState==='visible')refreshGps()};
-  document.addEventListener('visibilitychange',onVisible);
-  return()=>{active=false;window.clearInterval(timer);document.removeEventListener('visibilitychange',onVisible)};
- },[profile?.is_online]);
  async function switchToCustomer(){
   setSaving(true);setError('');
   try{
