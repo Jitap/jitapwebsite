@@ -1,6 +1,6 @@
 'use client';
 
-import {useEffect,useRef,useState,type PointerEvent} from 'react';
+import {useEffect,useRef,useState,type PointerEvent,type TouchEvent} from 'react';
 import {useRouter} from 'next/navigation';
 import {CheckCircle2,ChevronLeft,ChevronRight,UserRound} from 'lucide-react';
 import {SERVICE_OPTIONS} from '@/lib/provider-options';
@@ -24,7 +24,7 @@ export function ProviderActiveJobStack({jobs,onUpdated}:Props){
  const [dragging,setDragging]=useState(false);
  const gesture=useRef<Gesture|null>(null);
  const cardRef=useRef<HTMLElement|null>(null);
- const suppressClick=useRef(false);
+ const touchActive=useRef(false);
  useEffect(()=>{
   const ids=jobs.map(job=>job.id);
   setOrder(old=>{
@@ -46,10 +46,10 @@ export function ProviderActiveJobStack({jobs,onUpdated}:Props){
  };
  const detail=(job:ActiveProviderJob)=>router.push('/provider/calendar?job='+encodeURIComponent(job.requestId));
  const pointerDown=(event:PointerEvent<HTMLElement>)=>{
-  if(event.button!==0||!event.isPrimary)return;
+  if(event.pointerType!=='mouse'||event.button!==0||!event.isPrimary)return;
   if((event.target as HTMLElement).closest('a,button,input,textarea,select'))return;
   gesture.current={x:event.clientX,y:event.clientY,pointerId:event.pointerId,axis:'pending'};
-  suppressClick.current=false;
+
  };
  const pointerMove=(event:PointerEvent<HTMLElement>)=>{
   const g=gesture.current;
@@ -62,7 +62,7 @@ export function ProviderActiveJobStack({jobs,onUpdated}:Props){
    setDragging(true);
    try{cardRef.current?.setPointerCapture(event.pointerId)}catch{}
   }
-  if(g.axis==='horizontal'){suppressClick.current=true;setOffset(dx)}
+  if(g.axis==='horizontal')setOffset(dx)
  };
  const pointerUp=(event:PointerEvent<HTMLElement>)=>{
   const g=gesture.current;
@@ -76,6 +76,35 @@ export function ProviderActiveJobStack({jobs,onUpdated}:Props){
   else if(dx>=SWIPE_THRESHOLD&&current)detail(current);
  };
  const pointerCancel=()=>{gesture.current=null;setDragging(false);setOffset(0)};
+ // Follow touch events explicitly, since mobile browsers can cancel pointer moves.
+ const touchStart=(event:TouchEvent<HTMLElement>)=>{
+  if(event.touches.length!==1)return;
+  if((event.target as HTMLElement).closest('a,button,input,textarea,select'))return;
+  touchActive.current=true;
+  gesture.current={x:event.touches[0].clientX,y:event.touches[0].clientY,pointerId:-1,axis:'pending'};
+ };
+ const touchMove=(event:TouchEvent<HTMLElement>)=>{
+  const g=gesture.current;
+  if(!touchActive.current||!g||g.pointerId!==-1||event.touches.length!==1)return;
+  const dx=event.touches[0].clientX-g.x,dy=event.touches[0].clientY-g.y;
+  if(g.axis==='pending'){
+   if(Math.max(Math.abs(dx),Math.abs(dy))<10)return;
+   if(Math.abs(dy)>=Math.abs(dx)*1.1){g.axis='vertical';return}
+   g.axis='horizontal';
+   setDragging(true);
+  }
+  if(g.axis==='horizontal')setOffset(dx);
+ };
+ const touchEnd=(event:TouchEvent<HTMLElement>)=>{
+  const g=gesture.current;
+  if(!touchActive.current||!g||g.pointerId!==-1)return;
+  touchActive.current=false;gesture.current=null;setDragging(false);setOffset(0);
+  if(g.axis!=='horizontal'||!event.changedTouches.length)return;
+  const dx=event.changedTouches[0].clientX-g.x;
+  if(dx<=-SWIPE_THRESHOLD)advance('next');
+  else if(dx>=SWIPE_THRESHOLD&&current)detail(current);
+ };
+ const touchCancel=()=>{touchActive.current=false;gesture.current=null;setDragging(false);setOffset(0)};
  if(!current)return null;
  const label=SERVICE_OPTIONS.find(c=>c.value===current.service)?.label||current.service;
  return <section className="jt-confirmed-jobs jt-provider-stack" aria-label="Active jobs">
@@ -88,8 +117,8 @@ export function ProviderActiveJobStack({jobs,onUpdated}:Props){
    <article ref={cardRef} className={'jt-confirmed-job jt-provider-stack-front'+(dragging?' is-dragging':'')}
     style={{transform:`translate3d(${offset}px,0,0) rotate(${Math.max(-6,Math.min(6,offset/30))}deg)`}}
     onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerUp}
-    onPointerCancel={pointerCancel} onLostPointerCapture={()=>{if(gesture.current)pointerCancel()}}
-    onClickCapture={event=>{if(suppressClick.current){event.preventDefault();event.stopPropagation();suppressClick.current=false}}}
+    onPointerCancel={pointerCancel} onLostPointerCapture={()=>{if(gesture.current?.pointerId!==-1)pointerCancel()}}
+    onTouchStart={touchStart} onTouchMove={touchMove} onTouchEnd={touchEnd} onTouchCancel={touchCancel}
     aria-label={`Active job ${label} for ${current.customerName}. Swipe left for next job, swipe right for details.`}>
     <div className="jt-confirmed-job-meta"><strong>{label}</strong><small>JT-{current.requestId.slice(0,8).toUpperCase()}</small></div>
     <p><UserRound size={17}/> {current.customerName}</p>
@@ -103,7 +132,7 @@ export function ProviderActiveJobStack({jobs,onUpdated}:Props){
     <div className="jt-confirmed-job-actions">
      <ProviderJobAction key={current.id} appointmentId={current.id} status={current.status} rated={current.rated}
       onUpdated={async(status)=>onUpdated(current,status)}/>
-     <button type="button" className="jt-confirmed-view" onClick={()=>detail(current)}>View <ChevronRight size={16}/></button>
+     <a className="jt-confirmed-view" href={'/provider/calendar?job='+encodeURIComponent(current.requestId)}>View <ChevronRight size={16}/></a>
     </div>
    </article>
   </div>
