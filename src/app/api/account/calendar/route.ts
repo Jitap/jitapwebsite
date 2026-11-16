@@ -19,8 +19,11 @@ const changes=z.discriminatedUnion('action',[
  z.object({action:z.literal('respond_proposal'),bookingId:uuid,accept:z.boolean()}).strict(),
  z.object({action:z.enum(['create_save','create_invite']),category:z.string().max(70),
   area:z.string().trim().min(2).max(80),description:z.string().trim().min(10).max(1200),
-  location:z.string().trim().min(3).max(160),providerId:uuid.optional(),
-  startsAt:time,endsAt:time,note:z.string().max(500).default(''),
+  location:z.string().trim().min(3).max(160),
+  locationLat:z.number().finite().min(-5).max(5),
+  locationLng:z.number().finite().min(33).max(42),
+  locationPlaceId:z.string().max(250).optional(),providerId:uuid.optional(),
+  startsAt:time,note:z.string().max(500).default(''),
   idempotencyKey:z.string().regex(/^[a-f0-9]{64}$/)}).strict(),
  z.object({action:z.enum(['cancel','reschedule']),bookingId:uuid,
   startsAt:time.optional(),endsAt:time.optional()}).strict(),
@@ -143,13 +146,13 @@ export async function POST(req:NextRequest){
    return reply(result);
   }
   if(input.action==='cancel'||input.action==='reschedule'){
-   if(input.action==='reschedule'&&(!input.startsAt||!input.endsAt))
-    return reply({error:'Choose a new date and time'},422);
+   if(input.action==='reschedule'&&!input.startsAt)
+    return reply({error:'Choose a new arrival date and time'},422);
    const result=await supabasePrivate<{ok?:boolean;error?:string}>(
     'rpc/jitap_customer_manage_calendar_booking',{method:'POST',
      body:JSON.stringify({p_customer:session.userId,p_booking:input.bookingId,
       p_action:input.action,p_start:input.action==='reschedule'?input.startsAt:null,
-      p_end:input.action==='reschedule'?input.endsAt:null})});
+      p_end:input.action==='reschedule'?new Date(Date.parse(input.startsAt!)+3600000).toISOString():null})});
    if(!result.ok)return reply({error:result.error||'Unable to change this booking'},409);
    after(async()=>{await notifyScheduledBooking(input.bookingId,
     input.action==='cancel'?'cancelled':'reschedule_requested','provider').catch(()=>{})});
@@ -161,10 +164,11 @@ export async function POST(req:NextRequest){
    if(input.action==='create_invite'&&!input.providerId)
     return reply({error:'Select a matching provider'},422);
    const result=await supabasePrivate<{ok?:boolean;error?:string;id?:string;requestId?:string;serviceId?:string}>(
-    'rpc/jitap_customer_create_calendar_request',{method:'POST',body:JSON.stringify({
+    'rpc/jitap_customer_create_calendar_request_v2',{method:'POST',body:JSON.stringify({
      p_customer:session.userId,p_phone:session.phone,p_name:session.fullName||'Customer',
      p_category:input.category,p_area:input.area,p_description:input.description,
-     p_location:input.location,p_start:input.startsAt,p_end:input.endsAt,
+     p_location:input.location,p_lat:input.locationLat,p_lng:input.locationLng,
+     p_place_id:input.locationPlaceId||'',p_start:input.startsAt,
      p_note:input.note,p_provider:input.action==='create_invite'?input.providerId:null,
      p_submit:input.action==='create_invite',p_key:input.idempotencyKey})});
    if(!result.ok)return reply({error:result.error||'Unable to create booking'},409);
