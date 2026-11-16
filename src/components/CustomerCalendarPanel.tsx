@@ -6,7 +6,7 @@ import type {CustomerTicket} from '@/components/CustomerTicketCard';
 import './customer-calendar.css';
 
 type Booking={id:string;request_id:string;provider_user_id:string|null;
- starts_at:string;ends_at:string;status:string;note:string;
+ starts_at:string;ends_at:string;status:string;note:string;providerName?:string|null;
  proposed_start_at:string|null;proposed_end_at:string|null;response_note:string;};
 type Provider={id:string;name:string};
 type Options={request?:{category:string;area:string;description:string};canSchedule?:boolean;providers?:Provider[]};
@@ -16,6 +16,7 @@ const dt=(iso:string)=>new Intl.DateTimeFormat('en-KE',{
 }).format(new Date(iso))+' EAT';
 const localDay=(date:Date)=>date.toLocaleDateString('en-CA',{timeZone:kenya,year:'numeric',month:'2-digit',day:'2-digit'});
 const currentDay=()=>localDay(new Date());
+const nextDay=()=>localDay(new Date(Date.now()+24*3600000));
 function startMonth(day:string){return day.slice(0,7)+'-01'}
 function shiftMonth(day:string,n:number){const d=new Date(day.slice(0,7)+'-15T12:00:00Z');d.setUTCMonth(d.getUTCMonth()+n);return d.toISOString().slice(0,7)+'-01'}
 function daysForMonth(month:string){
@@ -31,8 +32,8 @@ export function CustomerCalendarPanel({tickets,saved=[],reviewer=false,onRefresh
  tickets:CustomerTicket[];saved?:{id:string;name:string;url:string}[];
  reviewer?:boolean;onRefresh?:()=>void;
 }){
- const [day,setDay]=useState(currentDay);
- const [month,setMonth]=useState(()=>startMonth(currentDay()));
+ const [day,setDay]=useState(nextDay);
+ const [month,setMonth]=useState(()=>startMonth(nextDay()));
  const [requestId,setRequestId]=useState('');
  const [start,setStart]=useState('09:00');
  const [end,setEnd]=useState('10:00');
@@ -53,7 +54,15 @@ export function CustomerCalendarPanel({tickets,saved=[],reviewer=false,onRefresh
   const response=await fetch(url,{cache:'no-store'});
   const data=await response.json().catch(()=>({}));
   if(!response.ok)throw Error(data.error||'Unable to load your calendar');
-  setBookings(Array.isArray(data.bookings)?data.bookings:[]);
+  const rows:Booking[]=Array.isArray(data.bookings)?data.bookings:[];
+  setBookings(rows);
+  const selected=rows.find(b=>b.request_id===id);
+  if(selected){
+   const d=localDay(new Date(selected.starts_at));
+   const clock=(iso:string)=>new Intl.DateTimeFormat('en-GB',{timeZone:kenya,hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(iso));
+   setDay(d);setMonth(startMonth(d));setStart(clock(selected.starts_at));setEnd(clock(selected.ends_at));
+   setNote(selected.note||'');setSelectedProvider(selected.provider_user_id||'');
+  }
   setOptions(id?data:{});
  },[]);
  useEffect(()=>{
@@ -179,7 +188,7 @@ export function CustomerCalendarPanel({tickets,saved=[],reviewer=false,onRefresh
    {loading?<p>Loading calendar…</p>:!bookings.length?<p>No scheduled bookings yet.</p>:
     bookings.map(b=><article key={b.id}>
      <div><CalendarDays size={20}/><strong>{dt(b.starts_at)}</strong></div>
-     <p>{tickets.find(t=>t.reference===b.request_id)?.category.replaceAll('-',' ')||'Service'} · JT-{b.request_id.slice(0,8).toUpperCase()}</p>
+     <p>{tickets.find(t=>t.reference===b.request_id)?.category.replaceAll('-',' ')||'Service'} · JT-{b.request_id.slice(0,8).toUpperCase()}{b.providerName?' · '+b.providerName:''}</p>
      <small>{b.status==='pending'?'Awaiting provider':b.status==='proposed'?'New time proposed — your decision needed':
       b.status==='accepted'?'Confirmed':b.status==='declined'?'Declined — choose another provider':'Saved draft'}</small>
      {b.status==='proposed'&&b.proposed_start_at&&<div className="jt-calendar-proposal-actions">
