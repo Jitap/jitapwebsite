@@ -32,7 +32,7 @@ type Provider={user_id:string;full_name:string;business_name:string;categories:s
 const clean=(v:unknown,max=100)=>typeof v==='string'?v.trim().slice(0,max):'';
 const summary=(p:Record<string,unknown>)=>({
  category:clean(p.category,70),area:clean(p.area,70),
- description:clean(p.title,100)||clean(p.description,140)
+ description:clean(p.title,100)||clean(p.description,140),location:clean(p.location,160)
 });
 async function customer(req:NextRequest){
  const identity=await getCustomerIdentity(req);
