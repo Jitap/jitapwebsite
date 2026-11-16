@@ -9,7 +9,7 @@ import {ProviderNewJob} from '@/components/ProviderNewJob';
 import {ProviderCalendarInvitations} from '@/components/ProviderCalendarInvitations';
 
 type Appointment={
- id:string;requestId:string;startsAt:string|null;endsAt:string|null;status:string;rated:boolean;providerEtaAt?:string|null;
+ id:string;requestId:string;startsAt:string|null;endsAt:string|null;status:string;rated:boolean;scheduledService?:boolean;providerEtaAt?:string|null;
  title:string;category:string;area:string;location:string;latitude:number|null;longitude:number|null;
  placeId:string;customerName:string;customerPhone:string;description:string;
   customerRating?:number|null;customerRatingCount?:number;customerRequestedJobs?:number|null;
@@ -143,7 +143,7 @@ export default function ProviderCalendar(){
       <div className="jcal-map-placeholder"><MapPin size={24}/><span>{detail.location}</span></div>)}
     <ProviderTravelEstimate job={detail}/>
    </section>
-   <section className="jcal-info"><h2>Schedule</h2><p><CalendarDays size={20}/>{detail.startsAt&&detail.endsAt?dateTime(detail.startsAt)+' · '+time(detail.startsAt)+' – '+time(detail.endsAt):'Confirmed · Date and time to arrange'}</p>{detail.pendingReschedule&&<p className="jcal-pending"><Clock3 size={18}/> Reschedule awaiting JiTap confirmation</p>}</section>
+   <section className="jcal-info"><h2>Schedule</h2><p><CalendarDays size={20}/>{detail.startsAt&&detail.endsAt?dateTime(detail.startsAt)+' · '+time(detail.startsAt)+(detail.scheduledService?' arrival (EAT)':' – '+time(detail.endsAt)):'Confirmed · Date and time to arrange'}</p>{detail.pendingReschedule&&<p className="jcal-pending"><Clock3 size={18}/> Reschedule awaiting JiTap confirmation</p>}</section>
    {['confirmed','on_my_way'].includes(detail.status)&&<section className="jcal-info jcal-eta">
     <h2>Confirm estimated arrival</h2>
     {detail.providerEtaAt&&<p><Clock3 size={18}/> Current ETA: {dateTime(detail.providerEtaAt)} · {time(detail.providerEtaAt)} EAT</p>}
@@ -187,7 +187,7 @@ export default function ProviderCalendar(){
      <div className="jcal-events">{dayJobs.map((a,i)=>{
       const top=Math.max(0,(hour(a.startsAt!)-7)*58);
       const duration=Math.max(1,hour(a.endsAt!)-hour(a.startsAt!));
-      return <button key={a.id} style={{top:top+'px',height:Math.max(65,duration*58-5)+'px'}} className={'jcal-event jcal-event-'+i%3} onClick={()=>{setExpandedDescription(false);setDetailId(a.id)}}><span className="jcal-event-dot"/><span><strong>{a.title}</strong><small>{time(a.startsAt!)} – {time(a.endsAt!)}</small><small>{a.location||a.area}</small></span></button>
+      return <button key={a.id} style={{top:top+'px',height:Math.max(65,duration*58-5)+'px'}} className={'jcal-event jcal-event-'+i%3} onClick={()=>{setExpandedDescription(false);setDetailId(a.id)}}><span className="jcal-event-dot"/><span><strong>{a.title}</strong><small>{a.scheduledService?'Arrival '+time(a.startsAt!):time(a.startsAt!)+' – '+time(a.endsAt!)}</small><small>{a.location||a.area}</small></span></button>
      })}</div>
     </section>}
    {!loading&&unscheduled.length>0&&<section className="jcal-unscheduled"><h2>Confirmed jobs · Time to arrange</h2>{unscheduled.map(a=><button key={a.id} onClick={()=>setDetailId(a.id)}><strong>{a.title}</strong><span>{a.location||a.area} · Booking confirmed</span><small>View job and tap On my way</small></button>)}</section>}
