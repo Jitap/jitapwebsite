@@ -68,16 +68,16 @@ export async function GET(req:NextRequest){
    request_id:string;provider_user_id:string;status:string
   }[]>('jitap_provider_appointments?select=request_id,provider_user_id,status&request_id=in.('+
    accepted.map(b=>b.request_id).join(',')+')'):[];
-  const confirmed=new Set(appointments.filter(a=>!['cancelled'].includes(a.status))
+  const acceptedMatchKeys=new Set(appointments.filter(a=>!['cancelled'].includes(a.status))
    .map(a=>a.request_id+'|'+a.provider_user_id));
-  const contactIds=[...new Set(accepted.filter(b=>confirmed.has(b.request_id+'|'+b.provider_user_id))
+  const contactIds=[...new Set(accepted.filter(b=>acceptedMatchKeys.has(b.request_id+'|'+b.provider_user_id))
    .map(b=>b.provider_user_id).filter((id):id is string=>!!id))];
   const contacts=contactIds.length?await supabasePrivate<{user_id:string;phone:string}[]>(
    'jitap_accounts?select=user_id,phone&user_id=in.('+contactIds.join(',')+')'):[];
   const phoneById=new Map(contacts.map(a=>[a.user_id,normalizeKenyanPhone(a.phone)]));
   const bookings=rows.map(b=>({
    ...b,providerName:byProvider.get(b.provider_user_id||'')||null,
-   providerPhone:confirmed.has(b.request_id+'|'+b.provider_user_id)&&
+   providerPhone:acceptedMatchKeys.has(b.request_id+'|'+b.provider_user_id)&&
     ['accepted','change_requested','change_proposed'].includes(b.status)
     ?phoneById.get(b.provider_user_id||'')||null:null,
    service:summary(requestById.get(b.request_id)||{})
