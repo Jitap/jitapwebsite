@@ -7,7 +7,7 @@ create or replace function public.jitap_customer_create_calendar_request_v2(
 ) returns jsonb language plpgsql security definer set search_path='' as $$
 declare v_result jsonb;v_id uuid;
 begin
- if p_lat is null or p_lng is null or not isfinite(p_lat) or not isfinite(p_lng)
+ if p_lat is null or p_lng is null
   or p_lat not between -5 and 5 or p_lng not between 33 and 42
   or length(coalesce(p_place_id,''))>250
  then return jsonb_build_object('error','select_exact_map_location');end if;
