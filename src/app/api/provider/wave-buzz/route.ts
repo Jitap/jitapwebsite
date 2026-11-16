@@ -73,6 +73,10 @@ export async function POST(req:NextRequest){
     return respond({sharing:false});
    }
    if(body.latitude===undefined||body.longitude===undefined)return respond({error:'Location required'},422);
+   // Do not recreate a GPS record after the provider explicitly switched Offline.
+   const workspaces=await supabasePrivate<{is_online:boolean}[]>(
+    'jitap_provider_workspaces?select=is_online&user_id=eq.'+session.userId+'&limit=1');
+   if(workspaces[0]?.is_online!==true)return respond({error:'Provider is Offline. Go Online to share location.'},409);
    // Only explicit, user-triggered geolocation sharing is accepted.
    await supabasePrivate('jitap_wave_provider_locations?on_conflict=provider_user_id',{
     method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},
