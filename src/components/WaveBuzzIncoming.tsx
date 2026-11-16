@@ -47,33 +47,6 @@ export function WaveBuzzIncoming({enabled}:{enabled:boolean}){
    lastPing.current=Date.now();play();
   }
  },[enabled,offer,remaining,play]);
- const shareLocation=useCallback(async(silent=false)=>{
-  if(!navigator.geolocation){if(!silent)setError('Location is unavailable on this device.');return}
-  if(!silent)setBusy(true);
-  if(!silent)setError('');
-  try{
-   const position=await new Promise<GeolocationPosition>((resolve,reject)=>
-    navigator.geolocation.getCurrentPosition(resolve,reject,
-     {enableHighAccuracy:true,maximumAge:0,timeout:12000}));
-   const res=await fetch('/api/provider/wave-buzz',{method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({action:'location',sharing:true,latitude:position.coords.latitude,longitude:position.coords.longitude})});
-   if(!res.ok)throw Error('Precise location was not refreshed.');
-  }catch{
-   if(!silent)setError('Please enable precise location in your phone settings to receive nearby jobs.');
-  }finally{if(!silent)setBusy(false)}
- },[]);
- useEffect(()=>{
-  if(!enabled)return
-  // The first Online tap already obtained GPS. Continue refreshing every 20s
-  // while the web page is active. Background/locked screen requires native support.
-  const timer=window.setInterval(()=>{
-   if(document.visibilityState==='visible')void shareLocation(true);
-  },20000);
-  const onVisible=()=>{if(document.visibilityState==='visible')void shareLocation(true)};
-  document.addEventListener('visibilitychange',onVisible);
-  return()=>{window.clearInterval(timer);document.removeEventListener('visibilitychange',onVisible)};
- },[enabled,shareLocation]);
  async function respond(decision:'accepted'|'declined'){
   if(!offer||remaining<=0||busy)return;
   setBusy(true);setError('');
