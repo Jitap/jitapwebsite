@@ -28,7 +28,12 @@ const checks=[
  ['Washing machine door will not close','appliance-repair'],
  ['My freezer is not cooling','appliance-repair'],
  ['Microwave does not heat','appliance-repair'],
- ['My tap handle is leaking','plumbing'],
+ ['My shower is not working and I need it fixed','plumbing'],
+ ['My shower is not working','plumbing'],
+ ['The shower mixer is broken','plumbing'],
+ ['Shower head has low pressure','plumbing'],
+ ['The electric shower heater is not heating','electrical'],
+  ['My tap handle is leaking','plumbing'],
  ['Kitchen sink leaking water','plumbing'],
  ['Need a plumber','plumbing'],
  ['Choo imeziba','plumbing'],
@@ -77,6 +82,16 @@ for(const [description,expected] of checks){
  try{assert.equal(got,expected,description)}catch{throw new Error('Routing case failed: '+JSON.stringify({description,expected,got}))}
  passed++;
 }
+const intake=load('src/lib/fast-intake.ts');
+const showerQuestions=intake.fastIntakeQuestions('plumbing','My shower is not working and I need it fixed');
+assert.ok(Array.isArray(showerQuestions)&&showerQuestions.length===2);
+assert.equal(showerQuestions[0].id,'showerFault');
+const priorities=load('src/lib/customer-home-priority.ts');
+const ticket=(status,canReview)=>({status,canReview,updatedAt:'2026-11-16T12:00:00Z',createdAt:'2026-11-16T11:00:00Z',reference:status+canReview});
+assert.equal(priorities.isActiveServiceRequest(ticket('completed',true)),true,'Unreviewed completed jobs remain visible');
+assert.equal(priorities.isActiveServiceRequest(ticket('completed',false)),false,'Reviewed completed jobs leave active queue');
+assert.equal(priorities.prioritizeActiveRequests([ticket('in_progress',false),ticket('completed',true)])[0].status,'completed','Review handoff must precede active cards');
+passed+=5;
 const {providerMatchesTrade}=load('src/lib/trade-categories.ts');
 const {fundiListings}=load('src/lib/fundis-public.ts');
 for(const id of ['fund-002','fund-004','fund-006','fund-019']){
