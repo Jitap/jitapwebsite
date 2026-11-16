@@ -40,9 +40,10 @@ export async function GET(req:NextRequest){
    const p=record?.payload||{};
     const trust=customerStats.get(record?.customer_user_id||'');
    return {id:a.id,requestId:a.request_id,startsAt:a.starts_at,endsAt:a.ends_at,status:a.status,providerEtaAt:a.provider_eta_at,
-    title:typeof p.title==='string'&&p.title.trim()?safeText(p.title).slice(0,120):(SERVICE_OPTIONS.find(item=>item.value===p.category)?.label||safeText(p.category).replace(/[-_]/g,' ')||'Service')+' Service',
+    scheduledService:p.requestMode==='scheduled',
+     title:typeof p.title==='string'&&p.title.trim()?safeText(p.title).slice(0,120):(SERVICE_OPTIONS.find(item=>item.value===p.category)?.label||safeText(p.category).replace(/[-_]/g,' ')||'Service')+' Service',
     category:safeText(p.category),area:safeText(p.area),
-    location:safeText(p.locationLabel)||safeText(p.area),
+    location:safeText(p.locationLabel)||safeText(p.location)||safeText(p.area),
     latitude:typeof p.locationLat==='number'?p.locationLat:null,
     longitude:typeof p.locationLng==='number'?p.locationLng:null,
     placeId:safeText(p.locationPlaceId),
