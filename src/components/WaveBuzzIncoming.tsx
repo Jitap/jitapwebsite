@@ -82,7 +82,6 @@ export function WaveBuzzIncoming({enabled,enRoute=false}:{enabled:boolean;enRout
     body:JSON.stringify({action:'respond',requestId:offer.requestId,decision})});
    const data=await result.json();
    if(!result.ok||!['matched','declined'].includes(data.status))throw Error(data.status==='expired'?'Another provider accepted or your BUZZ expired.':data.error||'Request no longer available');
-   setLastOutcome(data.status==='matched'?'Accepted! JiTap Service Operations will coordinate the customer connection.':'Declined. JiTap will continue searching.');
    setOffer(null);current.current='';
    if('vibrate' in navigator)navigator.vibrate(0);
   }catch(e){setError(e instanceof Error?e.message:'Unable to respond')}
