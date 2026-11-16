@@ -16,3 +16,7 @@
 .jt-provider-stack-front :is(button,a):focus-visible,.jt-provider-stack-controls button:focus-visible{outline:3px solid #00a85a;outline-offset:2px}
 @media(max-width:390px){.jt-provider-stack-controls span{font-size:10px}.jt-provider-stack-controls button{padding:7px 6px;font-size:11px}.jt-provider-stack-stage{padding-right:8px}}
 @media(prefers-reduced-motion:reduce){.jt-provider-stack-front{transition:none}}
+
+/* Native link remains tappable; horizontal drag stays on the non-interactive card. */
+.jt-provider-stack-front .jt-confirmed-view{display:flex;align-items:center;justify-content:center;gap:4px;min-height:47px;border-radius:10px;text-decoration:none;position:relative;z-index:2;touch-action:manipulation}
+.jt-provider-stack-front button,.jt-provider-stack-front a{touch-action:manipulation}
