@@ -20,7 +20,6 @@ export function ProviderCalendarInvitations({onUpdated}:{onUpdated?:()=>void}){
  const [message,setMessage]=useState('');
  const [proposing,setProposing]=useState<string|null>(null);
  const [start,setStart]=useState('');
- const [end,setEnd]=useState('');
  const [note,setNote]=useState('');
  const load=useCallback(async()=>{
   const r=await fetch('/api/provider/calendar/invitations',{cache:'no-store'});
@@ -46,8 +45,8 @@ export function ProviderCalendarInvitations({onUpdated}:{onUpdated?:()=>void}){
   try{
    const payload:Record<string,unknown>={action,bookingId:inv.id};
    if(action==='propose'||action==='propose_change'){
-    if(!start||!end)throw Error('Choose a new date, start and end time.');
-    payload.startsAt=toIso(start);payload.endsAt=toIso(end);payload.note=note;
+    if(!start)throw Error('Choose the new arrival date and time.');
+    payload.startsAt=toIso(start);payload.endsAt=new Date(Date.parse(toIso(start))+3600000).toISOString();payload.note=note;
    }
    const r=await fetch('/api/provider/calendar/invitations',{
     method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)
@@ -73,7 +72,7 @@ export function ProviderCalendarInvitations({onUpdated}:{onUpdated?:()=>void}){
    pending.map(inv=><article key={inv.id} id={'jt-booking-invite-'+inv.id} className={highlighted===inv.id?'highlighted':''}>
     <div className="jt-invite-top"><strong>{inv.category.replaceAll('-',' ')}</strong><small>{inv.serviceId}</small></div>
     <p>{inv.summary||'Customer service booking'} · {inv.area}</p>
-    <div className="jt-invite-dates"><CalendarClock size={17}/><span>{dt(inv.startsAt)} – {dt(inv.endsAt)}</span></div>
+    <div className="jt-invite-dates"><CalendarClock size={17}/><span>Arrival {dt(inv.startsAt)}</span></div>
     {inv.note&&<p className="jt-invite-note">{inv.note}</p>}
     {inv.status==='proposed'||inv.status==='change_proposed'?<div className="jt-invite-awaiting">
      <CheckCircle2 size={17}/> New time proposed for {inv.proposedStartAt?dt(inv.proposedStartAt):'this appointment'} — awaiting customer response.
@@ -83,7 +82,7 @@ export function ProviderCalendarInvitations({onUpdated}:{onUpdated?:()=>void}){
       <button type="button" disabled={busy} onClick={()=>void respond(inv,inv.status==='change_requested'?'accept_change':'accept')}><CheckCircle2 size={17}/> Accept {inv.status==='change_requested'?'new time':'booking'}</button>
       <button type="button" disabled={busy} onClick={()=>void respond(inv,inv.status==='change_requested'?'decline_change':'decline')}><XCircle size={17}/> Decline</button>
       <button type="button" disabled={busy} onClick={()=>{
-       setProposing(inv.id);setStart(local(inv.startsAt));setEnd(local(inv.endsAt));setNote('');
+       setProposing(inv.id);setStart(local(inv.startsAt));setNote('');
       }}><CalendarClock size={17}/> Reschedule</button>
      </div>
      {proposing===inv.id&&<div className="jt-invite-reschedule">
