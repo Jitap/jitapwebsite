@@ -2,6 +2,7 @@ import 'server-only';
 import {supabasePrivate} from '@/lib/coordinator-server';
 import {fundiListings} from '@/lib/fundis-public';
 import {customerProgressStage} from '@/lib/customer-progress';
+import {providerTrustMetrics} from '@/lib/trust-metrics-server';
 
 export type RequestRecord={id:string;status:string;created_at:string;payload?:Record<string,unknown>};
 type Brief={request_id:string;technical_summary:string;proposed_scope:string;source:string};
@@ -45,10 +46,11 @@ export async function formatCustomerTickets(rows:RequestRecord[]){
   supabasePrivate<ProviderReview[]>('jitap_customer_provider_reviews?select=request_id,stars,comment,created_at&request_id=in.'+where)
  ]);
  const assignedIds=[...new Set(appointments.map(a=>a.provider_user_id))];
- const [providers,accounts]=assignedIds.length?await Promise.all([
+ const [providers,accounts,metrics]=assignedIds.length?await Promise.all([
   supabasePrivate<Provider[]>('jitap_provider_workspaces?select=user_id,full_name,business_name&user_id=in.('+assignedIds.join(',')+')'),
-  supabasePrivate<ProviderAccount[]>('jitap_accounts?select=user_id,phone&user_id=in.('+assignedIds.join(',')+')')
- ]):[[],[]];
+  supabasePrivate<ProviderAccount[]>('jitap_accounts?select=user_id,phone&user_id=in.('+assignedIds.join(',')+')'),
+  providerTrustMetrics(assignedIds).catch(()=>new Map())
+ ]):[[],[],new Map()];
  const providerById=new Map(providers.map(p=>[p.user_id,p]));
  const phoneById=new Map(accounts.map(a=>[a.user_id,a.phone]));
  const appointmentById=new Map(appointments.map(a=>[a.request_id,a]));
@@ -71,6 +73,7 @@ export async function formatCustomerTickets(rows:RequestRecord[]){
   const appointment=appointmentById.get(r.id);
   const assignedProvider=appointment?providerById.get(appointment.provider_user_id):null;
   const assignedPhone=appointment?phoneById.get(appointment.provider_user_id)||'':'';
+  const providerMetrics=appointment?metrics.get(appointment.provider_user_id):undefined;
   const awaitingRematch=cancellation?.status==='awaiting_customer';
   const approvedRematch=cancellation?.status==='rematch_approved'&&!appointment;
   const rejectedRematch=cancellation?.status==='rematch_declined';
@@ -92,6 +95,9 @@ export async function formatCustomerTickets(rows:RequestRecord[]){
    area:asText(p.area,100),
    provider:awaitingRematch?(assignedProvider?.business_name||assignedProvider?.full_name||'Previous provider'):approvedRematch?'Finding a new provider':appointment?(assignedProvider?.business_name||assignedProvider?.full_name||'Confirmed provider'):provider?.name||'To be matched',
    providerPhone:appointment&&['confirmed','on_my_way','arrived','in_progress','completed'].includes(appointment.status)?assignedPhone:'',
+   providerRating:providerMetrics?.rating??null,
+   providerRatingCount:providerMetrics?.ratingCount??0,
+   providerCompletedJobs:providerMetrics?.jobs??null,
    providerStatus:awaitingRematch?'Provider cancelled — your decision is needed':approvedRematch?'Your request is available to eligible providers':appointment?(appointment.status==='on_my_way'?'On my way':appointment.status==='arrived'?'Arrived at your location':appointment.status==='in_progress'?'Working on your job':appointment.status==='completed'?'Work marked completed':'Booking confirmed'):provider?'Requested provider — awaiting confirmation':'Awaiting matching',
    rematch:awaitingRematch?{reason:cancellation?.reason||'other',details:cancellation?.details||''}:null,
    canReview:!!appointment&&status==='completed'&&!customerReview,
