@@ -58,7 +58,7 @@ function PinnedMap({onSelect,onClose,initial}:{onSelect:(v:MoveLocation)=>void;o
   </div>
  </section></div>;
 }
-export function MovingLocationPicker({title,value,selected,onChange,onSelect}:{title:string;value:string;selected?:MoveLocation|null;onChange:(v:string)=>void;onSelect:(v:MoveLocation)=>void}){
+export function MovingLocationPicker({title,value,selected,onChange,onSelect,requireCoordinates=false}:{title:string;value:string;selected?:MoveLocation|null;onChange:(v:string)=>void;onSelect:(v:MoveLocation)=>void;requireCoordinates?:boolean}){
  const [results,setResults]=useState<Suggestion[]>([]);
  const [loading,setLoading]=useState(false);
  const [focused,setFocused]=useState(false);
@@ -98,8 +98,8 @@ export function MovingLocationPicker({title,value,selected,onChange,onSelect}:{t
   <div className="jt-location-input"><Search size={18} aria-hidden="true"/><input id={'jt-location-'+title} autoComplete="off" role="combobox" aria-expanded={focused&&results.length>0} aria-autocomplete="list" placeholder="Search neighbourhood, building or landmark" maxLength={200} required value={value} onFocus={()=>setFocused(true)} onChange={e=>{onChange(e.target.value);setFocused(true)}}/>{selected&&<Check size={17} color="#00a16c" aria-label="Selected location"/>}</div>
   {focused&&results.length>0&&<div className="jt-location-suggestions" role="listbox" aria-label={title+' suggestions'}>{results.map(s=><button type="button" role="option" aria-selected={false} key={s.placeId} onMouseDown={e=>e.preventDefault()} onClick={()=>choose(s)}><MapPin size={17}/><span><strong>{s.main}</strong><small>{s.secondary}</small></span></button>)}<div className="jt-location-google-credit">Location suggestions by Google</div></div>}
   {loading&&<small className="jt-location-status">Finding locations…</small>}
-  {error&&<small className="jt-location-status">{error}. You can still use a typed address or map pin.</small>}
-  <div className="jt-location-extras"><button type="button" onClick={()=>setMapOpen(true)}><MapPinned size={16}/> Choose on map</button>{!selected&&value.trim().length>=3&&<button type="button" onClick={()=>{onSelect({label:value.trim()});setFocused(false);setResults([])}}><Check size={15}/> Use typed address</button>}</div>
+  {error&&<small className="jt-location-status">{error}. {requireCoordinates?'Choose an exact map pin.':'You can still use a typed address or map pin.'}</small>}
+  <div className="jt-location-extras"><button type="button" onClick={()=>setMapOpen(true)}><MapPinned size={16}/> Choose on map</button>{!requireCoordinates&&!selected&&value.trim().length>=3&&<button type="button" onClick={()=>{onSelect({label:value.trim()});setFocused(false);setResults([])}}><Check size={15}/> Use typed address</button>}</div>
   {selected&&<small className="jt-location-selected"><Check size={13}/> {selected.placeId?'Place selected':selected.lat!==undefined?'Map pin selected':'Address noted'} · You can edit to change it</small>}
   {mapOpen&&<PinnedMap initial={selected||undefined} onClose={()=>setMapOpen(false)} onSelect={onSelect}/>}
  </div>;
