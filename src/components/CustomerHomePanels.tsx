@@ -2,7 +2,8 @@
 
 import {useCallback,useEffect,useRef,useState} from 'react';
 import Link from 'next/link';
-import {ChevronRight,Clock3} from 'lucide-react';
+import {CheckCircle2,ChevronRight,Clock3} from 'lucide-react';
+import {CustomerProviderReview} from '@/components/CustomerProviderReview';
 import type {CustomerTicket} from '@/components/CustomerTicketCard';
 import {CustomerRequestStack} from '@/components/CustomerRequestStack';
 import {SERVICE_OPTIONS} from '@/lib/provider-options';
@@ -44,9 +45,29 @@ export function CustomerHomePanels({activeRequests,loading,error,reviewer,onRetr
   if(!rail.current)return;
   rail.current.scrollBy({left:direction*Math.max(190,rail.current.clientWidth*.75),behavior:'smooth'});
  };
- const current=activeRequests[0]||null;
- const activeCount=activeRequests.length;
+ const reviewNeeded=activeRequests.find(t=>t.status==='completed'&&t.canReview===true)||null;
+ const liveRequests=activeRequests.filter(t=>!(t.status==='completed'&&t.canReview===true));
+ const current=liveRequests[0]||null;
+ const activeCount=liveRequests.length;
+ const reviewFocus=useRef<string|null>(null);
+ useEffect(()=>{
+  if(loading||!reviewNeeded||reviewer||reviewFocus.current===reviewNeeded.reference)return;
+  reviewFocus.current=reviewNeeded.reference;
+  const timer=window.setTimeout(()=>{
+   document.getElementById('jt-review-handoff')?.scrollIntoView({behavior:'smooth',block:'center'});
+  },280);
+  return()=>window.clearTimeout(timer);
+ },[loading,reviewNeeded?.reference,reviewer]);
  return <>
+  {!loading&&reviewNeeded&&!reviewer&&<section id="jt-review-handoff" className="jt-customer-review-handoff" aria-label="Review your completed service">
+   <div className="jt-customer-review-handoff-heading">
+    <CheckCircle2 size={22} aria-hidden="true"/>
+    <div><strong>Job completed — review your provider</strong>
+     <small>{reviewNeeded.category.replaceAll('-',' ')} · {reviewNeeded.serviceId}</small></div>
+   </div>
+   <CustomerProviderReview key={reviewNeeded.reference} requestId={reviewNeeded.reference}
+    providerName={reviewNeeded.provider} existing={null} onReviewed={onRetry}/>
+  </section>}
   {loading?<section className="jt-glass-current" aria-label="Loading request summary">
    <div className="jt-glass-section-head jt-glass-current-heading"><h2><Clock3 size={25}/> My Current Request</h2></div>
    <div className="jt-glass-request-card jt-home-request-skeleton" role="status" aria-live="polite">
@@ -64,7 +85,7 @@ export function CustomerHomePanels({activeRequests,loading,error,reviewer,onRetr
     <h2 id="jt-glass-current-title"><Clock3 size={22}/><span>My Current Request</span>{activeCount>1&&<span className="jt-home-count" aria-label={activeCount+' active requests'}>{activeCount}</span>}</h2>
    </div>
    {error&&<div className="jt-home-stale-banner" role="status">Showing your last known request status. <button type="button" onClick={onRetry}>Refresh again</button></div>}
-   <CustomerRequestStack tickets={activeRequests} onOpenRequests={onOpenRequests}/>
+   <CustomerRequestStack tickets={liveRequests} onOpenRequests={onOpenRequests}/>
   </section>:null}
   <section className="jt-glass-explore" aria-labelledby="jt-glass-explore-title">
    <div className="jt-glass-section-head">
