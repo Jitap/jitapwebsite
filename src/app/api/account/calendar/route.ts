@@ -42,8 +42,13 @@ export async function GET(req:NextRequest){
  try{
   const rows=await supabasePrivate<Offer[]>('jitap_customer_calendar_bookings?select=*&customer_user_id=eq.'+
    encodeURIComponent(session.userId)+'&order=starts_at.asc&limit=250');
+  const providerIds=[...new Set(rows.map(b=>b.provider_user_id).filter((v):v is string=>!!v))];
+  const providerNames=providerIds.length?await supabasePrivate<{user_id:string;business_name:string;full_name:string}[]>(
+   'jitap_provider_workspaces?select=user_id,business_name,full_name&user_id=in.('+providerIds.join(',')+')'):[];
+  const byProvider=new Map(providerNames.map(p=>[p.user_id,p.business_name||p.full_name||'JiTap provider']));
+  const bookings=rows.map(b=>({...b,providerName:byProvider.get(b.provider_user_id||'')||null}));
   const requestId=req.nextUrl.searchParams.get('requestId');
-  if(!requestId)return reply({bookings:rows});
+  if(!requestId)return reply({bookings});
   if(!uuid.safeParse(requestId).success)return reply({error:'Invalid request'},422);
   const record=await ownedRequest(session.userId,session.phone,requestId);
   if(!record)return reply({error:'Request not found'},404);
@@ -61,7 +66,7 @@ export async function GET(req:NextRequest){
   }));
   const confirmed=await supabasePrivate<{id:string}[]>(
    'jitap_provider_appointments?select=id&request_id=eq.'+requestId+'&limit=1');
-  return reply({bookings:rows,request:summary(p),
+  return reply({bookings,request:summary(p),
    canSchedule:confirmed.length===0&&!['closed','completed','cancelled'].includes(record.status),
    providers});
  }catch{return reply({error:'Calendar temporarily unavailable'},503)}
