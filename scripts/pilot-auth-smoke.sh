@@ -85,8 +85,29 @@ ACCESS2="$(echo "$REFRESH_RESP" | json_field accessToken)" || exit 1
 echo "$REFRESH_RESP" | json_field refreshToken >/dev/null || exit 1
 echo "OK  POST /api/auth/refresh"
 
-curl -sfS "$BASE/api/account/requests" -H "Authorization: Bearer $ACCESS2" -o /dev/null
-echo "OK  protected route /api/account/requests with refreshed Bearer"
+SESSION2="$(curl -sfS "$BASE/api/auth/session" -H "Authorization: Bearer $ACCESS2")"
+echo "$SESSION2" | json_field authenticated | grep -qx true || {
+  echo "FAIL: refreshed Bearer session not authenticated"
+  exit 1
+}
+echo "OK  GET /api/auth/session with refreshed Bearer"
+
+# Provider accounts need X-JiTap-Mode: customer for /api/account/* (mirrors jt_mode cookie).
+REQ_CODE="$(curl -sS -o /tmp/jitap-smoke-requests.json -w '%{http_code}' \
+  "$BASE/api/account/requests" \
+  -H "Authorization: Bearer $ACCESS2" \
+  -H 'X-JiTap-Mode: customer')"
+if [[ "$REQ_CODE" == "200" ]]; then
+  echo "OK  protected route /api/account/requests with refreshed Bearer"
+elif [[ "$REQ_CODE" == "401" || "$REQ_CODE" == "403" ]]; then
+  echo "FAIL: /api/account/requests auth rejected → HTTP $REQ_CODE"
+  head -c 400 /tmp/jitap-smoke-requests.json; echo
+  exit 1
+else
+  # Local often lacks coordinator service-role secret → 500 after auth succeeds.
+  echo "WARN /api/account/requests → HTTP $REQ_CODE (auth passed; non-auth env/data issue)"
+  head -c 200 /tmp/jitap-smoke-requests.json; echo
+fi
 
 if [[ "${PILOT_SMOKE_WEB:-1}" == "1" ]]; then
   echo "-- Web cookie path (same OTP; may fail if code already consumed — set PILOT_SMOKE_WEB=0) --"
