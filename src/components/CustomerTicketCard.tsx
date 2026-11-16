@@ -2,12 +2,15 @@
 import Link from 'next/link';
 import {useState} from 'react';
 import {PrivateRequestPhotos} from '@/components/PrivateRequestPhotos';
+import {CustomerProviderReview} from '@/components/CustomerProviderReview';
+import {CustomerEnRoute} from '@/components/CustomerEnRoute';
 import {customerProgressStage,customerProgressSteps} from '@/lib/customer-progress';
 import {CalendarDays,Clock3,MapPin,UserRoundCheck,ClipboardList,ArrowUpRight} from 'lucide-react';
 
 export type CustomerTicket={
  reference:string;serviceId:string;category:string;date:string;time:string;location:string;area:string;
  provider:string;providerPhone?:string;providerStatus:string;rematch?:{reason:string;details:string}|null;status:string;statusLabel:string;brief:string;scope:string;
+ canReview?:boolean;customerReview?:{stars:number;comment:string}|null;
  createdAt:string;updatedAt:string;
 };
 function dateText(value:string){
@@ -63,6 +66,8 @@ export function CustomerTicketCard({ticket,detail=false}:{ticket:CustomerTicket;
   </section>}
   <div className="jt-ticket-brief"><strong>Service brief</strong><p>{ticket.brief}</p>{ticket.scope&&<p className="jt-ticket-scope"><b>Preliminary scope:</b> {ticket.scope}</p>}</div>
   <PrivateRequestPhotos requestId={ticket.reference}/>
+  {ticket.status==='on_my_way'&&<CustomerEnRoute requestId={ticket.reference}/>}
+  {(ticket.canReview||ticket.customerReview)&&<CustomerProviderReview requestId={ticket.reference} providerName={ticket.provider} existing={ticket.customerReview||null}/>}
   <div className="jt-ticket-bottom"><small>Last updated {new Date(ticket.updatedAt).toLocaleString('en-KE',{dateStyle:'medium',timeStyle:'short',timeZone:'Africa/Nairobi'})}</small>
    {!detail&&<Link href={'/track?ref='+encodeURIComponent(ticket.serviceId)}>Track progress <ArrowUpRight size={16}/></Link>}
   </div>
