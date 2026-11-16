@@ -33,3 +33,109 @@
 .jt-calendar-detail .jt-calendar-status{display:block;padding:11px;font-size:13px}
 .jt-calendar-detail .jt-calendar-status svg{vertical-align:middle;margin-right:5px}
 @media(max-width:440px){.jt-calendar-plus{width:48px;height:48px}.jt-calendar-detail{padding:13px}}
+
+/* JiTap customer calendar 2.0 — consistent with the provider Calendar. */
+.jt-customer-calendar{gap:16px;max-width:920px}
+.jt-customer-calendar .jt-calendar-intro{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:3px 8px 0;margin:0}
+.jt-customer-calendar .jt-calendar-intro>div:first-child{flex:1;min-width:0}
+.jt-customer-calendar .jt-calendar-intro h1{font-size:clamp(28px,5vw,36px);font-weight:800;letter-spacing:-.04em;color:#102c59;line-height:1.2;margin:0 0 4px}
+.jt-customer-calendar .jt-calendar-intro p{font-size:15px;color:#84929e;margin:0}
+.jt-calendar-top-actions{display:flex;align-items:center;gap:12px!important;flex:none!important}
+.jt-customer-calendar .jt-calendar-filter-button{background:transparent;border:0;display:grid;place-items:center;width:43px;height:43px;color:#173965;cursor:pointer}
+.jt-customer-calendar .jt-calendar-plus{width:54px;min-width:54px;height:54px;min-height:54px;border-radius:999px;background:#00bf61;color:#fff;display:flex;align-items:center;justify-content:center;border:0;box-shadow:0 5px 16px #00aa5150;cursor:pointer;padding:0}
+.jt-customer-calendar .jt-calendar-plus-mark{display:block;flex:none;font-family:Arial,sans-serif;font-size:42px;font-weight:300;color:#fff;line-height:1;transform:translateY(-2px);-webkit-text-fill-color:#fff}
+.jt-customer-calendar .jt-calendar-filter{display:flex;align-self:flex-end;gap:6px;padding:6px;border:1px solid #e0ece5;border-radius:12px;background:#fff;box-shadow:0 6px 16px #142d4817}
+.jt-calendar-filter button{border:0;background:transparent;padding:10px 15px;border-radius:8px;color:#375a4b;font-size:13px;font-weight:700}
+.jt-calendar-filter button[aria-pressed=true]{background:#e5f8ed;color:#008a3e}
+.jt-customer-calendar .jt-calendar-month{border:0;box-shadow:none;background:transparent;border-radius:0;margin:0;padding:0 8px 0}
+.jt-customer-calendar .jt-calendar-month-header{margin:8px 0 18px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.jt-customer-calendar .jt-calendar-month-header strong{font-size:20px;color:#10325d;letter-spacing:-.025em}
+.jt-customer-calendar .jt-calendar-month-header button{width:42px;height:42px;display:grid;place-items:center;border:0;border-radius:11px;background:transparent;color:#133962}
+.jt-customer-calendar .jt-calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;align-items:center;text-align:center;margin:0}
+.jt-customer-calendar .jt-calendar-grid .jt-calendar-weekday{font-size:13px;color:#8896a3;font-weight:550;padding:5px 0 12px}
+.jt-customer-calendar .jt-calendar-grid button{height:44px;max-width:56px;width:100%;margin:0 auto;border:0;border-radius:50%;background:transparent;color:#17365a;font-size:18px;font-weight:500;display:grid;place-items:center;position:relative;padding:0}
+.jt-customer-calendar .jt-calendar-grid button.selected{background:#00bf61;color:white;box-shadow:0 2px 6px #00a44734}
+.jt-customer-calendar .jt-calendar-grid button.is-other-month{color:#a8b2b9}
+.jt-customer-calendar .jt-calendar-grid button.has-booking::after{width:6px;height:6px;border-radius:50%;bottom:1px;background:#00b85a;left:calc(50% - 3px)}
+.jt-customer-calendar .jt-calendar-grid button.selected.has-booking::after{background:#123363;bottom:-7px}
+.jt-customer-calendar .jt-calendar-expand{display:block;margin:15px auto 3px;width:52px;height:19px;padding:7px;border:0;background:transparent}
+.jt-calendar-expand span{display:block;width:34px;height:5px;margin:auto;background:#a8aaa9;border-radius:99px}
+.jt-calendar-agenda{display:grid;gap:15px;padding:12px 5px 5px}
+.jt-calendar-agenda-heading{display:flex;align-items:center;justify-content:space-between}
+.jt-calendar-agenda-heading h2{font-size:21px;letter-spacing:-.02em;color:#122d59;margin:0}
+.jt-calendar-agenda-heading p{font-size:13px;color:#8a9ba4;margin:3px 0}
+.jt-calendar-agenda-count{background:#ebf8ef;color:#007a42;border-radius:99px;font-size:12px;font-weight:800;padding:7px 11px}
+.jt-calendar-empty-day{display:grid;place-items:center;text-align:center;gap:5px;padding:42px 10px 54px;background:#f7fafc;border-radius:19px;color:#7c93a5}
+.jt-calendar-empty-day p{font-size:17px;font-weight:700;color:#17355b;margin:7px 0 0}
+.jt-calendar-empty-day small{font-size:12px}
+.jt-calendar-timeline{height:812px;position:relative;margin:3px 0 6px}
+.jt-calendar-hour{height:58px;display:grid;grid-template-columns:64px 1fr;align-items:start;font-size:12px;color:#8896a4}
+.jt-calendar-hour span{padding-top:0}
+.jt-calendar-hour i{display:block;border-top:1px solid #e4eaf0;margin-top:8px}
+.jt-calendar-events{position:absolute;top:0;bottom:0;left:76px;right:5px;pointer-events:none}
+.jt-calendar-event{position:absolute;width:100%;display:flex;align-items:flex-start;gap:8px;padding:11px 12px;background:#e7f7ed;border:1px solid #bde5cc;border-left:4px solid #00af56;border-radius:11px;box-shadow:0 2px 7px #071f240b;text-align:left;color:#15432e;pointer-events:auto;overflow:hidden;cursor:pointer}
+.jt-calendar-event-1{background:#edf3fe;border-color:#d6e4f6;border-left-color:#447ac9;color:#1c3860}
+.jt-calendar-event-2{background:#f5f0fe;border-color:#e9def8;border-left-color:#9473cc;color:#423167}
+.jt-calendar-event-indicator{display:block;border-radius:50%;width:8px;height:8px;flex:none;margin-top:4px;background:#00b657}
+.jt-calendar-event span:last-child{display:grid;gap:3px}
+.jt-calendar-event strong{font-size:14px;font-weight:800;line-height:1.25}
+.jt-calendar-event small{font-size:12px;line-height:1.3;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.jt-customer-calendar .jt-calendar-bookings{margin:12px 0 0;background:#fff;border:1px solid #e1eae6;border-radius:19px;box-shadow:0 4px 15px #1635270a;padding:17px}
+.jt-calendar-list-heading{display:flex;align-items:center;justify-content:space-between;margin:0 0 4px}
+.jt-calendar-list-heading h2{font-size:17px;margin:0;font-weight:800;color:#142f5a}
+.jt-calendar-list-heading small{font-size:12px;color:#7e9489}
+.jt-customer-calendar .jt-calendar-bookings .jt-calendar-booking-row{display:flex;width:100%;align-items:center;gap:12px;border:0;background:transparent;border-bottom:1px solid #eef2f1;text-align:left;padding:15px 0;color:#163b57;cursor:pointer}
+.jt-calendar-booking-row:last-child{border-bottom:0!important}
+.jt-calendar-booking-icon{display:grid;place-items:center;border-radius:12px;width:40px;height:40px;flex:none;background:#e8f9f0;color:#00a04a}
+.jt-calendar-booking-main{display:grid;gap:4px;flex:1;min-width:0}
+.jt-calendar-booking-main strong{font-size:15px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.jt-calendar-booking-main small{font-size:12px;color:#647783;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.jt-calendar-booking-aside{display:grid;justify-items:end;align-items:center;gap:4px;flex:none}
+.jt-calendar-booking-aside svg{color:#8d9da7}
+.jt-calendar-booking-badge{color:#087b47;background:#edfbf2;border-radius:50px;padding:4px 9px;font-size:10px;font-weight:800}
+.jt-calendar-booking-badge.status-cancelled,.jt-calendar-booking-badge.status-declined{background:#faf0f1;color:#9b4a4a}
+.jt-calendar-booking-badge.status-pending,.jt-calendar-booking-badge.status-change_requested{background:#fdf5e6;color:#9d6c16}
+.jt-calendar-list-empty{text-align:center;padding:22px;color:#84929b}.jt-calendar-list-empty svg{margin:auto}
+.jt-customer-calendar.is-detail>.jt-calendar-intro,.jt-customer-calendar.is-detail>.jt-calendar-filter,.jt-customer-calendar.is-detail>.jt-calendar-month,.jt-customer-calendar.is-detail>.jt-calendar-agenda,.jt-customer-calendar.is-detail>.jt-calendar-entry,.jt-customer-calendar.is-detail>.jt-calendar-bookings{display:none}
+.jt-customer-calendar.is-editor>.jt-calendar-month,.jt-customer-calendar.is-editor>.jt-calendar-agenda,.jt-customer-calendar.is-editor>.jt-calendar-bookings{display:none}
+.jt-customer-calendar.is-editor>.jt-calendar-entry{box-shadow:none;border:0;padding:16px 7px 30px}
+.jt-customer-calendar .jt-calendar-detail{padding:0 7px 80px;background:transparent;border:0;border-radius:0;box-shadow:none;display:grid;gap:12px;align-content:start}
+.jt-customer-calendar .jt-calendar-detail-head{justify-content:flex-start;gap:13px;padding:6px 0 0}
+.jt-customer-calendar .jt-calendar-detail-head h2{font-size:20px;color:#132e55;margin:0}
+.jt-customer-calendar .jt-calendar-detail-head button{width:39px;height:39px;border:0;background:transparent;color:#16365d}
+.jt-calendar-service-title{font-size:24px;letter-spacing:-.035em;font-weight:800;color:#0e2f5e;margin:4px 0 -7px}
+.jt-customer-calendar .jt-calendar-detail-subtitle{font-size:14px;color:#798999;margin:0 0 4px}
+.jt-calendar-provider-card{border:1px solid #e2e9e5;border-radius:17px;background:#fff;padding:14px;display:flex;flex-wrap:wrap;align-items:center;gap:11px}
+.jt-calendar-provider-avatar{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;flex:none;background:#e6f4f9;color:#1a527d}
+.jt-calendar-provider-card>div{flex:1;min-width:120px;display:grid;gap:5px}
+.jt-calendar-provider-card strong{font-size:16px;color:#14345f}
+.jt-calendar-provider-card small{font-size:12px;color:#72899a}
+.jt-calendar-call{display:flex;align-items:center;justify-content:center;gap:8px;background:#eaf8ff;color:#0570ab;border-radius:12px;padding:11px;font-size:13px;font-weight:750;min-height:42px;flex-basis:100%;text-decoration:none}
+.jt-calendar-location-card{display:flex;align-items:start;gap:10px;padding:14px;background:#f0f8fb;border-radius:14px;color:#2b6692}
+.jt-calendar-location-card>svg{flex:none;margin-top:2px}
+.jt-calendar-location-card>div{display:grid;gap:3px}
+.jt-calendar-location-card strong{color:#26526e;font-size:14px}
+.jt-calendar-location-card small{color:#7e95a4;font-size:12px}
+.jt-calendar-detail-section h3,.jt-calendar-detail-schedule h3{font-size:16px;font-weight:800;color:#17345a;margin:0 0 9px}
+.jt-customer-calendar .jt-calendar-detail-section{padding:13px 2px 10px}
+.jt-customer-calendar .jt-calendar-detail-description{font-size:14px;line-height:1.55;margin:0 0 9px;color:#35526a}
+.jt-calendar-detail-section small{color:#84959f;font-size:12px}
+.jt-customer-calendar .jt-calendar-detail-schedule{padding:10px 2px}
+.jt-customer-calendar .jt-calendar-detail-schedule p{display:flex;align-items:center;gap:9px;color:#5e7691;font-size:14px}
+.jt-calendar-detail-schedule p svg{color:#1e5f95;flex:none}
+.jt-customer-calendar.is-detail .jt-calendar-detail>.jt-calendar-ctas{position:sticky;bottom:calc(91px + env(safe-area-inset-bottom,0px));padding:10px 0;background:#f8fbffed;z-index:3}
+.jt-customer-calendar .jt-calendar-detail>.jt-calendar-ctas>button{min-height:47px}
+@media(max-width:540px){
+ .jt-customer-calendar{gap:12px}
+ .jt-customer-calendar .jt-calendar-intro{padding:6px 8px}
+ .jt-calendar-top-actions{gap:5px!important}
+ .jt-customer-calendar .jt-calendar-plus{width:45px;min-width:45px;height:45px;min-height:45px}
+ .jt-customer-calendar .jt-calendar-plus-mark{font-size:35px}
+ .jt-customer-calendar .jt-calendar-grid button{height:43px;font-size:17px}
+ .jt-calendar-agenda{padding:10px 0}
+ .jt-calendar-events{left:68px}
+ .jt-calendar-hour{grid-template-columns:56px 1fr}
+ .jt-customer-calendar .jt-calendar-bookings{margin:6px 0;padding:13px}
+ .jt-calendar-booking-badge{font-size:10px}
+ .jt-customer-calendar .jt-calendar-detail{padding-bottom:115px}
+}
