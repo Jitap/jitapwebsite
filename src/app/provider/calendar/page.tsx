@@ -11,6 +11,7 @@ type Appointment={
  id:string;requestId:string;startsAt:string|null;endsAt:string|null;status:string;rated:boolean;providerEtaAt?:string|null;
  title:string;category:string;area:string;location:string;latitude:number|null;longitude:number|null;
  placeId:string;customerName:string;customerPhone:string;description:string;
+  customerRating?:number|null;customerRatingCount?:number;customerRequestedJobs?:number|null;
  pendingReschedule:{id:string;proposed_start_at:string;proposed_end_at:string}|null
 };
 const tz='Africa/Nairobi';
@@ -134,7 +135,7 @@ export default function ProviderCalendar(){
   {detail?<div className="jcal-details">
    <header className="jcal-detail-heading"><button aria-label="Back to calendar" onClick={()=>{setDetailId(null);setExpandedDescription(false);setError('');setMessage('')}}><ArrowLeft size={22}/></button><strong>Scheduled Work</strong></header>
    <h1>{detail.title}</h1><p className="jcal-subtitle">{detail.category||'Service'} · {detail.area||detail.location}</p>
-   <section className="jcal-customer"><div className="jcal-avatar"><UserRound size={27}/></div><div><h2>{detail.customerName}</h2><p><CheckCircle2 size={17}/> Scheduled customer</p></div>{detail.customerPhone&&<a href={'tel:'+detail.customerPhone.replace(/[^+0-9]/g,'')} className="jcal-call"><Phone size={16}/> Call Now</a>}</section>
+   <section className="jcal-customer"><div className="jcal-avatar"><UserRound size={27}/></div><div><h2>{detail.customerName}</h2><p><CheckCircle2 size={17}/> Scheduled customer</p>{detail.customerRequestedJobs!==undefined&&detail.customerRequestedJobs!==null&&<p className="jcal-customer-trust" aria-label="Customer rating and requested jobs"><span>{detail.customerRating!==null&&detail.customerRating!==undefined?'★ '+detail.customerRating.toFixed(1)+' ('+(detail.customerRatingCount||0)+' ratings)':'☆ New · No ratings yet'}</span><span>{detail.customerRequestedJobs} {detail.customerRequestedJobs===1?'job requested':'jobs requested'}</span></p>}</div>{detail.customerPhone&&<a href={'tel:'+detail.customerPhone.replace(/[^+0-9]/g,'')} className="jcal-call"><Phone size={16}/> Call Now</a>}</section>
    <section className="jcal-map" aria-label="Appointment map">
     {detail.location&&(detail.latitude!==null&&detail.longitude!==null?
       <iframe title={'Google Maps: '+detail.location} loading="lazy" referrerPolicy="no-referrer-when-downgrade" src={'https://maps.google.com/maps?q='+encodeURIComponent(detail.latitude+','+detail.longitude)+'&z=15&output=embed'}/>:
@@ -165,7 +166,7 @@ export default function ProviderCalendar(){
    {loading?<p className="jcal-state">Loading jobs…</p>:filteredJobs.length===0?<div className="jcal-bucket-empty"><CalendarDays size={32}/><p>{bucket==='completed'?'No completed jobs yet.':'No active jobs at the moment.'}</p></div>:
     filteredJobs.map(job=><button type="button" className="jcal-bucket-job" key={job.id} onClick={()=>{setExpandedDescription(false);setDetailId(job.id)}}>
      <span className="jcal-bucket-card-top"><strong>{job.title}</strong><ChevronRight size={18}/></span>
-     <span>{job.customerName} · {job.location||job.area}</span>
+     <span>{job.customerName} · {job.location||job.area}</span>{job.customerRequestedJobs!==undefined&&job.customerRequestedJobs!==null&&<small className="jcal-customer-trust">{job.customerRating!==null&&job.customerRating!==undefined?'★ '+job.customerRating.toFixed(1):'☆ New · No ratings yet'} · {job.customerRequestedJobs} jobs requested</small>}
      <small>{job.status==='completed'?(job.rated?'Completed · Customer rated':'Completed · Rate customer'):job.status==='in_progress'?'Work in progress':job.status==='arrived'?'Arrived':job.status==='on_my_way'?'On my way':'Confirmed'}</small>
     </button>)}
   </section>:<>
