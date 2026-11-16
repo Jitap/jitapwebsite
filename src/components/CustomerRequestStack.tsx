@@ -211,6 +211,10 @@ export function CustomerRequestStack({tickets,onOpenRequests}:{
     </div>
     <div className="jt-glass-request-details">
      <div><UserRound size={18}/><span>{current.provider||'To be matched'}</span></div>
+     {current.providerCompletedJobs!==undefined&&current.providerCompletedJobs!==null&&<div className="jt-home-provider-trust" aria-label="Provider rating and completed jobs">
+      <span>{current.providerRating!==null&&current.providerRating!==undefined?'★ '+current.providerRating.toFixed(1)+' ('+(current.providerRatingCount||0)+')':'☆ New · No ratings yet'}</span>
+      <span>{current.providerCompletedJobs} completed {current.providerCompletedJobs===1?'job':'jobs'}</span>
+     </div>}
      <div><CalendarDays size={18}/><span>{timeLabel(current)}</span></div>
      {current.status==='on_my_way'
       ?<CustomerEnRoute key={current.reference} requestId={current.reference} variant="home"/>
