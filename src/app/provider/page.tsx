@@ -10,6 +10,7 @@ import {ProviderMediaFields,type MediaKind} from '@/components/ProviderMediaFiel
 import './provider-dashboard.css';
 import {ProviderJobAction} from '@/components/ProviderJobAction';
 import {WaveBuzzIncoming} from '@/components/WaveBuzzIncoming';
+import {armProviderBuzzAudio} from '@/lib/provider-buzz-audio';
 import {ProviderTravelEstimate} from '@/components/ProviderTravelEstimate';
 import {ProviderIdentityVerification} from '@/components/ProviderIdentityVerification';
 
@@ -106,25 +107,32 @@ export default function ProviderDashboardPage(){
   return()=>window.clearInterval(id);
  },[dashboard?.profile?.is_online,tab,refresh]);
  async function toggleOnlineAvailability(){
-  if(online){await act({action:'availability',online:false});return}
   if(reviewMode){await act({action:'availability',online:true});return}
-  if(!navigator.geolocation){setError('Location is required to receive nearby jobs. Enable location services in your phone settings.');return}
-  setBusy(true);setError('');
+  if(!navigator.geolocation){setError('Enable precise phone location to receive nearby jobs.');return}
+  // The Online switch enables BUZZ audio through a real user gesture.
+  armProviderBuzzAudio();
+  setBusy(true);setError('');setSuccess('');
   try{
    const position=await new Promise<GeolocationPosition>((resolve,reject)=>
-    navigator.geolocation.getCurrentPosition(resolve,reject,{enableHighAccuracy:true,maximumAge:0,timeout:15000}));
-   // Provider explicitly opts in via the Online switch and device location prompt.
-   const res=await fetch('/api/provider/workspace',{method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({action:'availability',online:true,latitude:position.coords.latitude,longitude:position.coords.longitude})});
+    navigator.geolocation.getCurrentPosition(resolve,reject,
+     {enableHighAccuracy:true,maximumAge:0,timeout:15000}));
+   const endpoint=online?'/api/provider/wave-buzz':'/api/provider/workspace';
+   const action=online?
+    {action:'location',sharing:true,latitude:position.coords.latitude,longitude:position.coords.longitude}:
+    {action:'availability',online:true,latitude:position.coords.latitude,longitude:position.coords.longitude};
+   const res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(action)});
    const data=await res.json().catch(()=>({}));
-   if(!res.ok)throw Error(data.error||'Unable to enable JiTap location.');
+   if(!res.ok)throw Error(data.error||'Unable to update precise location');
    await refresh();
-   setSuccess('You’re online. JiTap uses your location for nearby job matching while you are available.');
+   setSuccess(online?'GPS refreshed. JiTap BUZZ is ready.':'You’re online. JiTap BUZZ is enabled.');
   }catch(e){
    const denied=typeof e==='object'&&e!==null&&'code' in e&&(e as {code:number}).code===1;
-   setError(denied?'Allow precise location in your phone settings to go online and receive jobs.':e instanceof Error?e.message:'Could not access your location. Check GPS and try again.');
+   setError(denied?'Allow precise location in phone settings to receive nearby jobs.':
+    e instanceof Error?e.message:'Location unavailable. Please check GPS and try again.');
   }finally{setBusy(false)}
+ }
+ async function goOffline(){
+  await act({action:'availability',online:false});
  }
  async function switchCustomer(){
   setBusy(true);setError('');
@@ -247,11 +255,11 @@ export default function ProviderDashboardPage(){
       <div className="jt-provider-home-header-right"><button type="button" className="jt-provider-notification-trigger" onClick={()=>setNotificationsOpen(v=>!v)} aria-expanded={notificationsOpen} aria-controls="jt-provider-notification-panel" aria-label={unreadCount+' unread notifications'}><Bell size={25}/>{unreadCount>0&&<span className="jt-provider-unread-count">{unreadCount>99?'99+':unreadCount}</span>}</button>
       <button type="button" className="jt-provider-home-avatar" onClick={()=>reviewMode?setTab('profile'):router.push('/provider/profile')} aria-label="Open your provider profile">{dashboard?.uploadedMedia?.some(m=>m.kind==='profile_photo')?<img src={'/api/provider/media?kind=profile_photo&v='+encodeURIComponent(dashboard.uploadedMedia.find(m=>m.kind==='profile_photo')?.uploadedAt||'')} alt="Provider profile"/>:<UserRound size={24}/>}</button><div className="jt-provider-header-online" aria-label="Provider availability">
         <span className={online?'is-online':'is-offline'}><span className="jt-provider-live-dot"/>{online?'Online':'Offline'}</span>
-        <button className={'jt-provider-toggle '+(online?'active':'')} type="button" role="switch" aria-label="Available for requests" aria-checked={online} disabled={busy} onClick={()=>void toggleOnlineAvailability()}><span/></button>
+        <button className={'jt-provider-toggle '+(online?'active':'')} type="button" role="switch" aria-label={online?"Refresh GPS and enable JiTap BUZZ":"Go online and enable JiTap BUZZ"} aria-checked={online} disabled={busy} onClick={()=>void toggleOnlineAvailability()}><span/></button>
       </div></div>
      </header>:<header className="jt-provider-app-header"><span className="jt-provider-workspace-heading">Provider dashboard</span><div className="jt-provider-header-actions"><div className="jt-provider-badge"><ShieldCheck size={17}/> Provider workspace</div><button type="button" onClick={switchCustomer} disabled={busy} className="jt-provider-logout">Switch to Customer</button><button type="button" onClick={logout} className="jt-provider-logout">Log out</button></div></header>}
     {approved&&!reviewMode&&!online&&<p style={{margin:'6px 12px 10px',fontSize:12,color:'#536b62'}}><MapPin size={13} style={{verticalAlign:'middle',marginRight:5}}/>To receive nearby jobs, tap the Online switch and allow precise location. You can go offline at any time.</p>}
-    <WaveBuzzIncoming enabled={!!approved&&!!online&&!reviewMode}/>
+    <WaveBuzzIncoming enabled={!!approved&&!!online&&!reviewMode} enRoute={inProgressJobs.some(job=>job.status==='on_my_way')}/>
     {approved&&notificationsOpen&&<aside className="jt-provider-notification-panel" id="jt-provider-notification-panel" aria-label="Unread provider notifications">
       <div className="jt-provider-notification-title"><strong>Notifications <span className="jt-provider-notification-total">{unreadCount} unread</span></strong><button type="button" onClick={()=>setNotificationsOpen(false)} aria-label="Close notifications">×</button></div>
       {notificationError&&<p className="jt-provider-notification-error" role="alert">{notificationError}</p>}
@@ -291,7 +299,12 @@ export default function ProviderDashboardPage(){
       <p>Your account is verified. You can add a missing profile photo once, without reopening identity verification.</p>
       <ProviderMediaFields uploaded={dashboard?.uploadedMedia||[]} kinds={['profile_photo']} onUploaded={refreshMedia}/>
      </div>}
-     <p className="jt-provider-disclaimer">Your verified details are locked to protect your account. Contact JiTap Service Operations to request changes.</p>
+     <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:12,padding:'12px 0',flexWrap:'wrap'}}>
+       <div style={{fontSize:13,color:'#426651'}}><strong>Availability:</strong> {online?'Online · Ready for JiTap BUZZ':'Offline'}<p style={{margin:'4px 0 0',fontSize:12}}>Your Online status stays on until you choose to go offline. GPS refreshes while the app is active.</p></div>
+       {online?<button type="button" disabled={busy} onClick={()=>void goOffline()} style={{background:'#fff',border:'1px solid #a3c6b3',borderRadius:11,color:'#17643b',padding:'10px 14px',fontWeight:750,cursor:'pointer'}}>Go Offline</button>:
+        <button type="button" disabled={busy} onClick={()=>void toggleOnlineAvailability()} style={{background:'#008a3e',border:0,borderRadius:11,color:'#fff',padding:'10px 14px',fontWeight:750,cursor:'pointer'}}>Go Online</button>}
+      </div>
+      <p className="jt-provider-disclaimer">Your verified details are locked to protect your account. Contact JiTap Service Operations to request changes.</p>
     </section>:visible?
     <section className="jt-provider-card" aria-labelledby="jt-provider-onboarding-heading">
      <div className="jt-provider-progress"><span><CheckCircle2 size={17}/> Phone verified</span><span>{submitted?'Submitted for review':'Final step · Your profile'}</span></div>
