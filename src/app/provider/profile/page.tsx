@@ -47,6 +47,11 @@ export default function ProviderProfilePage(){
   finally{setSaving(false)}
  }
  async function setOnline(value:boolean){
+  if(saving||!profile)return;
+  const previous=profile.is_online;
+  // Show the new position immediately; revert it if GPS permission or the
+  // availability request fails, rather than keeping the switch frozen.
+  setProfile(p=>p?{...p,is_online:value}:p);
   setSaving(true);setError('');setNotice('');
   try{
    let payload:Record<string,unknown>={action:'availability',online:false};
@@ -59,13 +64,16 @@ export default function ProviderProfilePage(){
     payload={action:'availability',online:true,
      latitude:position.coords.latitude,longitude:position.coords.longitude};
    }
-   const res=await fetch('/api/provider/workspace',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+   const res=await fetch('/api/provider/workspace',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(payload)
+   });
    const data=await res.json().catch(()=>({}));
    if(!res.ok)throw Error(data.error||'Unable to update availability');
-   setProfile(p=>p?{...p,is_online:value}:p);
-   setNotice(value?'You’re Online. GPS now refreshes automatically while JiTap is open.':'You’re Offline. Location sharing stopped.');
-  }catch(e){setError(e instanceof Error?e.message:'Unable to update availability')}
-  finally{setSaving(false)}
+  }catch(e){
+   setProfile(p=>p?{...p,is_online:previous}:p);
+   setError(e instanceof Error?e.message:'Unable to update availability');
+  }finally{setSaving(false)}
  }
  async function switchToCustomer(){
   setSaving(true);setError('');
