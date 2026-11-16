@@ -127,7 +127,7 @@ export default function ProviderCalendar(){
  }
  async function reschedule(e:FormEvent<HTMLFormElement>){
   e.preventDefault();if(!detail)return;
-  const start=new Date(newDate+'T'+newStart+':00+03:00'),end=new Date(newDate+'T'+newEnd+':00+03:00');
+  const start=new Date(newDate+'T'+newStart+':00+03:00'),end=detail.scheduledService?new Date(start.getTime()+3600000):new Date(newDate+'T'+newEnd+':00+03:00');
   if(!(end>start)){setError('End time must be after start time');return}
   const result=await send({action:'reschedule',appointmentId:detail.id,start:start.toISOString(),end:end.toISOString(),reason});
   if(result){setShowReschedule(false);setMessage('Reschedule sent for confirmation. Your current appointment remains unchanged.')}
@@ -200,7 +200,7 @@ export default function ProviderCalendar(){
   </section></div>}
   {showReschedule&&detail&&<div className="jcal-overlay" role="presentation" onClick={()=>setShowReschedule(false)}><section className="jcal-sheet" role="dialog" aria-modal="true" aria-labelledby="jcal-reschedule-title" onClick={e=>e.stopPropagation()}>
    <header><h2 id="jcal-reschedule-title">Reschedule Appointment</h2><button onClick={()=>setShowReschedule(false)} aria-label="Close"><X size={22}/></button></header>
-   <form onSubmit={reschedule}><label>Date<input type="date" min={today} required value={newDate} onChange={e=>setNewDate(e.target.value)}/></label><div className="jcal-time-fields"><label>Start time<input type="time" required value={newStart} onChange={e=>setNewStart(e.target.value)}/></label><label>End time<input type="time" required value={newEnd} onChange={e=>setNewEnd(e.target.value)}/></label></div><label>Reason (optional)<input maxLength={500} value={reason} onChange={e=>setReason(e.target.value)} placeholder="e.g. I have another job at this time."/></label><p className="jcal-sheet-note">JiTap will coordinate this request. The existing time remains confirmed until approved.</p><button disabled={busy} className="jcal-primary">{busy?'Submitting…':'Confirm'}</button></form>
+   <form onSubmit={reschedule}><label>Date<input type="date" min={today} required value={newDate} onChange={e=>setNewDate(e.target.value)}/></label><div className="jcal-time-fields"><label>{detail.scheduledService?'Arrival time (EAT)':'Start time'}<input type="time" required value={newStart} onChange={e=>setNewStart(e.target.value)}/></label>{!detail.scheduledService&&<label>End time<input type="time" required value={newEnd} onChange={e=>setNewEnd(e.target.value)}/></label>}</div><label>Reason (optional)<input maxLength={500} value={reason} onChange={e=>setReason(e.target.value)} placeholder="e.g. I have another job at this time."/></label><p className="jcal-sheet-note">JiTap will coordinate this request. The existing time remains confirmed until approved.</p><button disabled={busy} className="jcal-primary">{busy?'Submitting…':'Confirm'}</button></form>
   </section></div>}
  </div></main>;
 }
