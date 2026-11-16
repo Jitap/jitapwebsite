@@ -1,0 +1,138 @@
+/**
+ * Aly: copy into Expo Android/iOS app, e.g. src/lib/jitap-background-location.ts.
+ *
+ * Required:
+ *   npx expo install expo-location expo-task-manager
+ *
+ * Import this module ONCE in the root app layout at module scope before using
+ * startProviderLocationUpdates() so the TaskManager task registers even after
+ * the OS wakes the JS runtime. Use your existing persisted Supabase auth client
+ * in the function getNativeSupabase() below (replace this placeholder).
+ *
+ * BACKGROUND LOCATION IS A SEPARATE, OPTIONAL OS PERMISSION. A provider can
+ * still use JiTap Online while the app is foregrounded if permission is denied.
+ * 20 seconds is the requested refresh cadence, not a promise of exact delivery
+ * on a locked phone. iOS/Android may batch or stop updates due to OS policies.
+ */
+import {Platform} from 'react-native';
+import * as Location from 'expo-location';
+import * as TaskManager from 'expo-task-manager';
+// Replace path with Aly's existing, persisted Expo Supabase client:
+import {supabase} from './supabase';
+
+const API='https://jitap.app';
+export const PROVIDER_GPS_TASK='jitap.provider.gps.v1';
+const HEADERS={'Content-Type':'application/json'};
+
+async function accessToken(){
+  // Existing Supabase auth storage should persist and refresh tokens; never
+  // embed API secrets or long-lived provider JWTs inside a background task.
+  const {data,error}=await supabase.auth.getSession();
+  if(error||!data.session?.access_token)return null;
+  return data.session.access_token;
+}
+async function submitPosition(location:Location.LocationObject){
+  const jwt=await accessToken();
+  if(!jwt)return;
+  const {latitude,longitude,accuracy}=location.coords;
+  if(!Number.isFinite(latitude)||!Number.isFinite(longitude))return;
+  // Do not submit a rough location as a precise location fix.
+  if(accuracy!==null&&accuracy>100)return;
+  const response=await fetch(API+'/api/mobile/provider-location',{
+   method:'POST',
+   headers:{...HEADERS,Authorization:'Bearer '+jwt},
+   body:JSON.stringify({latitude,longitude,
+    ...(accuracy!==null?{accuracyMeters:accuracy}:{})})
+  });
+  if(response.status===409){
+   // The provider deliberately went Offline on another device.
+   if(await Location.hasStartedLocationUpdatesAsync(PROVIDER_GPS_TASK)){
+    await Location.stopLocationUpdatesAsync(PROVIDER_GPS_TASK);
+   }
+  }
+}
+TaskManager.defineTask(PROVIDER_GPS_TASK,async({data,error})=>{
+  if(error||!data)return;
+  const locations=(data as {locations?:Location.LocationObject[]}).locations;
+  if(!locations?.length)return;
+  // Only latest sample in this batch; avoid replaying stale positions.
+  const latest=locations[locations.length-1];
+  if(Date.now()-latest.timestamp>120000)return;
+  try{await submitPosition(latest)}catch{/* Resume on next OS location update. */}
+});
+export async function startProviderLocationUpdates(options:{
+ explainBackgroundPermission:()=>Promise<boolean>;
+ onBackgroundDenied:()=>void;
+}){
+  if(!(await Location.hasServicesEnabledAsync()))throw Error('Enable device location services.');
+  let foreground=await Location.getForegroundPermissionsAsync();
+  if(foreground.status!=='granted')foreground=await Location.requestForegroundPermissionsAsync();
+  if(foreground.status!=='granted')throw Error('Precise location permission is required to go Online.');
+  const first=await Location.getCurrentPositionAsync({accuracy:Location.Accuracy.Highest});
+  if(first.coords.accuracy!==null&&first.coords.accuracy>100)
+    throw Error('Could not obtain a precise GPS fix. Try again outside or near a window.');
+  const jwt=await accessToken();
+  if(!jwt)throw Error('Sign in as a verified JiTap provider.');
+  // The first Online action stores a fresh GPS sample and flips availability.
+  const enabled=await fetch(API+'/api/mobile/provider-availability',{
+   method:'POST',headers:{...HEADERS,Authorization:'Bearer '+jwt},
+   body:JSON.stringify({
+    online:true,latitude:first.coords.latitude,longitude:first.coords.longitude,
+    ...(first.coords.accuracy!==null?{accuracyMeters:first.coords.accuracy}:{})
+   })
+  });
+  if(!enabled.ok)throw Error('JiTap could not activate your availability.');
+  // Foreground location refresh is managed by your native provider Online screen,
+  // e.g. watchPositionAsync({accuracy: High, timeInterval: 20000, distanceInterval: 0}).
+  // Do not request Background/Always silently: the user must explicitly opt in.
+  if(!(await options.explainBackgroundPermission())){options.onBackgroundDenied();return}
+  let permission=await Location.getBackgroundPermissionsAsync();
+  if(permission.status!=='granted')permission=await Location.requestBackgroundPermissionsAsync();
+  if(permission.status!=='granted'){options.onBackgroundDenied();return}
+  const registered=await Location.hasStartedLocationUpdatesAsync(PROVIDER_GPS_TASK);
+  if(!registered){
+   await Location.startLocationUpdatesAsync(PROVIDER_GPS_TASK,{
+    accuracy:Location.Accuracy.High,
+    timeInterval:20000,
+    distanceInterval:0,
+    deferredUpdatesInterval:0,
+    deferredUpdatesDistance:0,
+    pausesUpdatesAutomatically:false,
+    ...(Platform.OS==='android'?{
+     foregroundService:{
+      notificationTitle:'JiTap is Online',
+      notificationBody:'Location is being used to find nearby service requests',
+      notificationColor:'#008a3e'
+     }
+    }:{
+     showsBackgroundLocationIndicator:true
+    })
+   });
+  }
+}
+export async function stopProviderLocationUpdates(){
+  // Stop tracking immediately, regardless of an API failure.
+  if(await Location.hasStartedLocationUpdatesAsync(PROVIDER_GPS_TASK)){
+   await Location.stopLocationUpdatesAsync(PROVIDER_GPS_TASK);
+  }
+  const jwt=await accessToken();
+  if(!jwt)throw Error('Sign in to confirm JiTap Offline status.');
+  const response=await fetch(API+'/api/mobile/provider-availability',{
+   method:'POST',headers:{...HEADERS,Authorization:'Bearer '+jwt},
+   body:JSON.stringify({online:false})
+  });
+  if(!response.ok)throw Error('Unable to confirm JiTap is Offline.');
+}
+// Integration notes:
+// 1. Call startProviderLocationUpdates from the provider Online switch.
+// 2. On Android request background permission with an explainer; Android 11+
+//    moves permission selection to Settings. Show a persistent foreground
+//    service notification during background tracking.
+// 3. On iOS, Always permission and UIBackgroundModes=location are required
+//    when using background updates. OS can still throttle/terminate.
+// 4. Foreground screens should use watchPositionAsync with timeInterval=20000
+//    and submitPosition; remove subscriptions when provider goes Offline.
+// 5. When provider goes Offline, call stopProviderLocationUpdates; no background
+//    GPS updates or push offer matches should be processed after Offline.
+// 6. Request native permissions only when necessary and with clear purpose.
+// 7. Requires a signed development build (not Expo Go); full device QA needed.
