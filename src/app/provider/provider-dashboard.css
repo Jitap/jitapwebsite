@@ -422,3 +422,7 @@
 .jt-provider-identity-stage{padding-top:18px}
 .jt-provider-verification-heading{margin:0 0 14px}
 @media(max-width:540px){.jt-provider-id-progress-top{margin-bottom:12px}.jt-provider-identity-stage{padding-top:14px}}
+
+/* Customer reputation on a connected provider's active booking only. */
+.jt-confirmed-job-trust{display:flex!important;align-items:center;flex-wrap:wrap;gap:6px 14px;color:#167147!important;font-size:12px!important;font-weight:750;margin-top:4px;margin-bottom:9px}
+.jt-confirmed-job-trust span{display:inline-flex;gap:4px;align-items:center}
