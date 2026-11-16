@@ -34,6 +34,7 @@ export default function ProviderDashboardPage(){
  const [reviewMode,setReviewMode]=useState(false);
  const referralClaimInFlight=useRef(false);
  const [reviewOnline,setReviewOnline]=useState(true);
+ const [pendingOnline,setPendingOnline]=useState<boolean|null>(null);
  const inProgressJobs=(dashboard?.confirmedJobs||[]).filter(job=>['confirmed','on_my_way','arrived','in_progress'].includes(job.status));
  const completedJobs=(dashboard?.confirmedJobs||[]).filter(job=>job.status==='completed');
  const [form,setForm]=useState<ProviderProfile>(empty);
@@ -107,40 +108,42 @@ export default function ProviderDashboardPage(){
   return()=>window.clearInterval(id);
  },[dashboard?.profile?.is_online,tab,refresh]);
  async function toggleOnlineAvailability(){
-  // This is a true two-way switch: the provider alone chooses when to go Offline.
-  if(online){
-   if(reviewMode){setReviewOnline(false);setSuccess('Demo: provider is now offline.');return}
-   await act({action:'availability',online:false});
+  if(busy)return;
+  if(reviewMode){setReviewOnline(!online);return}
+  const next=!online;
+  if(next&&!navigator.geolocation){
+   setError('Enable precise phone location to receive nearby jobs.');
    return;
   }
-  if(reviewMode){setReviewOnline(true);setSuccess('Demo: provider is now online.');return}
-  if(!navigator.geolocation){
-   setError('Enable precise phone location to receive nearby jobs.');return;
-  }
-  // A first Online gesture authorizes GPS and unlocks BUZZ sound.
-  armProviderBuzzAudio();
-  setBusy(true);setError('');setSuccess('');
+  // Change the visible switch immediately. The server remains authoritative;
+  // if a request fails, restore the previous value and show the error.
+  setPendingOnline(next);setBusy(true);setError('');setSuccess('');
   try{
-   const position=await new Promise<GeolocationPosition>((resolve,reject)=>
-    navigator.geolocation.getCurrentPosition(resolve,reject,
-     {enableHighAccuracy:true,maximumAge:0,timeout:15000}));
+   let payload:Record<string,unknown>={action:'availability',online:false};
+   if(next){
+    armProviderBuzzAudio();
+    const position=await new Promise<GeolocationPosition>((resolve,reject)=>
+     navigator.geolocation.getCurrentPosition(resolve,reject,
+      {enableHighAccuracy:true,maximumAge:0,timeout:15000}));
+    payload={action:'availability',online:true,
+     latitude:position.coords.latitude,longitude:position.coords.longitude};
+   }
    const res=await fetch('/api/provider/workspace',{
     method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({action:'availability',online:true,
-     latitude:position.coords.latitude,longitude:position.coords.longitude})
+    body:JSON.stringify(payload)
    });
    const data=await res.json().catch(()=>({}));
-   if(!res.ok)throw Error(data.error||'Unable to go online with precise location');
+   if(!res.ok)throw Error(data.error||'Unable to change provider availability');
    await refresh();
-   setSuccess('You’re online. JiTap BUZZ and automatic GPS updates are enabled.');
   }catch(e){
-   const denied=typeof e==='object'&&e!==null&&'code' in e&&(e as {code:number}).code===1;
-   setError(denied?'Allow precise location in phone settings to receive nearby jobs.':
-    e instanceof Error?e.message:'Location unavailable. Please check GPS and try again.');
-  }finally{setBusy(false)}
+   setError(e instanceof Error?e.message:'Unable to change provider availability');
+  }finally{
+   setPendingOnline(null);
+   setBusy(false);
+  }
  }
  async function goOffline(){
-  await act({action:'availability',online:false});
+  if(online)await toggleOnlineAvailability();
  }
  async function switchCustomer(){
   setBusy(true);setError('');
@@ -238,7 +241,7 @@ export default function ProviderDashboardPage(){
  }
  const approved=dashboard?.reviewStatus==='approved';
  const submitted=!!dashboard?.profile?.submitted_at;
- const online=reviewMode?reviewOnline:!!dashboard?.profile?.is_online;
+ const online=reviewMode?reviewOnline:pendingOnline??!!dashboard?.profile?.is_online;
  // Use the same filtered list for the badge, notifications and visible cards.
  // Keep locally handled IDs excluded across periodic refreshes, so a declined
  // request cannot briefly reappear while the server updates.
