@@ -49,26 +49,43 @@ export default function ProviderProfilePage(){
  async function setOnline(value:boolean){
   setSaving(true);setError('');setNotice('');
   try{
-   let action:Record<string,unknown>={action:'availability',online:false};
-   let endpoint='/api/provider/workspace';
+   let payload:Record<string,unknown>={action:'availability',online:false};
    if(value){
     armProviderBuzzAudio();
-    if(!navigator.geolocation)throw Error('Please enable precise location in your phone settings.');
+    if(!navigator.geolocation)throw Error('Enable precise location in your phone settings.');
     const position=await new Promise<GeolocationPosition>((resolve,reject)=>
-     navigator.geolocation.getCurrentPosition(resolve,reject,{enableHighAccuracy:true,maximumAge:0,timeout:15000}));
-    endpoint=profile?.is_online?'/api/provider/wave-buzz':'/api/provider/workspace';
-    action=profile?.is_online?
-      {action:'location',sharing:true,latitude:position.coords.latitude,longitude:position.coords.longitude}:
-      {action:'availability',online:true,latitude:position.coords.latitude,longitude:position.coords.longitude};
+     navigator.geolocation.getCurrentPosition(resolve,reject,
+      {enableHighAccuracy:true,maximumAge:0,timeout:15000}));
+    payload={action:'availability',online:true,
+     latitude:position.coords.latitude,longitude:position.coords.longitude};
    }
-   const res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(action)});
+   const res=await fetch('/api/provider/workspace',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
    const data=await res.json().catch(()=>({}));
    if(!res.ok)throw Error(data.error||'Unable to update availability');
    setProfile(p=>p?{...p,is_online:value}:p);
-   setNotice(value?(profile?.is_online?'GPS refreshed. JiTap BUZZ is enabled.':'You are Online and JiTap BUZZ is enabled.'):'You are now Offline.');
+   setNotice(value?'You’re Online. GPS now refreshes automatically while JiTap is open.':'You’re Offline. Location sharing stopped.');
   }catch(e){setError(e instanceof Error?e.message:'Unable to update availability')}
   finally{setSaving(false)}
  }
+ useEffect(()=>{
+  if(!profile?.is_online||!navigator.geolocation)return;
+  let active=true;
+  const refreshGps=()=>{
+   if(!active||document.visibilityState!=='visible')return;
+   navigator.geolocation.getCurrentPosition(position=>{
+    if(!active)return;
+    void fetch('/api/provider/wave-buzz',{method:'POST',
+     headers:{'Content-Type':'application/json'},
+     body:JSON.stringify({action:'location',sharing:true,
+      latitude:position.coords.latitude,longitude:position.coords.longitude})
+    }).catch(()=>{});
+   },()=>{}, {enableHighAccuracy:true,maximumAge:0,timeout:12000});
+  };
+  const timer=window.setInterval(refreshGps,20000);
+  const onVisible=()=>{if(document.visibilityState==='visible')refreshGps()};
+  document.addEventListener('visibilitychange',onVisible);
+  return()=>{active=false;window.clearInterval(timer);document.removeEventListener('visibilitychange',onVisible)};
+ },[profile?.is_online]);
  async function switchToCustomer(){
   setSaving(true);setError('');
   try{
@@ -89,8 +106,8 @@ export default function ProviderProfilePage(){
   {error&&<div className="jpf-error" role="alert">{error}</div>}{notice&&<div className="jpf-notice" role="status">{notice}</div>}
   {pane==='profile'&&<><div className="jpf-identity"><div className="jpf-avatar">{photo?<img src={'/api/provider/media?kind=profile_photo&v='+encodeURIComponent(photo.uploadedAt)} alt="Your profile photo"/>:<UserRound size={47}/>}<button aria-label={photo?'Profile photo already uploaded':'Add profile photo'} onClick={()=>{if(!photo)document.getElementById('jpf-photo')?.scrollIntoView({behavior:'smooth'})}}><Camera size={17}/></button></div><h2>{profile.full_name} {review==='approved'&&<CheckCircle2 size={20} fill="#00b958" color="white"/>}</h2><small>{profile.business_name||'JiTap Service Provider'}</small></div>
    <div className="jpf-online"><span><BriefcaseBusiness size={20}/> {profile.is_online?'Online':'Offline'}</span>
-    <button type="button" role="switch" aria-checked={profile.is_online} aria-label={profile.is_online?'Refresh GPS and JiTap BUZZ':'Go Online and enable JiTap BUZZ'}
-     disabled={saving||review!=='approved'} className={'jpf-switch '+(profile.is_online?'on':'')} onClick={()=>void setOnline(true)}><span/></button>
+    <button type="button" role="switch" aria-checked={profile.is_online} aria-label={profile.is_online?'Go Offline':'Go Online and enable JiTap BUZZ'}
+     disabled={saving||review!=='approved'} className={'jpf-switch '+(profile.is_online?'on':'')} onClick={()=>void setOnline(!profile.is_online)}><span/></button>
    </div>
    {profile.is_online&&<button type="button" disabled={saving} onClick={()=>void setOnline(false)}
     style={{display:'block',margin:'6px 14px 18px auto',padding:'9px 14px',background:'#fff',border:'1px solid #adcebb',color:'#17643b',borderRadius:10,fontWeight:700}}>Go Offline</button>}
