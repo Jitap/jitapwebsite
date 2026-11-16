@@ -9,6 +9,7 @@ import {notifyProviderCancelled} from '@/lib/wasiliana-booking-notifications';
 import {dispatchKapsoQueue} from '@/lib/kapso-dispatcher';
 import {dispatchServiceFollowups} from '@/lib/service-followup-dispatcher';
 import {SERVICE_OPTIONS} from '@/lib/provider-options';
+import {customerTrustMetrics} from '@/lib/trust-metrics-server';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -31,11 +32,13 @@ export async function GET(req:NextRequest){
   const ids=appointments.map(a=>a.request_id);
   const briefs=ids.length?await supabasePrivate<Brief[]>('website_intake?id=in.('+ids.map(encodeURIComponent).join(',')+')&select=id,payload,customer_user_id'):[];
   const byId=new Map(briefs.map(b=>[b.id,b]));
+   const customerStats=await customerTrustMetrics(briefs.map(b=>b.customer_user_id||'')).catch(()=>new Map());
   const ratings=appointments.length?await supabasePrivate<{appointment_id:string;stars:number}[]>('jitap_customer_ratings?provider_user_id=eq.'+encodeURIComponent(session.userId)+'&select=appointment_id,stars'):[];
   const pending=appointments.length?await supabasePrivate<{appointment_id:string;id:string;proposed_start_at:string;proposed_end_at:string;status:string}[]>('jitap_appointment_reschedule_requests?provider_user_id=eq.'+encodeURIComponent(session.userId)+'&status=eq.pending&select=id,appointment_id,proposed_start_at,proposed_end_at,status'):[];
   return reply({appointments:appointments.map(a=>{
    const record=byId.get(a.request_id);
    const p=record?.payload||{};
+    const trust=customerStats.get(record?.customer_user_id||'');
    return {id:a.id,requestId:a.request_id,startsAt:a.starts_at,endsAt:a.ends_at,status:a.status,providerEtaAt:a.provider_eta_at,
     title:typeof p.title==='string'&&p.title.trim()?safeText(p.title).slice(0,120):(SERVICE_OPTIONS.find(item=>item.value===p.category)?.label||safeText(p.category).replace(/[-_]/g,' ')||'Service')+' Service',
     category:safeText(p.category),area:safeText(p.area),
@@ -44,6 +47,8 @@ export async function GET(req:NextRequest){
     longitude:typeof p.locationLng==='number'?p.locationLng:null,
     placeId:safeText(p.locationPlaceId),
     customerName:safeText(p.name)||'Customer',rated:ratings.some(x=>x.appointment_id===a.id),
+     customerRating:trust?.rating??null,customerRatingCount:trust?.ratingCount??0,
+     customerRequestedJobs:trust?.jobs??null,
     customerPhone:safeText(p.phone),
     description:safeText(p.description),
     pendingReschedule:pending.find(x=>x.appointment_id===a.id)||null};
