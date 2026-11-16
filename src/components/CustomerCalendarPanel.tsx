@@ -2,6 +2,7 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {ArrowLeft,CalendarDays,ChevronLeft,ChevronRight,CheckCircle2,Send,X,Eye,Clock3,Phone,MapPin,SlidersHorizontal,UserRound} from 'lucide-react';
 import type {CustomerTicket} from '@/components/CustomerTicketCard';
+import {MovingLocationPicker,type MoveLocation} from '@/components/MovingLocationPicker';
 import {SERVICE_OPTIONS,KENYAN_SERVICE_AREAS} from '@/lib/provider-options';
 import './customer-calendar.css';
 
@@ -45,9 +46,10 @@ export function CustomerCalendarPanel({tickets,saved=[],reviewer=false,onRefresh
  const [category,setCategory]=useState<string>('plumbing');
  const [area,setArea]=useState<string>('Nyali');
  const [location,setLocation]=useState('');
+ const [locationSelection,setLocationSelection]=useState<MoveLocation|null>(null);
  const [description,setDescription]=useState('');
  const [start,setStart]=useState('09:00');
- const [end,setEnd]=useState('10:00');
+
  const [note,setNote]=useState('');
  const [providerId,setProviderId]=useState('');
  const [providers,setProviders]=useState<Provider[]>([]);
@@ -99,20 +101,23 @@ export function CustomerCalendarPanel({tickets,saved=[],reviewer=false,onRefresh
  };
  const reveal=(b:Booking)=>{open(b);window.scrollTo({top:0,behavior:'smooth'})};
  const reset=()=>{
-  setCategory('plumbing');setArea('Nyali');setLocation('');setDescription('');
-  setDay(tomorrow());setMonth(monthStart(tomorrow()));setStart('09:00');setEnd('10:00');
+  setCategory('plumbing');setArea('Nyali');setLocation('');setLocationSelection(null);setDescription('');
+  setDay(tomorrow());setMonth(monthStart(tomorrow()));setStart('09:00');
   setNote('');setProviderId('');setShowProviders(false);setShowReschedule(false);
   setReference('');key.current=newKey();setError('');setMessage('');
  };
  const create=async(action:'create_save'|'create_invite')=>{
   if(reviewer){setError('Bookings are disabled in design review mode');return}
   if(action==='create_invite'&&!providerId){setError('Select a matching provider first');return}
+  if(locationSelection?.lat===undefined||locationSelection?.lng===undefined){setError('Select the exact job location from Google Places or choose a map pin.');return}
   if(!key.current)key.current=newKey();
   setBusy(true);setError('');setMessage('');
   try{
    const r=await fetch('/api/account/calendar',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({action,category,area,location,description,providerId:action==='create_invite'?providerId:undefined,
-     startsAt:toIso(day,start),endsAt:toIso(day,end),note,idempotencyKey:key.current})});
+    body:JSON.stringify({action,category,area,location:locationSelection.label,locationLat:locationSelection.lat,
+     locationLng:locationSelection.lng,locationPlaceId:locationSelection.placeId,
+     description,providerId:action==='create_invite'?providerId:undefined,
+     startsAt:toIso(day,start),note,idempotencyKey:key.current})});
    const data=await r.json().catch(()=>({}));
    if(!r.ok)throw Error(data.error||'Could not save this service');
    setReference(data.serviceId||'');
@@ -128,9 +133,10 @@ export function CustomerCalendarPanel({tickets,saved=[],reviewer=false,onRefresh
   setBusy(true);setError('');setMessage('');
   try{
    const payload:Record<string,unknown>=action==='invite'?
-    {action:'invite',requestId:selected.request_id,providerId,startsAt:toIso(day,start),endsAt:toIso(day,end),note}:
+    {action:'invite',requestId:selected.request_id,providerId,startsAt:toIso(day,start),
+     endsAt:new Date(Date.parse(toIso(day,start))+3600000).toISOString(),note}:
     {action,bookingId:selected.id};
-   if(action==='reschedule'){payload.startsAt=toIso(day,start);payload.endsAt=toIso(day,end)}
+   if(action==='reschedule'){payload.startsAt=toIso(day,start)}
    if(action==='respond_proposal'||action==='respond_change')payload.accept=!!accept;
    const r=await fetch('/api/account/calendar',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify(payload)});
@@ -145,9 +151,9 @@ export function CustomerCalendarPanel({tickets,saved=[],reviewer=false,onRefresh
  const open=(b:Booking)=>{
   setViewId(b.id);setEditor(false);setShowReschedule(false);setShowProviders(false);
   setDay(dateInEAT(new Date(b.starts_at)));setMonth(monthStart(dateInEAT(new Date(b.starts_at))));
-  setStart(clock(b.starts_at));setEnd(clock(b.ends_at));setNote(b.note);
+  setStart(clock(b.starts_at));setNote(b.note);
   setCategory(b.service?.category||'plumbing');setArea(b.service?.area||'Nyali');
-  setLocation('');setDescription(b.service?.description||'');
+  setLocation(b.service?.location||'');setLocationSelection(null);setDescription(b.service?.description||'');
   setProviderId(b.provider_user_id||'');setError('');setMessage('');
  };
  const ref=(id:string)=>'JT-'+id.slice(0,8).toUpperCase();
@@ -156,10 +162,9 @@ export function CustomerCalendarPanel({tickets,saved=[],reviewer=false,onRefresh
   accepted:'Confirmed',declined:'Declined',change_requested:'Reschedule pending',
   change_proposed:'Alternative time proposed',cancelled:'Cancelled'
  } as Record<string,string>)[b.status]||b.status;
- const dateInputs=<div className="jt-calendar-datetime">
-  <label>Date<input type="date" value={day} min={today()} onChange={e=>{setDay(e.target.value);setMonth(monthStart(e.target.value))}}/></label>
-  <label>Start (EAT)<input type="time" value={start} onChange={e=>setStart(e.target.value)}/></label>
-  <label>End (EAT)<input type="time" value={end} onChange={e=>setEnd(e.target.value)}/></label>
+ const dateInputs=<div className="jt-calendar-datetime jt-calendar-arrival-only">
+  <label>Arrival date<input type="date" value={day} min={today()} onChange={e=>{setDay(e.target.value);setMonth(monthStart(e.target.value))}}/></label>
+  <label>Arrival time (EAT)<input type="time" value={start} onChange={e=>setStart(e.target.value)}/></label>
  </div>;
  return <section className={'jt-customer-calendar'+(selected&&!editor?' is-detail':editor?' is-editor':'')} aria-label="Customer service Calendar">
   <header className="jt-calendar-intro">
@@ -214,7 +219,7 @@ export function CustomerCalendarPanel({tickets,saved=[],reviewer=false,onRefresh
        onClick={()=>reveal(b)}>
        <span className="jt-calendar-event-indicator"/>
        <span><strong>{serviceName(b.service?.category)}</strong>
-        <small>{timeLabel(b.starts_at)} – {timeLabel(b.ends_at)}</small>
+        <small>Arrival {timeLabel(b.starts_at)}</small>
         <small>{b.providerName||'Provider not selected'} · {status(b)}</small></span>
       </button>
      })}
@@ -237,9 +242,13 @@ export function CustomerCalendarPanel({tickets,saved=[],reviewer=false,onRefresh
    <select id="jt-calendar-area" value={area} onChange={e=>{setArea(e.target.value);setProviderId('')}}>
     {KENYAN_SERVICE_AREAS.map(a=><option key={a}>{a}</option>)}
    </select>
-   <label htmlFor="jt-calendar-location">Location / meeting point</label>
-   <input id="jt-calendar-location" value={location} maxLength={160}
-    onChange={e=>setLocation(e.target.value)} placeholder="e.g. Vescon 1, Nyali"/>
+   <div className="jt-calendar-location-field">
+    <MovingLocationPicker title="Exact service location" value={location}
+     selected={locationSelection} requireCoordinates
+     onChange={value=>{setLocation(value);setLocationSelection(null)}}
+     onSelect={place=>{setLocation(place.label);setLocationSelection(place)}}/>
+    <small>Find your building in Google Maps or choose the exact map pin. This is used for the provider's travel distance and ETA.</small>
+   </div>
    {dateInputs}
    <label htmlFor="jt-calendar-note">Additional instructions (optional)</label>
    <textarea id="jt-calendar-note" value={note} maxLength={500} rows={2}
@@ -315,7 +324,8 @@ export function CustomerCalendarPanel({tickets,saved=[],reviewer=false,onRefresh
    </div>}
    <p><strong>Provider:</strong> {selected.providerName||'Not selected'}</p>
    <section className="jt-calendar-detail-schedule"><h3>Schedule</h3><p>
-    <CalendarDays size={20}/>{dt(selected.starts_at)} – {timeLabel(selected.ends_at)} EAT</p></section>
+    <CalendarDays size={20}/>{dt(selected.starts_at)}</p>
+    <small>Arrival time only · Work duration depends on the job scope</small></section>
    <p><strong>Status:</strong> {status(selected)}</p>
    {selected.note&&<p><strong>Instructions:</strong> {selected.note}</p>}
    {['proposed','change_proposed'].includes(selected.status)&&selected.proposed_start_at&&
@@ -342,7 +352,7 @@ export function CustomerCalendarPanel({tickets,saved=[],reviewer=false,onRefresh
      <button type="button" className="secondary" onClick={()=>setShowReschedule(true)}>Reschedule</button>
      <button type="button" className="jt-calendar-cancel" disabled={busy} onClick={()=>void modify('cancel')}>Cancel booking</button>
     </div>:<div className="jt-calendar-reschedule">
-     <h3>Request a new date and time</h3>{dateInputs}
+     <h3>Request a new arrival date and time</h3>{dateInputs}
      <p className="jt-calendar-help">The existing booking remains confirmed until the provider accepts your new time.</p>
      <div className="jt-calendar-ctas">
       <button type="button" disabled={busy} onClick={()=>void modify('reschedule')}>Send reschedule request</button>
