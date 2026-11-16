@@ -20,3 +20,9 @@
 /* Native link remains tappable; horizontal drag stays on the non-interactive card. */
 .jt-provider-stack-front .jt-confirmed-view{display:flex;align-items:center;justify-content:center;gap:4px;min-height:47px;border-radius:10px;text-decoration:none;position:relative;z-index:2;touch-action:manipulation}
 .jt-provider-stack-front button,.jt-provider-stack-front a{touch-action:manipulation}
+
+/* Match the working customer card's gesture lifecycle: animate the old card
+   out, then snap the newly rotated job into the same compact slot. */
+.jt-provider-stack-front.is-exiting{pointer-events:none;transition:transform .23s cubic-bezier(.2,.8,.2,1)!important}
+.jt-provider-stack-front.no-animate{transition:none!important}
+.jt-provider-stack-stage{overflow:visible}
