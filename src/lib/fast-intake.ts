@@ -68,8 +68,8 @@ export function fastIntakeQuestions(category:string,description:string):FastInta
   question('masonrySize','How much work is involved?',['Small repair','One room or a short wall','Several rooms or a large area','New construction','Not sure yet'])
  ];
  if(category==='plumbing'){
-  if(/\\b(?:shower|showerhead|shower head|shower mixer|shawa|bafu)\\b/.test(text)
-   &&/\\b(?:not working|broken|repair|fix|problem|fault|stopped|no water|low pressure|not flowing|imeharibika)\\b/.test(text)){
+  if(/\b(?:shower|showerhead|shower head|shower mixer|shawa|bafu)\b/.test(text)
+   &&/\b(?:not working|broken|repair|fix|problem|fault|stopped|no water|low pressure|not flowing|imeharibika)\b/.test(text)){
    return [
     question('showerFault','What is happening with the shower?',[
      'No water comes out','Low water pressure','Shower tap or mixer is broken',
