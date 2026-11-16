@@ -10,6 +10,7 @@ type Appointment={request_id:string;provider_user_id:string;status:string;confir
 type Provider={user_id:string;full_name:string;business_name:string};
 type ProviderAccount={user_id:string;phone:string};
 type Cancellation={request_id:string;status:string;reason:string;details:string;created_at:string};
+type ProviderReview={request_id:string;stars:number;comment:string;created_at:string};
 const asText=(value:unknown,max=700)=>typeof value==='string'?value.slice(0,max).trim():'';
 const labels:Record<string,string>={
  new:'Received',incomplete:'Information needed',needs_sourcing:'Finding a provider',
@@ -36,11 +37,12 @@ export async function formatCustomerTickets(rows:RequestRecord[]){
  const where='('+ids.join(',')+')';
  // All row IDs were obtained through the authenticated customer-owned request
  // query (or exact OTP-verified phone ownership in the tracking endpoint).
- const [briefs,cases,appointments,cancellations]=await Promise.all([
+ const [briefs,cases,appointments,cancellations,reviews]=await Promise.all([
   supabasePrivate<Brief[]>('jitap_request_service_briefs?select=request_id,technical_summary,proposed_scope,source&request_id=in.'+where),
   supabasePrivate<Case[]>('coordinator_cases?select=source_id,status,updated_at&source_kind=eq.website_request&source_id=in.'+where),
   supabasePrivate<Appointment[]>('jitap_provider_appointments?select=request_id,provider_user_id,status,confirmed_at,updated_at,starts_at,ends_at&request_id=in.'+where),
-  supabasePrivate<Cancellation[]>('jitap_job_cancellations?select=request_id,status,reason,details,created_at&request_id=in.'+where+'&order=created_at.desc')
+  supabasePrivate<Cancellation[]>('jitap_job_cancellations?select=request_id,status,reason,details,created_at&request_id=in.'+where+'&order=created_at.desc'),
+  supabasePrivate<ProviderReview[]>('jitap_customer_provider_reviews?select=request_id,stars,comment,created_at&request_id=in.'+where)
  ]);
  const assignedIds=[...new Set(appointments.map(a=>a.provider_user_id))];
  const [providers,accounts]=assignedIds.length?await Promise.all([
@@ -53,6 +55,7 @@ export async function formatCustomerTickets(rows:RequestRecord[]){
  const cancelById=new Map<string,Cancellation>();for(const cancellation of cancellations){if(!cancelById.has(cancellation.request_id))cancelById.set(cancellation.request_id,cancellation)}
  const briefById=new Map(briefs.map(b=>[b.request_id,b]));
  const caseById=new Map(cases.map(c=>[c.source_id,c]));
+ const reviewById=new Map(reviews.map(v=>[v.request_id,v]));
  return rows.map(r=>{
   const p=r.payload||{};
   const b=briefById.get(r.id),caseRow=caseById.get(r.id);
@@ -64,6 +67,7 @@ export async function formatCustomerTickets(rows:RequestRecord[]){
    // Use exact known listing name only; never interpret this as assignment.
    fundiListings.find(f=>f.name.length>=6&&raw.toLocaleLowerCase('en-KE').includes(f.name.toLocaleLowerCase('en-KE')));
   const cancellation=cancelById.get(r.id);
+  const customerReview=reviewById.get(r.id);
   const appointment=appointmentById.get(r.id);
   const assignedProvider=appointment?providerById.get(appointment.provider_user_id):null;
   const assignedPhone=appointment?phoneById.get(appointment.provider_user_id)||'':'';
@@ -90,6 +94,8 @@ export async function formatCustomerTickets(rows:RequestRecord[]){
    providerPhone:appointment&&['confirmed','on_my_way','arrived','in_progress','completed'].includes(appointment.status)?assignedPhone:'',
    providerStatus:awaitingRematch?'Provider cancelled — your decision is needed':approvedRematch?'Your request is available to eligible providers':appointment?(appointment.status==='on_my_way'?'On my way':appointment.status==='arrived'?'Arrived at your location':appointment.status==='in_progress'?'Working on your job':appointment.status==='completed'?'Work marked completed':'Booking confirmed'):provider?'Requested provider — awaiting confirmation':'Awaiting matching',
    rematch:awaitingRematch?{reason:cancellation?.reason||'other',details:cancellation?.details||''}:null,
+   canReview:!!appointment&&appointment.status==='completed'&&!customerReview,
+   customerReview:customerReview?{stars:customerReview.stars,comment:customerReview.comment}:null,
    status,statusLabel:labels[status]||status.replace(/_/g,' '),
    brief:asText(p.title,120)?asText(p.title,120)+(raw?' — '+customerSummary(raw):''):b?.source==='ai'?asText(b.technical_summary,700):customerSummary(raw),
    scope:b?.source==='ai'?asText(b.proposed_scope,400):'',
