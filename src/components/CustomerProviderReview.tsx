@@ -1,7 +1,7 @@
 'use client';
 import {useState} from 'react';
 import {Star} from 'lucide-react';
-export function CustomerProviderReview({requestId,providerName,existing}:{requestId:string;providerName:string;existing:{stars:number;comment:string}|null}){
+export function CustomerProviderReview({requestId,providerName,existing,onReviewed}:{requestId:string;providerName:string;existing:{stars:number;comment:string}|null;onReviewed?:()=>void}){
  const [stars,setStars]=useState(0);
  const [comment,setComment]=useState('');
  const [saved,setSaved]=useState(existing);
@@ -18,6 +18,7 @@ export function CustomerProviderReview({requestId,providerName,existing}:{reques
    const data=await response.json().catch(()=>({}));
    if(!response.ok)throw Error(data.error||'Could not save your review');
    setSaved({stars,comment});
+   onReviewed?.();
   }catch(e){setError(e instanceof Error?e.message:'Please try again')}
   finally{setBusy(false)}
  }
