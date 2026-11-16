@@ -16,7 +16,8 @@ const schema=z.discriminatedUnion('action',[
   note:z.string().max(500).default('')}).strict(),
  z.object({action:z.enum(['accept_change','decline_change']),bookingId:z.string().uuid()}).strict(),
  z.object({action:z.literal('propose_change'),bookingId:z.string().uuid(),
-  startsAt:z.string().datetime({offset:true}),endsAt:z.string().datetime({offset:true})}).strict()
+  startsAt:z.string().datetime({offset:true}),endsAt:z.string().datetime({offset:true}),
+  note:z.string().max(500).default('')}).strict()
 ]);
 type Invitation={id:string;request_id:string;customer_user_id:string;provider_user_id:string;
  starts_at:string;ends_at:string;note:string;status:string;proposed_start_at:string|null;proposed_end_at:string|null;response_note:string};
