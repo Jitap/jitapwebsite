@@ -5,6 +5,7 @@ import {normalizeKenyanPhone,sameOrigin,setAuthCookies} from '@/lib/jitap-auth';
 import {supabasePrivate} from '@/lib/coordinator-server';
 import {notifyScheduledBooking} from '@/lib/customer-calendar-notifications';
 import {SERVICE_OPTIONS} from '@/lib/provider-options';
+import {providerTrustMetrics} from '@/lib/trust-metrics-server';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -75,11 +76,15 @@ export async function GET(req:NextRequest){
   const contacts=contactIds.length?await supabasePrivate<{user_id:string;phone:string}[]>(
    'jitap_accounts?select=user_id,phone&user_id=in.('+contactIds.join(',')+')'):[];
   const phoneById=new Map(contacts.map(a=>[a.user_id,normalizeKenyanPhone(a.phone)]));
+  const trust=await providerTrustMetrics(providerIds).catch(()=>new Map());
   const bookings=rows.map(b=>({
    ...b,providerName:byProvider.get(b.provider_user_id||'')||null,
    providerPhone:acceptedMatchKeys.has(b.request_id+'|'+b.provider_user_id)&&
     ['accepted','change_requested','change_proposed'].includes(b.status)
     ?phoneById.get(b.provider_user_id||'')||null:null,
+   providerRating:trust.get(b.provider_user_id||'')?.rating??null,
+   providerRatingCount:trust.get(b.provider_user_id||'')?.ratingCount??0,
+   providerCompletedJobs:trust.get(b.provider_user_id||'')?.jobs??null,
    service:summary(requestById.get(b.request_id)||{})
   }));
   const requestId=req.nextUrl.searchParams.get('requestId');
