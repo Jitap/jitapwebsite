@@ -94,7 +94,7 @@ export async function formatCustomerTickets(rows:RequestRecord[]){
    providerPhone:appointment&&['confirmed','on_my_way','arrived','in_progress','completed'].includes(appointment.status)?assignedPhone:'',
    providerStatus:awaitingRematch?'Provider cancelled — your decision is needed':approvedRematch?'Your request is available to eligible providers':appointment?(appointment.status==='on_my_way'?'On my way':appointment.status==='arrived'?'Arrived at your location':appointment.status==='in_progress'?'Working on your job':appointment.status==='completed'?'Work marked completed':'Booking confirmed'):provider?'Requested provider — awaiting confirmation':'Awaiting matching',
    rematch:awaitingRematch?{reason:cancellation?.reason||'other',details:cancellation?.details||''}:null,
-   canReview:!!appointment&&appointment.status==='completed'&&!customerReview,
+   canReview:!!appointment&&status==='completed'&&!customerReview,
    customerReview:customerReview?{stars:customerReview.stars,comment:customerReview.comment}:null,
    status,statusLabel:labels[status]||status.replace(/_/g,' '),
    brief:asText(p.title,120)?asText(p.title,120)+(raw?' — '+customerSummary(raw):''):b?.source==='ai'?asText(b.technical_summary,700):customerSummary(raw),
