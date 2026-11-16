@@ -5,6 +5,7 @@ import {useRouter} from 'next/navigation';
 import Link from 'next/link';
 import {CalendarDays,Check,MapPin,Phone,UserRound} from 'lucide-react';
 import type {CustomerTicket} from '@/components/CustomerTicketCard';
+import {CustomerEnRoute} from '@/components/CustomerEnRoute';
 import {customerProgressStage,customerProgressSteps} from '@/lib/customer-progress';
 import {SERVICE_OPTIONS} from '@/lib/provider-options';
 
@@ -211,7 +212,9 @@ export function CustomerRequestStack({tickets,onOpenRequests}:{
     <div className="jt-glass-request-details">
      <div><UserRound size={18}/><span>{current.provider||'To be matched'}</span></div>
      <div><CalendarDays size={18}/><span>{timeLabel(current)}</span></div>
-     <div><MapPin size={18}/><span>{current.location||current.area||'Location to be confirmed'}</span></div>
+     {current.status==='on_my_way'
+      ?<CustomerEnRoute key={current.reference} requestId={current.reference} variant="home"/>
+      :<div><MapPin size={18}/><span>{current.location||current.area||'Location to be confirmed'}</span></div>}
     </div>
     <ol className={'jt-glass-progress jt-home-progress is-stage-'+stage} aria-label="Request progress">
      {customerProgressSteps.map((step,index)=><li key={step} className={index<stage?'is-done':index===stage?'is-current':''} aria-current={index===stage?'step':undefined}>
