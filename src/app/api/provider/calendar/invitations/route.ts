@@ -13,7 +13,10 @@ const schema=z.discriminatedUnion('action',[
  z.object({action:z.enum(['accept','decline']),bookingId:z.string().uuid()}).strict(),
  z.object({action:z.literal('propose'),bookingId:z.string().uuid(),
   startsAt:z.string().datetime({offset:true}),endsAt:z.string().datetime({offset:true}),
-  note:z.string().max(500).default('')}).strict()
+  note:z.string().max(500).default('')}).strict(),
+ z.object({action:z.enum(['accept_change','decline_change']),bookingId:z.string().uuid()}).strict(),
+ z.object({action:z.literal('propose_change'),bookingId:z.string().uuid(),
+  startsAt:z.string().datetime({offset:true}),endsAt:z.string().datetime({offset:true})}).strict()
 ]);
 type Invitation={id:string;request_id:string;customer_user_id:string;provider_user_id:string;
  starts_at:string;ends_at:string;note:string;status:string;proposed_start_at:string|null;proposed_end_at:string|null;response_note:string};
@@ -23,7 +26,7 @@ export async function GET(req:NextRequest){
  try{
   const rows=await supabasePrivate<Invitation[]>(
    'jitap_customer_calendar_bookings?select=*&provider_user_id=eq.'+provider.userId+
-   '&status=in.(pending,proposed,accepted,declined)&order=created_at.desc&limit=100');
+   '&status=in.(pending,proposed,accepted,declined,change_requested,change_proposed,cancelled)&order=created_at.desc&limit=100');
   const ids=[...new Set(rows.map(r=>r.request_id))];
   const requests=ids.length?await supabasePrivate<{id:string;payload:Record<string,unknown>}[]>(
    'website_intake?select=id,payload&id=in.('+ids.join(',')+')'):[];
@@ -50,6 +53,20 @@ export async function POST(req:NextRequest){
  if(!parsed.success)return reply({error:'Choose a valid calendar response'},422);
  const input=parsed.data;
  try{
+  if(['accept_change','decline_change','propose_change'].includes(input.action)){
+   const result=await supabasePrivate<{ok?:boolean;error?:string;status?:string}>(
+    'rpc/jitap_provider_manage_calendar_change',{method:'POST',body:JSON.stringify({
+     p_provider:provider.userId,p_booking:input.bookingId,
+     p_action:input.action==='accept_change'?'accept':input.action==='decline_change'?'decline':'propose',
+     p_start:input.action==='propose_change'?input.startsAt:null,
+     p_end:input.action==='propose_change'?input.endsAt:null
+    })});
+   if(!result.ok)return reply({error:result.error||'Unable to respond to date change'},409);
+   after(async()=>{await notifyScheduledBooking(input.bookingId,
+    input.action==='accept_change'?'accepted':input.action==='decline_change'?'declined':'proposed',
+    'customer').catch(()=>{})});
+   return reply(result);
+  }
   const result=await supabasePrivate<{ok?:boolean;error?:string;status?:string}>(
    'rpc/jitap_provider_respond_calendar_booking',{
     method:'POST',body:JSON.stringify({
