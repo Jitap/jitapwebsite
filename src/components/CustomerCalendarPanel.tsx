@@ -7,7 +7,7 @@ import './customer-calendar.css';
 
 type Provider={id:string;name:string};
 type Booking={id:string;request_id:string;provider_user_id:string|null;providerName?:string|null;
- starts_at:string;ends_at:string;status:string;note:string;service?:{category:string;area:string;description:string};
+ starts_at:string;ends_at:string;status:string;note:string;service?:{category:string;area:string;description:string;location?:string};
  proposed_start_at:string|null;proposed_end_at:string|null;response_note:string};
 const kenya='Africa/Nairobi';
 const dt=(iso:string)=>new Intl.DateTimeFormat('en-KE',{timeZone:kenya,dateStyle:'medium',timeStyle:'short'}).format(new Date(iso))+' EAT';
@@ -221,6 +221,7 @@ export function CustomerCalendarPanel({tickets,saved=[],reviewer=false,onRefresh
    <p><strong>Service:</strong> {selected.service?.category?.replaceAll('-',' ')||'Service'}</p>
    <p><strong>Description:</strong> {selected.service?.description||'Scheduled service'}</p>
    <p><strong>Area:</strong> {selected.service?.area||'To be confirmed'}</p>
+   <p><strong>Location:</strong> {selected.service?.location||'To be confirmed'}</p>
    <p><strong>Provider:</strong> {selected.providerName||'Not selected'}</p>
    <p><strong>Date and time:</strong> {dt(selected.starts_at)} – {dt(selected.ends_at)}</p>
    <p><strong>Status:</strong> {status(selected)}</p>
@@ -257,6 +258,9 @@ export function CustomerCalendarPanel({tickets,saved=[],reviewer=false,onRefresh
      </div></div>}
    </>}
    {selected.status==='change_requested'&&<p className="jt-calendar-status"><Clock3 size={17}/> Waiting for provider to approve your new time: {selected.proposed_start_at?dt(selected.proposed_start_at):''}. Your existing time remains confirmed.</p>}
+   {['change_requested','change_proposed'].includes(selected.status)&&
+    <button type="button" className="jt-calendar-view jt-calendar-cancel" disabled={busy}
+     onClick={()=>void modify('cancel')}>Cancel booking</button>}
    {['pending','declined'].includes(selected.status)&&selected.status==='pending'&&
     <p className="jt-calendar-help">Awaiting provider response.</p>}
    {['pending','declined','draft'].includes(selected.status)&&
