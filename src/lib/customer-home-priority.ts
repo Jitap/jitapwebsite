@@ -6,8 +6,10 @@ const terminal=new Set([
  'rejected','declined','expired','failed','rematch_declined'
 ]);
 const attention=new Set(['incomplete','rematch_approval','needs_customer_action','awaiting_customer']);
-export function isActiveServiceRequest(ticket:Pick<CustomerTicket,'status'>):boolean{
+export function isActiveServiceRequest(ticket:Pick<CustomerTicket,'status'|'canReview'>):boolean{
  const status=(ticket.status||'').toLowerCase().trim().replace(/[\s-]+/g,'_');
+ // A finished job stays visible until the customer reviews the provider.
+ if(status==='completed'&&ticket.canReview===true)return true;
  return !terminal.has(status);
 }
 function timestamp(value:string):number{
@@ -19,7 +21,9 @@ export function prioritizeActiveRequests(requests:CustomerTicket[]):CustomerTick
  return requests.filter(isActiveServiceRequest).sort((a,b)=>{
   const aUrgent=a.rematch||attention.has(a.status)?1:0;
   const bUrgent=b.rematch||attention.has(b.status)?1:0;
-  return bUrgent-aUrgent||
+  const aReview=a.canReview===true&&a.status==='completed'?1:0;
+  const bReview=b.canReview===true&&b.status==='completed'?1:0;
+  return bReview-aReview||bUrgent-aUrgent||
    timestamp(b.updatedAt)-timestamp(a.updatedAt)||
    timestamp(b.createdAt)-timestamp(a.createdAt)||
    a.reference.localeCompare(b.reference);
