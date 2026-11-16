@@ -4,6 +4,7 @@ import Link from 'next/link';
 import {useRouter} from 'next/navigation';
 import {ArrowLeft,Settings,CheckCircle2,ChevronRight,ShieldCheck,UserRound,Camera,Plus,Trash2,Clock3,Phone,MapPin,Bell,Globe,LogOut,HelpCircle,FileText,LockKeyhole,BriefcaseBusiness} from 'lucide-react';
 import {ProviderMediaFields,type MediaKind} from '@/components/ProviderMediaFields';
+import {armProviderBuzzAudio} from '@/lib/provider-buzz-audio';
 import {SERVICE_OPTIONS} from '@/lib/provider-options';
 import {ProviderIdentityVerification} from '@/components/ProviderIdentityVerification';
 import './profile.css';
@@ -46,12 +47,27 @@ export default function ProviderProfilePage(){
   finally{setSaving(false)}
  }
  async function setOnline(value:boolean){
-  setSaving(true);setError('');
+  setSaving(true);setError('');setNotice('');
   try{
-   const res=await fetch('/api/provider/workspace',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'availability',online:value})});
-   const data=await res.json();if(!res.ok)throw Error(data.error||'Unable to update availability');
+   let action:Record<string,unknown>={action:'availability',online:false};
+   let endpoint='/api/provider/workspace';
+   if(value){
+    armProviderBuzzAudio();
+    if(!navigator.geolocation)throw Error('Please enable precise location in your phone settings.');
+    const position=await new Promise<GeolocationPosition>((resolve,reject)=>
+     navigator.geolocation.getCurrentPosition(resolve,reject,{enableHighAccuracy:true,maximumAge:0,timeout:15000}));
+    endpoint=profile?.is_online?'/api/provider/wave-buzz':'/api/provider/workspace';
+    action=profile?.is_online?
+      {action:'location',sharing:true,latitude:position.coords.latitude,longitude:position.coords.longitude}:
+      {action:'availability',online:true,latitude:position.coords.latitude,longitude:position.coords.longitude};
+   }
+   const res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(action)});
+   const data=await res.json().catch(()=>({}));
+   if(!res.ok)throw Error(data.error||'Unable to update availability');
    setProfile(p=>p?{...p,is_online:value}:p);
-  }catch(e){setError(e instanceof Error?e.message:'Unable to update availability')}finally{setSaving(false)}
+   setNotice(value?(profile?.is_online?'GPS refreshed. JiTap BUZZ is enabled.':'You are Online and JiTap BUZZ is enabled.'):'You are now Offline.');
+  }catch(e){setError(e instanceof Error?e.message:'Unable to update availability')}
+  finally{setSaving(false)}
  }
  async function switchToCustomer(){
   setSaving(true);setError('');
@@ -72,7 +88,12 @@ export default function ProviderProfilePage(){
   {loading?<div className="jt-provider-loading" role="status" aria-label="Loading provider profile"><span/><span/><span/><span className="jt-provider-loading-label">Loading your profile…</span></div>:!profile?<p className="jpf-info">Complete provider onboarding first. <Link href="/provider">Open provider dashboard</Link></p>:<>
   {error&&<div className="jpf-error" role="alert">{error}</div>}{notice&&<div className="jpf-notice" role="status">{notice}</div>}
   {pane==='profile'&&<><div className="jpf-identity"><div className="jpf-avatar">{photo?<img src={'/api/provider/media?kind=profile_photo&v='+encodeURIComponent(photo.uploadedAt)} alt="Your profile photo"/>:<UserRound size={47}/>}<button aria-label={photo?'Profile photo already uploaded':'Add profile photo'} onClick={()=>{if(!photo)document.getElementById('jpf-photo')?.scrollIntoView({behavior:'smooth'})}}><Camera size={17}/></button></div><h2>{profile.full_name} {review==='approved'&&<CheckCircle2 size={20} fill="#00b958" color="white"/>}</h2><small>{profile.business_name||'JiTap Service Provider'}</small></div>
-   <div className="jpf-online"><span><BriefcaseBusiness size={20}/> {profile.is_online?'Online':'Offline'}</span>{toggle(profile.is_online,()=>setOnline(!profile.is_online),review!=='approved')}</div>
+   <div className="jpf-online"><span><BriefcaseBusiness size={20}/> {profile.is_online?'Online':'Offline'}</span>
+    <button type="button" role="switch" aria-checked={profile.is_online} aria-label={profile.is_online?'Refresh GPS and JiTap BUZZ':'Go Online and enable JiTap BUZZ'}
+     disabled={saving||review!=='approved'} className={'jpf-switch '+(profile.is_online?'on':'')} onClick={()=>void setOnline(true)}><span/></button>
+   </div>
+   {profile.is_online&&<button type="button" disabled={saving} onClick={()=>void setOnline(false)}
+    style={{display:'block',margin:'6px 14px 18px auto',padding:'9px 14px',background:'#fff',border:'1px solid #adcebb',color:'#17643b',borderRadius:10,fontWeight:700}}>Go Offline</button>}
    <div className="jpf-group">{item('My Services',services.length+' services',<BriefcaseBusiness/>, 'services')}{item('Availability','Set your working hours',<Clock3/>,'availability')}{item('Account Details','Personal information',<UserRound/>,'account')}{item('Identity Verification',review==='approved'?'Verified':'Review '+review.replaceAll('_',' '),<ShieldCheck/>,'verification',review==='approved'?<CheckCircle2 color="#00b958"/>:<ChevronRight/>)}{item('Help & Support','',<HelpCircle/>,'support')}</div>
    {!photo&&<div id="jpf-photo" className="jpf-photo-upload"><strong>Add profile photo</strong><p>Add a clear profile photo so customers can recognize you.</p><ProviderMediaFields uploaded={media} kinds={['profile_photo']} onUploaded={uploadRefresh}/></div>}
   </>}
