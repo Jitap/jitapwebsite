@@ -35,15 +35,15 @@ async function settle(id:string,status:'submitted'|'failed'|'skipped'|'needs_tem
    error_code:reason?.slice(0,90)||null,updated_at:new Date().toISOString()})
  }).catch(()=>{});
 }
-async function whatsapp(phone:string,booking:Booking,event:Event):Promise<{accepted:boolean;id?:string;reason?:string}>{
+async function whatsapp(phone:string,booking:Booking,event:Event,role:'provider'|'customer'):Promise<{accepted:boolean;id?:string;reason?:string}>{
  const config=kapsoConfiguration();
- const name=process.env.KAPSO_TEMPLATE_PROVIDER_CALENDAR;
+ const name=role==='provider'?process.env.KAPSO_TEMPLATE_PROVIDER_CALENDAR:process.env.KAPSO_TEMPLATE_CUSTOMER_CALENDAR;
  if(!config.enabled||!config.configured||!config.signedWebhooks||!name||
   !/^[a-z][a-z0-9_]{1,255}$/.test(name))
   return {accepted:false,reason:'approved_provider_calendar_template_missing'};
  // This is an explicitly approved provider-calendar template with three body
  // variables and a dynamic URL button. Never reuse the customer tracking template.
- // Its configured button URL must point to https://jitap.app/provider/calendar?booking={{1}}
+ // Provider template button: https://jitap.app/provider/calendar?booking={{1}}\n // Customer template button: https://jitap.app/account?tab=calendar&booking={{1}}
  const phoneNumberId=process.env.KAPSO_PHONE_NUMBER_ID;
  const apiKey=process.env.KAPSO_API_KEY;
  if(!phoneNumberId||!apiKey)return {accepted:false,reason:'kapso_credentials_missing'};
@@ -110,7 +110,7 @@ export async function notifyScheduledBooking(
  if(account?.whatsapp_updates_opt_in){
   const ledger=await reserve(booking.id,event,role,'whatsapp');
   if(ledger){
-   const result=await whatsapp(phone,booking,event);
+   const result=await whatsapp(phone,booking,event,role);
    wa=result.accepted?'submitted':result.reason==='approved_provider_calendar_template_missing'?'needs_template':'failed';
    await settle(ledger,wa==='submitted'?'submitted':wa==='needs_template'?'needs_template':'failed',result.id,result.reason);
   }else wa='already_attempted';
