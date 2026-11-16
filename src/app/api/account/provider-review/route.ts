@@ -28,9 +28,14 @@ export async function POST(req:NextRequest){
   if(!booking||booking.customer_user_id!==customer.identity.userId||
      normalizeKenyanPhone(String(booking.payload?.phone||''))!==customer.identity.phone)
    return reply({error:'Request not found'},404);
-  const appointments=await supabasePrivate<Appointment[]>('jitap_provider_appointments?select=id,request_id,provider_user_id,status&request_id=eq.'+input.requestId+'&status=eq.completed&limit=1');
+  const appointments=await supabasePrivate<Appointment[]>('jitap_provider_appointments?select=id,request_id,provider_user_id,status&request_id=eq.'+input.requestId+'&limit=1');
   const appointment=appointments[0];
   if(!appointment)return reply({error:'You can review your provider after the job is completed'},409);
+  if(appointment.status!=='completed'){
+   const cases=await supabasePrivate<{status:string}[]>('coordinator_cases?select=status&source_kind=eq.website_request&source_id=eq.'+input.requestId+'&limit=1');
+   if(cases[0]?.status!=='completed')
+    return reply({error:'You can review your provider after the job is completed'},409);
+  }
   const existing=await supabasePrivate<{id:string}[]>('jitap_customer_provider_reviews?select=id&appointment_id=eq.'+appointment.id+'&limit=1');
   if(existing.length)return reply({error:'You have already reviewed this job'},409);
   await supabasePrivate('jitap_customer_provider_reviews',{
