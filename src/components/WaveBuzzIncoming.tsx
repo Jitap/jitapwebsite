@@ -5,7 +5,7 @@ import {playProviderBuzzChime} from '@/lib/provider-buzz-audio';
 import './wave-buzz.css';
 
 type LiveOffer={requestId:string;ref:string;category:string;brief:string;location:string;preferredTime:string;distanceKm:number;wave:number;expiresAt:string};
-export function WaveBuzzIncoming({enabled,enRoute=false}:{enabled:boolean;enRoute?:boolean}){
+export function WaveBuzzIncoming({enabled}:{enabled:boolean}){
  const [offer,setOffer]=useState<LiveOffer|null>(null);
  const [now,setNow]=useState(Date.now());
  const [clockOffset,setClockOffset]=useState(0);
@@ -65,15 +65,15 @@ export function WaveBuzzIncoming({enabled,enRoute=false}:{enabled:boolean;enRout
  },[]);
  useEffect(()=>{
   if(!enabled)return
-  // The Online switch already obtained explicit GPS permission. Refresh only
-  // while the app is visible; closed apps require Aly's native location service.
+  // The first Online tap already obtained GPS. Continue refreshing every 20s
+  // while the web page is active. Background/locked screen requires native support.
   const timer=window.setInterval(()=>{
    if(document.visibilityState==='visible')void shareLocation(true);
-  },enRoute?20000:4*60*1000);
+  },20000);
   const onVisible=()=>{if(document.visibilityState==='visible')void shareLocation(true)};
   document.addEventListener('visibilitychange',onVisible);
   return()=>{window.clearInterval(timer);document.removeEventListener('visibilitychange',onVisible)};
- },[enabled,shareLocation,enRoute]);
+ },[enabled,shareLocation]);
  async function respond(decision:'accepted'|'declined'){
   if(!offer||remaining<=0||busy)return;
   setBusy(true);setError('');
