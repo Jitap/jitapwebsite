@@ -68,6 +68,17 @@ export function fastIntakeQuestions(category:string,description:string):FastInta
   question('masonrySize','How much work is involved?',['Small repair','One room or a short wall','Several rooms or a large area','New construction','Not sure yet'])
  ];
  if(category==='plumbing'){
+  if(/\\b(?:shower|showerhead|shower head|shower mixer|shawa|bafu)\\b/.test(text)
+   &&/\\b(?:not working|broken|repair|fix|problem|fault|stopped|no water|low pressure|not flowing|imeharibika)\\b/.test(text)){
+   return [
+    question('showerFault','What is happening with the shower?',[
+     'No water comes out','Low water pressure','Shower tap or mixer is broken',
+     'Shower leaks','Water does not drain','Not sure']),
+    question('showerScope','What kind of shower is installed?',[
+     'Standard mixer / shower head','Electric hot shower','Water heater connected to shower',
+     'Not sure'])
+   ];
+  }
   const leaks=/\b(leak|leaking|drip|dripping|inavuja|imevuja|kuvuja|vuja)\b/.test(text);
   const blocked=/\b(block|blocked|clog|clogged|imeziba|ziba|drainage)\b/.test(text);
   if(leaks&&!blocked)return [
