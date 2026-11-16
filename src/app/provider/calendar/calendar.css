@@ -139,3 +139,6 @@
 .jcal-new-consent>p:first-child{font-size:14px;line-height:1.5;color:#526d80;margin:0}
 .jcal-new-consent .jcal-new-checkbox{margin:6px 0 2px}
 .jcal-new-sheet .jcal-new-actions{margin-top:1px}
+
+/* Compact, evidence-backed customer trust metadata in booking detail and lists. */
+.jcal-customer-trust{display:flex!important;flex-wrap:wrap;align-items:center;gap:6px 12px;margin:5px 0 0;font-size:12px!important;font-weight:700;color:#137044!important;line-height:1.4}
