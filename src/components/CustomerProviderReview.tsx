@@ -43,7 +43,7 @@ export function CustomerProviderReview({requestId,providerName,existing}:{reques
      placeholder="Share your experience (optional)" rows={3}
      style={{width:'100%',border:'1px solid #cae2d3',borderRadius:10,padding:11,resize:'vertical',fontFamily:'inherit',fontSize:14}}/>
     <button type="button" disabled={stars===0||busy} onClick={()=>void submit()}
-     style={{marginTop:10,padding:'12px 18px',background:'#008a3e',border:0,color:'#fff',fontWeight:800,borderRadius:10,cursor:'pointer',opacity:stars===0||busy?.6:1}}>
+     style={{marginTop:10,padding:'12px 18px',background:'#008a3e',border:0,color:'#fff',fontWeight:800,borderRadius:10,cursor:'pointer',opacity:(stars===0||busy)?0.6:1}}>
      {busy?'Submitting…':'Submit review'}
     </button>
     {error&&<p role="alert" style={{color:'#ad293b',fontSize:13}}>{error}</p>}
