@@ -706,3 +706,8 @@
 .jt-customer-review-handoff-heading small{font-size:12px;color:#64766d}
 .jt-customer-review-handoff .jt-customer-provider-review{margin:13px 0 10px}
 @media(max-width:500px){.jt-customer-review-handoff{padding:14px 12px 6px;border-radius:19px}}
+
+/* Grounded JiTap provider trust indicators, compact on customer cards. */
+.jt-home-provider-trust{display:flex!important;flex-wrap:wrap;align-items:center;gap:6px 14px!important;margin:0 0 2px 26px;font-size:12px!important;font-weight:760;color:#0b7944}
+.jt-home-provider-trust span{display:inline-flex;align-items:center;gap:4px}
+@media(max-width:420px){.jt-home-provider-trust{font-size:11px!important;margin-left:23px}}
