@@ -17,7 +17,7 @@ const dateLabel=(iso:string)=>new Intl.DateTimeFormat('en-KE',{
 }).format(new Date(iso))+' EAT';
 const ref=(id:string)=>'JT-'+id.slice(0,8).toUpperCase();
 const origin='https://jitap.app';
-function safePhone(value:string){return normalizeKenyanPhone(value).replace(/^\+/,'')}
+function safePhone(value:string){return (normalizeKenyanPhone(value)||'').replace(/^\+/,'')}
 async function reserve(bookingId:string,event:Event,role:'provider'|'customer',channel:'sms'|'whatsapp'){
  try{
   const rows=await supabasePrivate<Delivery[]>('jitap_calendar_delivery_attempts',{
