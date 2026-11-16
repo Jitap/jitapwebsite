@@ -60,8 +60,28 @@ export async function GET(req:NextRequest){
   const providerNames=providerIds.length?await supabasePrivate<{user_id:string;business_name:string;full_name:string}[]>(
    'jitap_provider_workspaces?select=user_id,business_name,full_name&user_id=in.('+providerIds.join(',')+')'):[];
   const byProvider=new Map(providerNames.map(p=>[p.user_id,p.business_name||p.full_name||'JiTap provider']));
-  const bookings=rows.map(b=>({...b,providerName:byProvider.get(b.provider_user_id||'')||null,
-   service:summary(requestById.get(b.request_id)||{})}));
+  // Contact details are released only after the provider has actually accepted
+  // this customer's booking. Never return a phone for a pending invitation.
+  const accepted=rows.filter(b=>b.provider_user_id&&
+   ['accepted','change_requested','change_proposed'].includes(b.status));
+  const appointments=accepted.length?await supabasePrivate<{
+   request_id:string;provider_user_id:string;status:string
+  }[]>('jitap_provider_appointments?select=request_id,provider_user_id,status&request_id=in.('+
+   accepted.map(b=>b.request_id).join(',')+')'):[];
+  const confirmed=new Set(appointments.filter(a=>!['cancelled'].includes(a.status))
+   .map(a=>a.request_id+'|'+a.provider_user_id));
+  const contactIds=[...new Set(accepted.filter(b=>confirmed.has(b.request_id+'|'+b.provider_user_id))
+   .map(b=>b.provider_user_id).filter((id):id is string=>!!id))];
+  const contacts=contactIds.length?await supabasePrivate<{user_id:string;phone:string}[]>(
+   'jitap_accounts?select=user_id,phone&user_id=in.('+contactIds.join(',')+')'):[];
+  const phoneById=new Map(contacts.map(a=>[a.user_id,normalizeKenyanPhone(a.phone)]));
+  const bookings=rows.map(b=>({
+   ...b,providerName:byProvider.get(b.provider_user_id||'')||null,
+   providerPhone:confirmed.has(b.request_id+'|'+b.provider_user_id)&&
+    ['accepted','change_requested','change_proposed'].includes(b.status)
+    ?phoneById.get(b.provider_user_id||'')||null:null,
+   service:summary(requestById.get(b.request_id)||{})
+  }));
   const requestId=req.nextUrl.searchParams.get('requestId');
   const optionsCategory=req.nextUrl.searchParams.get('category');
   const optionsArea=req.nextUrl.searchParams.get('area');
