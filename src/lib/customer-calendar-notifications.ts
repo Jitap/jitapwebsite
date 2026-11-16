@@ -10,7 +10,7 @@ type Booking={
 };
 type Account={user_id:string;phone:string;sms_updates_opt_in:boolean;whatsapp_updates_opt_in:boolean};
 type Delivery={id:string};
-type Event='invite'|'proposed'|'declined'|'accepted';
+type Event='invite'|'proposed'|'declined'|'accepted'|'cancelled'|'reschedule_requested';
 const dateLabel=(iso:string)=>new Intl.DateTimeFormat('en-KE',{
  timeZone:'Africa/Nairobi',day:'numeric',month:'short',year:'numeric',
  hour:'2-digit',minute:'2-digit',hour12:false
@@ -50,6 +50,8 @@ async function whatsapp(phone:string,booking:Booking,event:Event,role:'provider'
  const parameters=[
   ref(booking.request_id),dateLabel(booking.starts_at),
   event==='invite'?'New booking — respond in JiTap':
+   event==='reschedule_requested'?'Customer requests a new appointment time':
+   event==='cancelled'?'Customer cancelled this booking':
    event==='proposed'?'New time proposed':event==='declined'?'Booking declined':'Booking confirmed'
  ];
  const body={messaging_product:'whatsapp',recipient_type:'individual',to:phone,
@@ -93,6 +95,8 @@ export async function notifyScheduledBooking(
   '/account?tab=calendar';
  const message='JiTap '+ref(booking.request_id)+': '+
   (event==='invite'?'New scheduled job invitation for '+dateLabel(booking.starts_at)+'. Please Accept, Decline or propose another time.':
+   event==='reschedule_requested'?'Customer has requested a date change. Please respond in Calendar.':
+   event==='cancelled'?'Customer has cancelled the scheduled booking.':
    event==='proposed'?'Provider proposed a new booking time. Please review.':
    event==='accepted'?'Scheduled booking confirmed.':'Scheduled booking declined. Choose another provider.')+
   ' View: '+origin+route;
