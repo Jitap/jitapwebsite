@@ -11,6 +11,7 @@ import {
 import {CustomerTicketCard,type CustomerTicket} from '@/components/CustomerTicketCard';
 import {prioritizeActiveRequests} from '@/lib/customer-home-priority';
 import {CustomerHomePanels} from '@/components/CustomerHomePanels';
+import {CustomerCalendarPanel} from '@/components/CustomerCalendarPanel';
 import {NetworkPanel} from '@/components/NetworkPanel';
 import './customer-home.css';
 import './glass-dashboard.css';
@@ -19,8 +20,8 @@ type Account={
  authenticated:boolean;accountType:'customer'|'provider';
  primaryAccountType?:'customer'|'provider';phone:string;fullName?:string|null;reviewer?:boolean
 };
-type Tab='home'|'requests'|'network'|'wallet'|'profile';
-const tabs:Tab[]=['home','requests','network','wallet','profile'];
+type Tab='home'|'requests'|'calendar'|'network'|'wallet'|'profile';
+const tabs:Tab[]=['home','requests','calendar','network','wallet','profile'];
 export default function AccountPage(){
  const router=useRouter();
  const [account,setAccount]=useState<Account|null>(null);
@@ -30,7 +31,7 @@ export default function AccountPage(){
  const [requestsLoading,setRequestsLoading]=useState(true);
  const [requestsError,setRequestsError]=useState('');
  const [tab,setTab]=useState<Tab>('home');
- const [activeStory,setActiveStory]=useState<'request'|'track'|'network'>('request');
+ const [activeStory,setActiveStory]=useState<'request'|'calendar'|'network'>('request');
  const [showAll,setShowAll]=useState(false);
  const [savedProviders,setSavedProviders]=useState<{id:string;name:string;url:string}[]>([]);
 
@@ -38,7 +39,7 @@ export default function AccountPage(){
   const param=new URLSearchParams(window.location.search).get('tab');
   const next=param==='saved'?'network':param&&tabs.includes(param as Tab)?param as Tab:'home';
   setTab(next);
-  if(next==='requests')setActiveStory('track');
+  if(next==='calendar')setActiveStory('calendar');
   else if(next==='network')setActiveStory('network');
  },[]);
  useEffect(()=>{
@@ -97,7 +98,7 @@ export default function AccountPage(){
  },[account?.accountType,account?.phone]);
  function navigate(next:Tab){
   setTab(next);
-  if(next==='requests')setActiveStory('track');
+  if(next==='calendar')setActiveStory('calendar');
   else if(next==='network')setActiveStory('network');
   const nextUrl=next==='home'?'/account':'/account?tab='+next;
   window.history.pushState(null,'',nextUrl);
@@ -154,11 +155,11 @@ export default function AccountPage(){
       </span></span>
       <strong>Request<br/>a Service</strong>
      </Link>
-     <button type="button" className={'jt-glass-tile jt-story-action jt-story-track'+(activeStory==='track'?' is-story-active':'')} onClick={()=>navigate('requests')}>
+     <button type="button" className={'jt-glass-tile jt-story-action jt-story-track'+(activeStory==='calendar'?' is-story-active':'')} onClick={()=>navigate('calendar')}>
       <span className="jt-story-ring"><span className="jt-story-inner">
-       <img className="jt-glass-quick-icon" src="/images/Track%20Service.png" width={86} height={86} alt="" aria-hidden="true"/>
+       <CalendarDays size={50} strokeWidth={1.9} color="#075a64" aria-hidden="true"/>
       </span></span>
-      <strong>Track<br/>Requests</strong>
+      <strong>Calendar</strong>
      </button>
      <button type="button" className={'jt-glass-tile jt-story-action jt-story-saved'+(activeStory==='network'?' is-story-active':'')} onClick={()=>navigate('network')}>
       <span className="jt-story-ring"><span className="jt-story-inner jt-story-network-icon">
@@ -182,7 +183,7 @@ export default function AccountPage(){
      requests.length===0?<div className="jt-glass-empty"><ClipboardList size={33}/><h2>No requests yet</h2><p>Your requests will appear here when you submit them.</p><Link href={account.reviewer?'/services':'/request'}>Request a Service</Link></div>:
      <div className="jt-requests-list">{displayTickets.map(r=><CustomerTicketCard key={r.reference} ticket={r}/>)}
       {!showAll&&requests.length>3&&<button type="button" className="jt-glass-show-all" onClick={()=>setShowAll(true)}>View all {requests.length} requests <ChevronRight size={16}/></button>}</div>}
-   </section>:tab==='network'?<section className="jt-glass-subpage jt-glass-network-page">
+   </section>:tab==='calendar'?<section className="jt-glass-subpage"><CustomerCalendarPanel tickets={requests} saved={savedProviders} reviewer={!!account.reviewer} onRefresh={()=>void refreshRequests()}/></section>:tab==='network'?<section className="jt-glass-subpage jt-glass-network-page">
     <NetworkPanel mode="customer" reviewer={!!account.reviewer} saved={savedProviders}/>
    </section>:tab==='wallet'?<section className="jt-glass-subpage"><div className="jt-glass-empty"><Wallet size={37}/><h1>Wallet</h1><p>JiTap Wallet is coming soon. Manage your current jobs in Requests.</p><button type="button" className="jt-wallet-view-requests" onClick={()=>navigate('requests')}>View Requests</button></div></section>:
    <section className="jt-glass-subpage">
