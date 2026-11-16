@@ -124,12 +124,15 @@ export async function GET(req:NextRequest){
   const hasDestination=valid(locationLat,locationLng);
   const [label,route]=await Promise.all([
    key?addressForProvider(key,position.latitude,position.longitude):Promise.resolve(null),
-   key&&hasDestination?routeForCustomer(key,position,locationLat,locationLng):Promise.resolve(null)
+   key&&hasDestination?routeForCustomer(key,position,locationLat as number,locationLng as number):Promise.resolve(null)
   ]);
   const next:Snapshot={
    provider_user_id:appointment.provider_user_id,
    provider_location_label:label||previous?.provider_location_label||'Provider GPS location',
-   location_observed_at:position.observed_at,
+   // Preserve the timestamp of the displayed place label if reverse
+   // geocoding fails: an older street name is not a newly verified location.
+   location_observed_at:label||!previous?.location_observed_at?
+    position.observed_at:previous.location_observed_at,
    distance_km:route?.distance_km??previous?.distance_km??null,
    eta_minutes:route?.eta_minutes??previous?.eta_minutes??null,
    route_updated_at:route?new Date().toISOString():previous?.route_updated_at??null
