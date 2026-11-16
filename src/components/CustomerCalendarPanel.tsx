@@ -7,7 +7,8 @@ import './customer-calendar.css';
 
 type Provider={id:string;name:string};
 type Booking={id:string;request_id:string;provider_user_id:string|null;providerName?:string|null;
- starts_at:string;ends_at:string;status:string;note:string;providerPhone?:string|null;service?:{category:string;area:string;description:string;location?:string};
+ starts_at:string;ends_at:string;status:string;note:string;providerPhone?:string|null;
+ providerRating?:number|null;providerRatingCount?:number;providerCompletedJobs?:number|null;service?:{category:string;area:string;description:string;location?:string};
  proposed_start_at:string|null;proposed_end_at:string|null;response_note:string};
 const kenya='Africa/Nairobi';
 const dt=(iso:string)=>new Intl.DateTimeFormat('en-KE',{timeZone:kenya,dateStyle:'medium',timeStyle:'short'}).format(new Date(iso))+' EAT';
@@ -284,7 +285,12 @@ export function CustomerCalendarPanel({tickets,saved=[],reviewer=false,onRefresh
    <p className="jt-calendar-detail-subtitle">{selected.service?.category||'service'} · {selected.service?.area||'Service area'}</p>
    <div className="jt-calendar-provider-card">
     <span className="jt-calendar-provider-avatar"><UserRound size={28}/></span>
-    <div><strong>{selected.providerName||'Provider not selected'}</strong><small>{status(selected)}</small></div>
+    <div><strong>{selected.providerName||'Provider not selected'}</strong><small>{status(selected)}</small>
+     {selected.provider_user_id&&<span className="jt-calendar-provider-trust">
+      <span>{selected.providerRating!==null&&selected.providerRating!==undefined?'★ '+selected.providerRating.toFixed(1)+' ('+(selected.providerRatingCount||0)+' ratings)':'☆ New · No ratings yet'}</span>
+      {selected.providerCompletedJobs!==null&&selected.providerCompletedJobs!==undefined&&
+       <span>{selected.providerCompletedJobs} completed {selected.providerCompletedJobs===1?'job':'jobs'}</span>}
+     </span>}</div>
     {selected.providerPhone&&<a href={'tel:'+selected.providerPhone.replace(/[^+0-9]/g,'')} className="jt-calendar-call">
      <Phone size={18}/> Call Provider</a>}
    </div>
@@ -298,6 +304,15 @@ export function CustomerCalendarPanel({tickets,saved=[],reviewer=false,onRefresh
     <MapPin size={20}/><div><strong>{selected.service?.location||'Location to be confirmed'}</strong>
      <small>{selected.service?.area||''}</small></div>
    </div>
+   {selected.service?.location&&<div className="jt-calendar-location-map">
+    <iframe title={'Service location map: '+selected.service.location} loading="lazy"
+     referrerPolicy="no-referrer-when-downgrade"
+     src={'https://maps.google.com/maps?q='+encodeURIComponent(
+      selected.service.location+', '+(selected.service.area||'')+', Kenya')+'&z=15&output=embed'}/>
+    <a href={'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(
+     selected.service.location+', '+(selected.service.area||'')+', Kenya')}
+     target="_blank" rel="noopener noreferrer">Open in Google Maps</a>
+   </div>}
    <p><strong>Provider:</strong> {selected.providerName||'Not selected'}</p>
    <section className="jt-calendar-detail-schedule"><h3>Schedule</h3><p>
     <CalendarDays size={20}/>{dt(selected.starts_at)} – {timeLabel(selected.ends_at)} EAT</p></section>
