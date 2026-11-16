@@ -156,6 +156,7 @@ export async function POST(req:NextRequest){
    if(input.accept)after(async()=>{await notifyScheduledBooking(input.bookingId,'accepted','provider').catch(()=>{})});
    return reply(result);
   }
+  if(input.action!=='save'&&input.action!=='invite')return reply({error:'Invalid calendar action'},422);
   const record=await ownedRequest(session.userId,session.phone,input.requestId);
   if(!record)return reply({error:'Request not found'},404);
   const submit=input.action==='invite';
