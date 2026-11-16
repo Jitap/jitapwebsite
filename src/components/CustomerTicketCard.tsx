@@ -9,7 +9,8 @@ import {CalendarDays,Clock3,MapPin,UserRoundCheck,ClipboardList,ArrowUpRight} fr
 
 export type CustomerTicket={
  reference:string;serviceId:string;category:string;date:string;time:string;location:string;area:string;
- provider:string;providerPhone?:string;providerStatus:string;rematch?:{reason:string;details:string}|null;status:string;statusLabel:string;brief:string;scope:string;
+ provider:string;providerPhone?:string;providerStatus:string;
+ providerRating?:number|null;providerRatingCount?:number;providerCompletedJobs?:number|null;rematch?:{reason:string;details:string}|null;status:string;statusLabel:string;brief:string;scope:string;
  canReview?:boolean;customerReview?:{stars:number;comment:string}|null;
  createdAt:string;updatedAt:string;
 };
@@ -52,7 +53,7 @@ export function CustomerTicketCard({ticket,detail=false}:{ticket:CustomerTicket;
    <div><dt><CalendarDays size={16}/> Date</dt><dd>{dateText(ticket.date)}</dd></div>
    <div><dt><Clock3 size={16}/> Time</dt><dd>{timeText(ticket.time)}</dd></div>
    <div><dt><MapPin size={16}/> Location</dt><dd>{ticket.location||'To be confirmed'}</dd></div>
-   <div className="jt-ticket-field-wide"><dt><UserRoundCheck size={16}/> Provider</dt><dd>{ticket.provider}<small>{ticket.providerStatus}</small>{ticket.providerPhone&&<a href={'tel:'+ticket.providerPhone.replace(/[^+0-9]/g,'')} style={{display:'inline-block',marginTop:8,color:'#008a3e',fontWeight:700}}>Call provider: {ticket.providerPhone}</a>}</dd></div>
+   <div className="jt-ticket-field-wide"><dt><UserRoundCheck size={16}/> Provider</dt><dd>{ticket.provider}<small>{ticket.providerStatus}</small>{ticket.providerCompletedJobs!==null&&ticket.providerCompletedJobs!==undefined&&<div className="jt-provider-trust-inline" aria-label="Provider JiTap rating and completed jobs" style={{display:'flex',gap:12,flexWrap:'wrap',fontSize:12,color:'#12623c',fontWeight:700,marginTop:7}}><span>{ticket.providerRating!==null&&ticket.providerRating!==undefined?`★ ${ticket.providerRating.toFixed(1)} (${ticket.providerRatingCount||0} reviews)`:'☆ No ratings yet'}</span><span>{ticket.providerCompletedJobs} completed {ticket.providerCompletedJobs===1?'job':'jobs'}</span></div>}{ticket.providerPhone&&<a href={'tel:'+ticket.providerPhone.replace(/[^+0-9]/g,'')} style={{display:'inline-block',marginTop:8,color:'#008a3e',fontWeight:700}}>Call provider: {ticket.providerPhone}</a>}</dd></div>
   </dl>
   {ticket.rematch&&<section className="jt-ticket-rematch" aria-label="Rematch approval required" style={{margin:'17px 0',padding:16,border:'1px solid #f0c48c',borderRadius:13,background:'#fff9ef'}}>
    <h3 style={{fontSize:18,color:'#164d31',margin:'0 0 8px'}}>Your provider has cancelled</h3>
