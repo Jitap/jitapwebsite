@@ -22,9 +22,14 @@ export function ProviderActiveJobStack({jobs,onUpdated}:Props){
  const [order,setOrder]=useState<string[]>(()=>jobs.map(job=>job.id));
  const [offset,setOffset]=useState(0);
  const [dragging,setDragging]=useState(false);
+ const [exiting,setExiting]=useState<'left'|'right'|null>(null);
+ const [noAnimation,setNoAnimation]=useState(false);
+ const inFlight=useRef(false);
+ const exitTimer=useRef<ReturnType<typeof setTimeout>|null>(null);
  const gesture=useRef<Gesture|null>(null);
  const cardRef=useRef<HTMLElement|null>(null);
  const touchActive=useRef(false);
+ useEffect(()=>()=>{if(exitTimer.current)clearTimeout(exitTimer.current)},[]);
  useEffect(()=>{
   const ids=jobs.map(job=>job.id);
   setOrder(old=>{
@@ -39,14 +44,21 @@ export function ProviderActiveJobStack({jobs,onUpdated}:Props){
  const current=queue[0]||jobs[0];
  const next=queue[1];
  const count=queue.length||jobs.length;
- const advance=(direction:'next'|'previous')=>{
-  if(count<=1)return;
-  setOrder(old=>direction==='next'?[...old.slice(1),old[0]]:[old[old.length-1],...old.slice(0,-1)]);
-  setOffset(0);
- };
  const detail=(job:ActiveProviderJob)=>router.push('/provider/calendar?job='+encodeURIComponent(job.requestId));
+ const advance=(direction:'next'|'previous')=>{
+  if(count<=1||inFlight.current)return;
+  inFlight.current=true;
+  setExiting(direction==='next'?'left':'right');
+  setOffset(direction==='next'?-Math.max(window.innerWidth,500):Math.max(window.innerWidth,500));
+  exitTimer.current=setTimeout(()=>{
+   setNoAnimation(true);
+   setOrder(old=>direction==='next'?[...old.slice(1),old[0]]:[old[old.length-1],...old.slice(0,-1)]);
+   setOffset(0);setExiting(null);
+   exitTimer.current=setTimeout(()=>{setNoAnimation(false);inFlight.current=false;exitTimer.current=null},40);
+  },230);
+ };
  const pointerDown=(event:PointerEvent<HTMLElement>)=>{
-  if(event.pointerType!=='mouse'||event.button!==0||!event.isPrimary)return;
+  if(inFlight.current||event.pointerType==='touch'||event.button!==0||!event.isPrimary)return;
   if((event.target as HTMLElement).closest('a,button,input,textarea,select'))return;
   gesture.current={x:event.clientX,y:event.clientY,pointerId:event.pointerId,axis:'pending'};
 
@@ -78,14 +90,14 @@ export function ProviderActiveJobStack({jobs,onUpdated}:Props){
  const pointerCancel=()=>{gesture.current=null;setDragging(false);setOffset(0)};
  // Follow touch events explicitly, since mobile browsers can cancel pointer moves.
  const touchStart=(event:TouchEvent<HTMLElement>)=>{
-  if(event.touches.length!==1)return;
+  if(inFlight.current||event.touches.length!==1)return;
   if((event.target as HTMLElement).closest('a,button,input,textarea,select'))return;
   touchActive.current=true;
   gesture.current={x:event.touches[0].clientX,y:event.touches[0].clientY,pointerId:-1,axis:'pending'};
  };
  const touchMove=(event:TouchEvent<HTMLElement>)=>{
   const g=gesture.current;
-  if(!touchActive.current||!g||g.pointerId!==-1||event.touches.length!==1)return;
+  if(!touchActive.current||!g||g.pointerId!==-1||event.touches.length!==1||inFlight.current)return;
   const dx=event.touches[0].clientX-g.x,dy=event.touches[0].clientY-g.y;
   if(g.axis==='pending'){
    if(Math.max(Math.abs(dx),Math.abs(dy))<10)return;
@@ -114,10 +126,11 @@ export function ProviderActiveJobStack({jobs,onUpdated}:Props){
   </div>
   <div className="jt-provider-stack-stage">
    {next&&<div className="jt-provider-stack-behind" aria-hidden="true"><span>{SERVICE_OPTIONS.find(c=>c.value===next.service)?.label||next.service}</span></div>}
-   <article ref={cardRef} className={'jt-confirmed-job jt-provider-stack-front'+(dragging?' is-dragging':'')}
+   <article ref={cardRef} className={'jt-confirmed-job jt-provider-stack-front'+(dragging?' is-dragging':'')+(exiting?' is-exiting':'')+(noAnimation?' no-animate':'')}
     style={{transform:`translate3d(${offset}px,0,0) rotate(${Math.max(-6,Math.min(6,offset/30))}deg)`}}
     onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerUp}
-    onPointerCancel={pointerCancel} onLostPointerCapture={()=>{if(gesture.current?.pointerId!==-1)pointerCancel()}}
+    onPointerCancel={event=>{if(event.pointerType!=='touch')pointerCancel()}}
+    onLostPointerCapture={event=>{if(event.pointerType!=='touch'&&gesture.current)pointerCancel()}}
     onTouchStart={touchStart} onTouchMove={touchMove} onTouchEnd={touchEnd} onTouchCancel={touchCancel}
     aria-label={`Active job ${label} for ${current.customerName}. Swipe left for next job, swipe right for details.`}>
     <div className="jt-confirmed-job-meta"><strong>{label}</strong><small>JT-{current.requestId.slice(0,8).toUpperCase()}</small></div>
