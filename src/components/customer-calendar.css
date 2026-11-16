@@ -139,3 +139,9 @@
  .jt-calendar-booking-badge{font-size:10px}
  .jt-customer-calendar .jt-calendar-detail{padding-bottom:115px}
 }
+
+.jt-calendar-provider-trust{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:11px;font-weight:750;color:#078044;line-height:1.3}
+.jt-calendar-provider-trust>span{white-space:nowrap}
+.jt-calendar-location-map{border:1px solid #e3ece9;border-radius:15px;overflow:hidden;background:#ecf6f5}
+.jt-calendar-location-map iframe{border:0;width:100%;height:175px;display:block}
+.jt-calendar-location-map a{display:block;padding:9px 14px;text-align:right;font-size:12px;font-weight:750;color:#087a49;text-decoration:none}
