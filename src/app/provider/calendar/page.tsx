@@ -6,6 +6,7 @@ import './calendar.css';
 import {ProviderJobAction} from '@/components/ProviderJobAction';
 import {ProviderTravelEstimate} from '@/components/ProviderTravelEstimate';
 import {ProviderNewJob} from '@/components/ProviderNewJob';
+import {ProviderCalendarInvitations} from '@/components/ProviderCalendarInvitations';
 
 type Appointment={
  id:string;requestId:string;startsAt:string|null;endsAt:string|null;status:string;rated:boolean;providerEtaAt?:string|null;
@@ -131,7 +132,7 @@ export default function ProviderCalendar(){
   const result=await send({action:'reschedule',appointmentId:detail.id,start:start.toISOString(),end:end.toISOString(),reason});
   if(result){setShowReschedule(false);setMessage('Reschedule sent for confirmation. Your current appointment remains unchanged.')}
  }
- return <main className="jcal-app"><div className="jcal-phone">
+ return <main className="jcal-app"><div className="jcal-phone"><ProviderCalendarInvitations onUpdated={()=>void load()}/>
   {detail?<div className="jcal-details">
    <header className="jcal-detail-heading"><button aria-label="Back to calendar" onClick={()=>{setDetailId(null);setExpandedDescription(false);setError('');setMessage('')}}><ArrowLeft size={22}/></button><strong>Scheduled Work</strong></header>
    <h1>{detail.title}</h1><p className="jcal-subtitle">{detail.category||'Service'} · {detail.area||detail.location}</p>
