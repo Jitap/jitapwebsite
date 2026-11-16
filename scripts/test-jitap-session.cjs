@@ -57,6 +57,7 @@ const {
   parseBearerAuthorization,
   actingAsCustomer,
   isMobileClient,
+  isNativeApiClient,
   resolveAccessSession,
 } = load('src/lib/jitap-session.ts', {'@/lib/jitap-auth': {goTrue}});
 
@@ -70,6 +71,10 @@ assert.equal(actingAsCustomer(mockReq()), false);
 
 assert.equal(isMobileClient(mockReq({headers: {'x-jitap-client': 'mobile'}})), true);
 assert.equal(isMobileClient(mockReq()), false);
+
+assert.equal(isNativeApiClient(mockReq({headers: {'x-jitap-client': 'mobile'}})), true);
+assert.equal(isNativeApiClient(mockReq({headers: {authorization: 'Bearer tok'}})), true);
+assert.equal(isNativeApiClient(mockReq()), false);
 
 (async () => {
   calls.length = 0;

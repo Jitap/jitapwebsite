@@ -4,6 +4,7 @@ import {NextRequest,NextResponse,after} from 'next/server';
 import {z} from 'zod';
 import {getProviderSession} from '@/lib/provider-session-server';
 import {sameOrigin} from '@/lib/jitap-auth';
+import {isNativeApiClient} from '@/lib/jitap-session';
 import {supabasePrivate} from '@/lib/coordinator-server';
 import {notifyProviderCancelled} from '@/lib/wasiliana-booking-notifications';
 import {dispatchKapsoQueue} from '@/lib/kapso-dispatcher';
@@ -64,7 +65,7 @@ const action=z.discriminatedUnion('action',[
  z.object({action:z.literal('reschedule'),appointmentId:z.string().uuid(),start:z.string().datetime({offset:true}),end:z.string().datetime({offset:true}),reason:z.string().trim().max(500).default('')}).strict()
 ]);
 export async function POST(req:NextRequest){
- if(!sameOrigin(req))return reply({error:'Invalid origin'},403);
+ if(!isNativeApiClient(req)&&!sameOrigin(req))return reply({error:'Invalid origin'},403);
  if(Number(req.headers.get('content-length')||0)>2500)return reply({error:'Request too large'},413);
  const session=await getProviderSession(req);
  if(!session)return reply({error:'Sign in as a provider'},401);

@@ -1,10 +1,11 @@
 import {NextRequest,NextResponse} from 'next/server';
 import {sameOrigin} from '@/lib/jitap-auth';
+import {isNativeApiClient} from '@/lib/jitap-session';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
 const headers={'Cache-Control':'no-store','X-Robots-Tag':'noindex, nofollow'};
 export async function POST(req:NextRequest){
- if(!sameOrigin(req))return NextResponse.json({error:'Invalid origin'},{status:403,headers});
+ if(!isNativeApiClient(req)&&!sameOrigin(req))return NextResponse.json({error:'Invalid origin'},{status:403,headers});
  if(Number(req.headers.get('content-length')||0)>6*1024*1024)return NextResponse.json({error:'Photo too large'},{status:413,headers});
  const key=process.env.GEMINI_API_KEY;
  if(!key)return NextResponse.json({error:'Photo understanding is not configured'},{status:503,headers});

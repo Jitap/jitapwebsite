@@ -21,6 +21,11 @@ export function isMobileClient(req: NextRequest): boolean {
   return req.headers.get('x-jitap-client')?.toLowerCase() === 'mobile';
 }
 
+/** Native / hybrid client — may omit Origin or send a non-site Origin. */
+export function isNativeApiClient(req: NextRequest): boolean {
+  return isMobileClient(req) || !!parseBearerAuthorization(req);
+}
+
 /** Customer UI for a provider account (cookie `jt_mode` or mobile header). */
 export function actingAsCustomer(req: NextRequest): boolean {
   if (req.cookies.get('jt_mode')?.value === 'customer') return true;

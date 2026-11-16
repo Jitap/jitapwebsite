@@ -1,6 +1,7 @@
 import {NextRequest,NextResponse} from 'next/server';
 import {getProviderSession} from '@/lib/provider-session-server';
 import {sameOrigin} from '@/lib/jitap-auth';
+import {isNativeApiClient} from '@/lib/jitap-session';
 import {supabasePrivate} from '@/lib/coordinator-server';
 import {z} from 'zod';
 export const runtime='nodejs';export const dynamic='force-dynamic';
@@ -35,7 +36,7 @@ export async function GET(req:NextRequest){
  }catch{return reply({error:'Reminders temporarily unavailable'},503)}
 }
 export async function POST(req:NextRequest){
- if(!sameOrigin(req))return reply({error:'Invalid origin'},403);
+ if(!isNativeApiClient(req)&&!sameOrigin(req))return reply({error:'Invalid origin'},403);
  const session=await getProviderSession(req);if(!session)return reply({error:'Provider sign-in required'},401);
  const data=z.object({id:z.string().uuid()}).strict().safeParse(await req.json().catch(()=>null));
  if(!data.success)return reply({error:'Invalid reminder'},422);

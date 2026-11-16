@@ -3,6 +3,7 @@ import {dispatchKapsoQueue} from '@/lib/kapso-dispatcher';
 import {z} from 'zod';
 import {getProviderSession} from '@/lib/provider-session-server';
 import {sameOrigin} from '@/lib/jitap-auth';
+import {isNativeApiClient} from '@/lib/jitap-session';
 import {supabasePrivate} from '@/lib/coordinator-server';
 import {sendProviderCreatedBookingSms,createTrackingInvite} from '@/lib/provider-booking-acquisition';
 export const runtime='nodejs';
@@ -28,7 +29,7 @@ const schema=z.object({
  smsNotificationConsent:z.literal(true)
 }).strict();
 export async function POST(req:NextRequest){
- if(!sameOrigin(req))return send({error:'Invalid request origin'},403);
+ if(!isNativeApiClient(req)&&!sameOrigin(req))return send({error:'Invalid request origin'},403);
  if(Number(req.headers.get('content-length')||0)>6500)return send({error:'Request too large'},413);
  const session=await getProviderSession(req);
  if(!session)return send({error:'Sign in as a provider'},401);

@@ -4,6 +4,8 @@ Hybrid auth: **web** uses httpOnly cookies (`jt_access`, `jt_refresh`, `jt_mode`
 
 Protected routes use `resolveAccessSession`: a valid Bearer is preferred; if Bearer is missing or invalid, cookie session is used (web + hybrid clients).
 
+Mutations that enforce CSRF/`Origin` also allow native clients when `X-JiTap-Client: mobile` or `Authorization: Bearer …` is present (`isNativeApiClient`) — intake, photos, places, rematch, network, provider writes, phone auth.
+
 ## Headers (native)
 
 | Header | Use |

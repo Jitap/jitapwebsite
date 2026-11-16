@@ -1,10 +1,10 @@
 import {NextResponse,type NextRequest} from 'next/server';
 import {accountQuery,goTrue,isAccountType,normalizeKenyanPhone,sameOrigin,setAuthCookies} from '@/lib/jitap-auth';
-import {isMobileClient} from '@/lib/jitap-session';
+import {isMobileClient,isNativeApiClient} from '@/lib/jitap-session';
 export const runtime='nodejs';
 function error(message:string,status:number){return NextResponse.json({error:message},{status,headers:{'Cache-Control':'no-store'}})}
 export async function POST(req:NextRequest){
- if(!sameOrigin(req))return error('Invalid request origin.',403);
+ if(!isNativeApiClient(req)&&!sameOrigin(req))return error('Invalid request origin.',403);
  const len=Number(req.headers.get('content-length')||0);if(len>3000)return error('Request too large.',413);
  let input:Record<string,unknown>;
  try{input=await req.json()}catch{return error('Invalid request.',400)}

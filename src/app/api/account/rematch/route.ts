@@ -3,13 +3,14 @@ import {dispatchKapsoQueue} from '@/lib/kapso-dispatcher';
 import {z} from 'zod';
 import {getCustomerIdentity} from '@/lib/customer-session-server';
 import {sameOrigin,setAuthCookies} from '@/lib/jitap-auth';
+import {isNativeApiClient} from '@/lib/jitap-session';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
 const headers={'Cache-Control':'private, no-store','X-Robots-Tag':'noindex'};
 const reply=(data:unknown,status=200)=>NextResponse.json(data,{status,headers});
 const schema=z.object({requestId:z.string().uuid(),approve:z.boolean()}).strict();
 export async function POST(req:NextRequest){
- if(!sameOrigin(req))return reply({error:'Invalid origin'},403);
+ if(!isNativeApiClient(req)&&!sameOrigin(req))return reply({error:'Invalid origin'},403);
  if(Number(req.headers.get('content-length')||0)>1200)return reply({error:'Request too large'},413);
  const session=await getCustomerIdentity(req);
  if(session.kind!=='customer')return reply({error:'Sign in using the customer phone number associated with this request'},401);
