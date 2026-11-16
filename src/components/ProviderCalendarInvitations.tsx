@@ -35,17 +35,17 @@ export function ProviderCalendarInvitations({onUpdated}:{onUpdated?:()=>void}){
   document.addEventListener('visibilitychange',onVisible);
   return()=>{window.clearInterval(interval);document.removeEventListener('visibilitychange',onVisible)};
  },[load]);
- const pending=invitations.filter(i=>i.status==='pending'||i.status==='proposed');
+ const pending=invitations.filter(i=>['pending','proposed','change_requested','change_proposed'].includes(i.status));
  const highlighted=typeof window!=='undefined'?new URLSearchParams(window.location.search).get('booking'):null;
  useEffect(()=>{if(!highlighted||!pending.some(i=>i.id===highlighted))return;
   const timer=window.setTimeout(()=>document.getElementById('jt-booking-invite-'+highlighted)?.scrollIntoView({behavior:'smooth',block:'center'}),280);
   return()=>window.clearTimeout(timer);
  },[highlighted,pending.length]);
- async function respond(inv:Invite,action:'accept'|'decline'|'propose'){
+ async function respond(inv:Invite,action:'accept'|'decline'|'propose'|'accept_change'|'decline_change'|'propose_change'){
   setBusy(true);setError('');setMessage('');
   try{
    const payload:Record<string,unknown>={action,bookingId:inv.id};
-   if(action==='propose'){
+   if(action==='propose'||action==='propose_change'){
     if(!start||!end)throw Error('Choose a new date, start and end time.');
     payload.startsAt=toIso(start);payload.endsAt=toIso(end);payload.note=note;
    }
@@ -55,8 +55,8 @@ export function ProviderCalendarInvitations({onUpdated}:{onUpdated?:()=>void}){
    const data=await r.json().catch(()=>({}));
    if(!r.ok)throw Error(data.error||'Unable to respond to invitation');
    setProposing(null);
-   setMessage(action==='accept'?'Booking confirmed and added to your Calendar.':
-    action==='decline'?'Invitation declined.':
+   setMessage(action==='accept'||action==='accept_change'?'Booking date confirmed.':
+    action==='decline'||action==='decline_change'?'Request declined.':
     'New time proposed. Awaiting customer approval.');
    await load();onUpdated?.();
   }catch(e){setError(e instanceof Error?e.message:'Booking response failed')}
@@ -75,12 +75,13 @@ export function ProviderCalendarInvitations({onUpdated}:{onUpdated?:()=>void}){
     <p>{inv.summary||'Customer service booking'} · {inv.area}</p>
     <div className="jt-invite-dates"><CalendarClock size={17}/><span>{dt(inv.startsAt)} – {dt(inv.endsAt)}</span></div>
     {inv.note&&<p className="jt-invite-note">{inv.note}</p>}
-    {inv.status==='proposed'?<div className="jt-invite-awaiting">
+    {inv.status==='proposed'||inv.status==='change_proposed'?<div className="jt-invite-awaiting">
      <CheckCircle2 size={17}/> New time proposed for {inv.proposedStartAt?dt(inv.proposedStartAt):'this appointment'} — awaiting customer response.
     </div>:<>
+     {inv.status==='change_requested'&&<p><strong>Customer requested a different time: {inv.proposedStartAt?dt(inv.proposedStartAt):'See updated time'}</strong></p>}
      <div className="jt-invite-actions">
-      <button type="button" disabled={busy} onClick={()=>void respond(inv,'accept')}><CheckCircle2 size={17}/> Accept booking</button>
-      <button type="button" disabled={busy} onClick={()=>void respond(inv,'decline')}><XCircle size={17}/> Decline</button>
+      <button type="button" disabled={busy} onClick={()=>void respond(inv,inv.status==='change_requested'?'accept_change':'accept')}><CheckCircle2 size={17}/> Accept {inv.status==='change_requested'?'new time':'booking'}</button>
+      <button type="button" disabled={busy} onClick={()=>void respond(inv,inv.status==='change_requested'?'decline_change':'decline')}><XCircle size={17}/> Decline</button>
       <button type="button" disabled={busy} onClick={()=>{
        setProposing(inv.id);setStart(local(inv.startsAt));setEnd(local(inv.endsAt));setNote('');
       }}><CalendarClock size={17}/> Reschedule</button>
@@ -90,7 +91,7 @@ export function ProviderCalendarInvitations({onUpdated}:{onUpdated?:()=>void}){
       <label>Start (EAT)<input type="datetime-local" value={start} onChange={e=>setStart(e.target.value)}/></label>
       <label>End (EAT)<input type="datetime-local" value={end} onChange={e=>setEnd(e.target.value)}/></label>
       <label>Reason (optional)<textarea rows={2} maxLength={500} value={note} onChange={e=>setNote(e.target.value)}/></label>
-      <div><button type="button" disabled={busy} onClick={()=>void respond(inv,'propose')}>Send new time</button>
+      <div><button type="button" disabled={busy} onClick={()=>void respond(inv,inv.status==='change_requested'?'propose_change':'propose')}>Send new time</button>
        <button type="button" onClick={()=>setProposing(null)}>Cancel</button></div>
      </div>}
     </>}
