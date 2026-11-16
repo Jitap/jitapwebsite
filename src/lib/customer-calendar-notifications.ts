@@ -6,7 +6,7 @@ import {kapsoConfiguration} from '@/lib/kapso-server';
 
 type Booking={
  id:string;request_id:string;provider_user_id:string|null;customer_user_id:string;
- starts_at:string;ends_at:string;status:string;
+ starts_at:string;ends_at:string;status:string;invitation_version:number;
 };
 type Account={user_id:string;phone:string;sms_updates_opt_in:boolean;whatsapp_updates_opt_in:boolean};
 type Delivery={id:string};
@@ -18,11 +18,11 @@ const dateLabel=(iso:string)=>new Intl.DateTimeFormat('en-KE',{
 const ref=(id:string)=>'JT-'+id.slice(0,8).toUpperCase();
 const origin='https://jitap.app';
 function safePhone(value:string){return (normalizeKenyanPhone(value)||'').replace(/^\+/,'')}
-async function reserve(bookingId:string,event:Event,role:'provider'|'customer',channel:'sms'|'whatsapp'){
+async function reserve(bookingId:string,version:number,event:Event,role:'provider'|'customer',channel:'sms'|'whatsapp'){
  try{
   const rows=await supabasePrivate<Delivery[]>('jitap_calendar_delivery_attempts',{
    method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({
-    booking_id:bookingId,event_type:event,recipient_role:role,channel,status:'reserved'
+    booking_id:bookingId,invitation_version:version,event_type:event,recipient_role:role,channel,status:'reserved'
    })
   });
   return rows[0]?.id||null;
@@ -79,7 +79,7 @@ export async function notifyScheduledBooking(
  bookingId:string,event:Event,role:'provider'|'customer'
 ){
  const rows=await supabasePrivate<Booking[]>(
-  'jitap_customer_calendar_bookings?select=id,request_id,provider_user_id,customer_user_id,starts_at,ends_at,status&id=eq.'+
+  'jitap_customer_calendar_bookings?select=id,request_id,provider_user_id,customer_user_id,starts_at,ends_at,status,invitation_version&id=eq.'+
   encodeURIComponent(bookingId)+'&limit=1');
  const booking=rows[0];
  if(!booking)return {sms:'skipped',whatsapp:'skipped'};
@@ -98,7 +98,7 @@ export async function notifyScheduledBooking(
   ' View: '+origin+route;
  let sms='skipped',wa='skipped';
  if(account?.sms_updates_opt_in){
-  const ledger=await reserve(booking.id,event,role,'sms');
+  const ledger=await reserve(booking.id,booking.invitation_version,event,role,'sms');
   if(ledger){
    try{
     const result=await sendWasilianaSms(phone,message);
@@ -108,7 +108,7 @@ export async function notifyScheduledBooking(
   }else sms='already_attempted';
  }
  if(account?.whatsapp_updates_opt_in){
-  const ledger=await reserve(booking.id,event,role,'whatsapp');
+  const ledger=await reserve(booking.id,booking.invitation_version,event,role,'whatsapp');
   if(ledger){
    const result=await whatsapp(phone,booking,event,role);
    wa=result.accepted?'submitted':result.reason==='approved_provider_calendar_template_missing'?'needs_template':'failed';
