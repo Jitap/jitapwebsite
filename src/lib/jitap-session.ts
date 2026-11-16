@@ -21,9 +21,14 @@ export function isMobileClient(req: NextRequest): boolean {
   return req.headers.get('x-jitap-client')?.toLowerCase() === 'mobile';
 }
 
-/** Native / hybrid client — may omit Origin or send a non-site Origin. */
+/**
+ * Native client for CSRF/`Origin` bypass.
+ * Only `X-JiTap-Client: mobile` — do NOT treat a raw Bearer header as proof of
+ * native (browsers can set Authorization on cross-site fetches and would skip Origin).
+ * Missing Origin already passes `sameOrigin()`; Expo should always send the mobile header.
+ */
 export function isNativeApiClient(req: NextRequest): boolean {
-  return isMobileClient(req) || !!parseBearerAuthorization(req);
+  return isMobileClient(req);
 }
 
 /** Customer UI for a provider account (cookie `jt_mode` or mobile header). */

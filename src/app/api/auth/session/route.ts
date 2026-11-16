@@ -1,7 +1,7 @@
 import {getReviewSession,clearReviewSession} from '@/lib/jitap-review-session';
 import {NextResponse,type NextRequest} from 'next/server';
 import {accountQuery,clearAuthCookies,goTrue,sameOrigin,setAuthCookies} from '@/lib/jitap-auth';
-import {actingAsCustomer, parseBearerAuthorization, resolveAccessSession} from '@/lib/jitap-session';
+import {actingAsCustomer, isNativeApiClient, parseBearerAuthorization, resolveAccessSession} from '@/lib/jitap-session';
 export const runtime='nodejs';
 const noStore={'Cache-Control':'private, no-store'};
 export async function GET(req:NextRequest){
@@ -19,7 +19,8 @@ export async function GET(req:NextRequest){
 }
 export async function DELETE(req:NextRequest){
  const bearer=parseBearerAuthorization(req);
- if(!bearer&&!sameOrigin(req))return NextResponse.json({error:'Invalid origin'},{status:403});
+ // Mobile header or same-origin (missing Origin allowed). Do not treat bare Bearer as CSRF proof.
+ if(!isNativeApiClient(req)&&!sameOrigin(req))return NextResponse.json({error:'Invalid origin'},{status:403});
  if(getReviewSession(req)){
   const response=NextResponse.json({signedOut:true},{headers:noStore});clearReviewSession(response);clearAuthCookies(response);return response;
  }

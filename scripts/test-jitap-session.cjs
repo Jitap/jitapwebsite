@@ -73,7 +73,7 @@ assert.equal(isMobileClient(mockReq({headers: {'x-jitap-client': 'mobile'}})), t
 assert.equal(isMobileClient(mockReq()), false);
 
 assert.equal(isNativeApiClient(mockReq({headers: {'x-jitap-client': 'mobile'}})), true);
-assert.equal(isNativeApiClient(mockReq({headers: {authorization: 'Bearer tok'}})), true);
+assert.equal(isNativeApiClient(mockReq({headers: {authorization: 'Bearer tok'}})), false);
 assert.equal(isNativeApiClient(mockReq()), false);
 
 (async () => {
