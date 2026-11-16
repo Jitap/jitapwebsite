@@ -693,3 +693,16 @@
  .jt-home-priority-card .jt-glass-request-details>.jt-home-enroute{padding:10px}
  .jt-home-arrival-metrics{font-size:12px;gap:6px 12px}
 }
+
+/* Completion-to-review handoff: a finished request never silently vanishes. */
+.jt-customer-review-handoff{margin:12px 0 18px;padding:15px 17px 7px;
+ background:#fff;border:1px solid #c7ead5;border-radius:22px;
+ box-shadow:0 8px 25px rgba(0,80,45,.08);scroll-margin-top:95px}
+.jt-customer-review-handoff-heading{display:flex;align-items:flex-start;gap:10px;
+ color:#096c39;font-size:16px}
+.jt-customer-review-handoff-heading>svg{flex:none;margin-top:2px}
+.jt-customer-review-handoff-heading>div{display:grid;gap:4px}
+.jt-customer-review-handoff-heading strong{font-weight:850}
+.jt-customer-review-handoff-heading small{font-size:12px;color:#64766d}
+.jt-customer-review-handoff .jt-customer-provider-review{margin:13px 0 10px}
+@media(max-width:500px){.jt-customer-review-handoff{padding:14px 12px 6px;border-radius:19px}}
