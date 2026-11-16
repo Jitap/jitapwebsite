@@ -10,6 +10,7 @@ import {issuePhotoToken} from '@/lib/request-photo-token';
 import {supabasePrivate} from '@/lib/coordinator-server';
 import {dispatchProviderAlerts} from '@/lib/provider-alerts';
 import {fundiListings} from '@/lib/fundis-public';
+import {inferService} from '@/lib/data';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -133,7 +134,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{kind
   if (!validated.success) {
     return respond({ error: 'Please correct the form fields.', issues: validated.error.flatten().fieldErrors }, 422);
   }
-  const data = validated.data;
+  // Server-side authoritative trade routing: a common repair request must not
+  // become Other Services because a client AI call timed out or misclassified it.
+  // Explicitly selected trades remain unchanged; only the generic fallback
+  // is resolved using high-confidence service intent.
+  const validatedData=validated.data;
+  const data=kind==='request'&&'category' in validatedData&&'description' in validatedData&&
+   validatedData.category==='other-services'&&inferService(validatedData.description)
+   ?{...validatedData,category:inferService(validatedData.description)!}
+   :validatedData;
   if(kind==='request'&&'preferredProviderId' in data&&data.preferredProviderId&&
     !fundiListings.some(p=>p.id===data.preferredProviderId)){
     return respond({error:'The selected provider is unavailable. Please choose a listed provider.'},422);
