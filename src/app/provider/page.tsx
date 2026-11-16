@@ -20,7 +20,7 @@ type ProviderProfile={
 };
 type Opportunity={offer_expires_at?:string;request_id:string;category:string;area:string;preferred_date:string;preferred_time:string;created_at:string;technical_summary:string;proposed_scope:string;urgency:'high'|'normal'|'low'|'unspecified';brief_source:'ai'|'reported';requested_timing:string;job_location:string};
 type PastResponse={request_id:string;decision:string;created_at:string};
-type ConfirmedJob={id:string;requestId:string;status:string;customerName:string;customerPhone:string;location:string;service:string;latitude:number|null;longitude:number|null;placeId:string;rated:boolean};
+type ConfirmedJob={id:string;requestId:string;status:string;customerName:string;customerPhone:string;location:string;service:string;latitude:number|null;longitude:number|null;placeId:string;rated:boolean;customerRating?:number|null;customerRatingCount?:number;customerRequestedJobs?:number|null};
 type DirectInvitation={requestId:string;serviceId:string;category:string;area:string;url:string};
 type Dashboard={directInvitations?:DirectInvitation[];profile:ProviderProfile|null;onboardingName?:string;reviewStatus:string;confirmedJobs:ConfirmedJob[];readNotificationIds:string[];opportunities:Opportunity[];recentResponses:PastResponse[];uploadedMedia:{kind:MediaKind;uploadedAt:string}[]};
 type Tab='home'|'profile'|'requests'|'verification';
@@ -358,7 +358,7 @@ export default function ProviderDashboardPage(){
       <h2><CheckCircle2 size={21}/> Active Jobs <span>{inProgressJobs.length}</span></h2>
       {inProgressJobs.map(job=><article key={job.id} className="jt-confirmed-job">
        <div className="jt-confirmed-job-meta"><strong>{SERVICE_OPTIONS.find(c=>c.value===job.service)?.label||job.service}</strong><small>JT-{job.requestId.slice(0,8).toUpperCase()}</small></div>
-       <p><UserRound size={17}/> {job.customerName}</p>
+       <p><UserRound size={17}/> {job.customerName}</p>{job.customerRequestedJobs!==undefined&&job.customerRequestedJobs!==null&&<p className="jt-confirmed-job-trust" aria-label="Customer rating and number of service requests"><span>{job.customerRating!==null&&job.customerRating!==undefined?'★ '+job.customerRating.toFixed(1)+' ('+(job.customerRatingCount||0)+' ratings)':'☆ New · No ratings yet'}</span><span>{job.customerRequestedJobs} {job.customerRequestedJobs===1?'job requested':'jobs requested'}</span></p>}
        {job.customerPhone&&<p><a href={'tel:'+job.customerPhone.replace(/[^+0-9]/g,'')}>{job.customerPhone} · Call customer</a></p>}
        <ProviderTravelEstimate job={job}/>
        <div className="jt-confirmed-job-actions">
