@@ -69,7 +69,30 @@ export default function ProviderCalendar(){
   });
  },[router]);
  useEffect(()=>{let active=true;load().catch(e=>{if(active)setError(e.message)}).finally(()=>{if(active)setLoading(false)});return()=>{active=false}},[load]);
- const active=appointments.filter(a=>!['cancelled','completed'].includes(a.status));
+ // Refresh opted-in location while an active job is en route. Browsers cannot
+ // reliably track location when backgrounded; Aly's native app handles that case.
+ const enRoute=appointments.some(a=>a.status==='on_my_way');
+ useEffect(()=>{
+  if(!enRoute||!navigator.geolocation)return;
+  let active=true;
+  const update=()=>{
+   if(document.visibilityState!=='visible')return;
+   navigator.geolocation.getCurrentPosition(position=>{
+    if(!active)return;
+    void fetch('/api/provider/wave-buzz',{
+     method:'POST',headers:{'Content-Type':'application/json'},
+     body:JSON.stringify({
+      action:'location',sharing:true,
+      latitude:position.coords.latitude,longitude:position.coords.longitude
+     })
+    }).catch(()=>{});
+   },()=>{}, {enableHighAccuracy:true,maximumAge:0,timeout:12000});
+  };
+  update();
+  const timer=window.setInterval(update,20000);
+  return()=>{active=false;window.clearInterval(timer)};
+ },[enRoute]);
+  const active=appointments.filter(a=>!['cancelled','completed'].includes(a.status));
  const unscheduled=active.filter(a=>!a.startsAt||!a.endsAt);
  const detail=appointments.find(a=>a.id===detailId&&a.status!=='cancelled');
  const filteredJobs=appointments.filter(a=>bucket==='completed'?a.status==='completed':['confirmed','on_my_way','arrived','in_progress'].includes(a.status));
