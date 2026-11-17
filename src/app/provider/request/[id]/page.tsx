@@ -24,7 +24,6 @@ export default function ProviderRequestView(){
   void load();return()=>{active=false}
  },[params.id,router]);
  async function respond(decision:'accepted'|'declined'|'needs_clarification'){
-  if(opportunity?.offer_expires_at&&Date.parse(opportunity.offer_expires_at)<=Date.now()){setError('Your BUZZ offer has expired. JiTap Service Operations can rematch the customer.');return}
   if(decision==='needs_clarification'&&note.trim().length<3){setError('Write your question before sending.');return}
   setError('');setBusy(true);
   try{const response=await fetch('/api/provider/workspace',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'respond',requestId:params.id,decision,note:decision==='needs_clarification'?note.trim():''})});
@@ -36,8 +35,8 @@ export default function ProviderRequestView(){
   finally{setBusy(false)}
  }
  const title=opportunity?SERVICE_OPTIONS.find(c=>c.value===opportunity.category)?.label||opportunity.category:'Service request';
- const remaining=opportunity?.offer_expires_at?Math.max(0,Math.ceil((Date.parse(opportunity.offer_expires_at)-clock)/1000)):null;
- const expired=remaining===0;
+ const remaining=opportunity?.offer_expires_at?((Math.ceil((Date.parse(opportunity.offer_expires_at)-clock)/1000)-1)%60+60)%60+1:null;
+ const expired=false;
  return <main className="jt-request-detail-page">
   <header className="jt-request-detail-header"><Link href="/provider?view=requests" aria-label="Back to requests"><ArrowLeft size={23}/></Link><h1>Service Request</h1><span/></header>
   {loading?<div className="jt-provider-loading" role="status" aria-label="Loading service request"><span/><span/><span/><span className="jt-provider-loading-label">Loading request…</span></div>:
@@ -46,7 +45,7 @@ export default function ProviderRequestView(){
    <article className="jt-request-detail-content">
     <div className="jt-request-detail-category"><Wrench size={17}/>{title}</div>
     <h2>{title}</h2><p className="jt-request-detail-reference">Service ID: JT-{opportunity.request_id.slice(0,8).toUpperCase()}</p>
-    {remaining!==null&&<p role="timer" style={{fontSize:14,fontWeight:700,color:expired?'#bb3035':'#0b8651'}}>{expired?'BUZZ expired — customer request remains active':'BUZZ expires in 0:'+String(remaining).padStart(2,'0')+'secs'}</p>}
+    {remaining!==null&&<p role="timer" style={{fontSize:14,fontWeight:700,color:expired?'#bb3035':'#0b8651'}}>{expired?'BUZZ expired — customer request remains active':'Next BUZZ cycle in '+String(remaining).padStart(2,'0')+'s'}</p>}
     <div className="jt-request-detail-schedule"><div><MapPin size={19}/><span><strong>Job location</strong>{opportunity.job_location||opportunity.area}{opportunity.job_location?'':' · Exact directions shared after acceptance'}</span></div>
      <div><Clock3 size={19}/><span><strong>Requested date</strong>{providerPreferredDate(opportunity.preferred_date)}</span></div>
      <div><Clock3 size={19}/><span><strong>Requested time</strong>{providerPreferredTime(opportunity.preferred_time)}</span></div>
