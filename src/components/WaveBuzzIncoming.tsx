@@ -5,7 +5,7 @@ import {playProviderBuzzChime} from '@/lib/provider-buzz-audio';
 import './wave-buzz.css';
 
 type LiveOffer={requestId:string;ref:string;category:string;brief:string;location:string;preferredTime:string;distanceKm:number;wave:number;expiresAt:string};
-export function WaveBuzzIncoming({enabled}:{enabled:boolean}){
+export function WaveBuzzIncoming({enabled,onResponded}:{enabled:boolean;onResponded?:(requestId:string,matched:boolean)=>Promise<void>|void}){
  const [offer,setOffer]=useState<LiveOffer|null>(null);
  const [now,setNow]=useState(Date.now());
  const [clockOffset,setClockOffset]=useState(0);
@@ -54,8 +54,10 @@ export function WaveBuzzIncoming({enabled}:{enabled:boolean}){
    const result=await fetch('/api/provider/wave-buzz',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({action:'respond',requestId:offer.requestId,decision})});
    const data=await result.json();
-   if(!result.ok||!['matched','declined'].includes(data.status))throw Error(data.status==='expired'?'Another provider accepted or your BUZZ expired.':data.error||'Request no longer available');
+   if(!result.ok||!['matched','declined'].includes(data.status))throw Error(data.status==='expired'?'Your BUZZ offer expired.':data.error||'Request no longer available');
+   const requestId=offer.requestId;
    setOffer(null);current.current='';
+   await onResponded?.(requestId,data.status==='matched');
    if('vibrate' in navigator)navigator.vibrate(0);
   }catch(e){setError(e instanceof Error?e.message:'Unable to respond')}
   finally{setBusy(false)}
