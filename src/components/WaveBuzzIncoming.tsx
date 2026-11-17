@@ -84,8 +84,8 @@ export function WaveBuzzIncoming({enabled,onResponded,fallbackOffers=[]}:{enable
      <span className="jt-wave-ring jt-wave-ring-one"/><span className="jt-wave-ring jt-wave-ring-two"/><span className="jt-wave-ring jt-wave-ring-three"/>
      <div className="jt-wave-sonar-icon" style={{width:64,height:64}}><Zap size={30}/></div>
     </div>
-    <div className="jt-wave-live-countdown">{remaining}s <small>to respond</small></div>
-    <div className="jt-wave-progress"><span style={{width:(Math.min(100,remaining/(offer.standard?59:15)*100))+'%'}}/></div>
+    <div className="jt-wave-live-countdown">{remaining}s <small>{offer.standard?'next cycle':'to respond'}</small></div>
+    <div className="jt-wave-progress"><span style={{width:(Math.min(100,remaining/(offer.standard?60:15)*100))+'%'}}/></div>
     <h2>{offer.category.replaceAll('-',' ')}</h2>
     <p>{offer.brief}</p>
     <div className="jt-wave-fact"><MapPin size={17}/> {offer.location}{offer.distanceKm!==null?` · ${offer.distanceKm.toFixed(1)} km away`:''}</div>
