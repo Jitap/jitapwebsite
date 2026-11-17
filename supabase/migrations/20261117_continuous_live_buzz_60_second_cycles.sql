@@ -29,7 +29,7 @@ begin
  and not exists(select 1 from public.jitap_job_cancellations banned where banned.request_id=w.id and banned.provider_user_id=auth.uid())
  and (not exists(select 1 from public.jitap_provider_buzz_responses prev where prev.request_id=w.id and prev.provider_user_id=auth.uid()) or rematch.id is not null)
  and (not exists(select 1 from public.jitap_provider_buzz_responses accepted where accepted.request_id=w.id and accepted.decision='accepted') or rematch.id is not null)
- on conflict on constraint jitap_provider_offer_windows_pkey do update set expires_at=now()+interval '60 seconds' where public.jitap_provider_offer_windows.expires_at<=now();
+ on conflict on constraint jitap_provider_offer_windows_pk do update set expires_at=now()+interval '60 seconds' where public.jitap_provider_offer_windows.expires_at<=now();
 
  return query
  select w.id,w.payload->>'category',w.payload->>'area',
