@@ -1,7 +1,7 @@
 import {NextRequest,NextResponse} from 'next/server';
 import {z} from 'zod';
 import {getProviderSession} from '@/lib/provider-session-server';
-import {sameOrigin} from '@/lib/jitap-auth';
+import {sameOrigin,setAuthCookies} from '@/lib/jitap-auth';
 import {supabasePrivate} from '@/lib/coordinator-server';
 
 export const runtime='nodejs';
@@ -28,22 +28,23 @@ async function approved(userId:string){
 export async function GET(req:NextRequest){
  const session=await getProviderSession(req);
  if(!session)return respond({error:'Provider sign-in required'},401);
- if(!await approved(session.userId))return respond({offer:null,eligible:false,serverNow:new Date().toISOString()});
+ const reply=(data:unknown,status=200)=>{const response=respond(data,status);if(session.rotated)setAuthCookies(response,session.rotated.access,session.rotated.refresh,session.rotated.expires);return response};
+ if(!await approved(session.userId))return reply({offer:null,eligible:false,serverNow:new Date().toISOString()});
  try{
-  // Idempotent, bounded fan-out. Refresh never prolongs any wave or offer.
-  await supabasePrivate('rpc/jitap_wave_dispatch_tick',{method:'POST',body:JSON.stringify({p_limit:10})});
+  // The active five-second database cron dispatches independently. Do not block
+  // the handset on a write/tick before reading its short-lived offers.
   const offers=await supabasePrivate<Offer[]>(
    'jitap_wave_offers?select=request_id,distance_km,wave,expires_at,state&provider_user_id=eq.'+session.userId+
    '&state=eq.pending&expires_at=gt.'+encodeURIComponent(new Date().toISOString())+'&order=expires_at.asc&limit=8');
-  if(!offers.length)return respond({offer:null,eligible:true,serverNow:new Date().toISOString()});
+  if(!offers.length)return reply({offer:null,eligible:true,serverNow:new Date().toISOString()});
   const ids=offers.map(o=>o.request_id);
   const jobs=await supabasePrivate<Job[]>('jitap_wave_dispatch_jobs?select=request_id,state,started_at,matched_provider_user_id,category&request_id=in.('+ids.join(',')+')');
   const jobById=new Map(jobs.map(j=>[j.request_id,j]));
   const first=offers.find(o=>jobById.get(o.request_id)?.state==='searching');
-  if(!first)return respond({offer:null,eligible:true,serverNow:new Date().toISOString()});
+  if(!first)return reply({offer:null,eligible:true,serverNow:new Date().toISOString()});
   const request=await supabasePrivate<Request[]>('website_intake?select=id,payload&id=eq.'+first.request_id+'&limit=1');
   const payload=request[0]?.payload||{};
-  return respond({
+  return reply({
    eligible:true,serverNow:new Date().toISOString(),
    offer:{
     requestId:first.request_id,ref:'JT-'+first.request_id.slice(0,8).toUpperCase(),
@@ -54,7 +55,7 @@ export async function GET(req:NextRequest){
     distanceKm:Number(first.distance_km),wave:first.wave,expiresAt:first.expires_at,
    }
   });
- }catch{return respond({error:'Wave BUZZ temporarily unavailable'},503)}
+ }catch{console.warn('JiTap Wave BUZZ offer read failed');return reply({error:'Wave BUZZ temporarily unavailable'},503)}
 }
 export async function POST(req:NextRequest){
  if(!sameOrigin(req))return respond({error:'Invalid request origin'},403);
