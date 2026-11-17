@@ -10,6 +10,7 @@ export function WaveBuzzIncoming({enabled,onResponded,fallbackOffers=[]}:{enable
  const [now,setNow]=useState(Date.now());
  const [clockOffset,setClockOffset]=useState(0);
  const [error,setError]=useState('');
+ const [pollError,setPollError]=useState('');
  const [busy,setBusy]=useState(false);
  const current=useRef('');
  const lastPing=useRef(0);
@@ -25,8 +26,9 @@ export function WaveBuzzIncoming({enabled,onResponded,fallbackOffers=[]}:{enable
   polling.current=true;
   try{
    const result=await fetch('/api/provider/wave-buzz',{cache:'no-store',credentials:'same-origin'});
-   if(!result.ok)return;
+   if(!result.ok){setPollError(result.status===401?'Sign in again to receive BUZZ.':'BUZZ connection interrupted.');return}
    const data=await result.json();
+   setPollError('');
    if(data.serverNow)setClockOffset(Date.parse(data.serverNow)-Date.now());
    const serverTime=Date.parse(data.serverNow)||Date.now();
    const wave=data.offer as LiveOffer|null;
@@ -41,7 +43,7 @@ export function WaveBuzzIncoming({enabled,onResponded,fallbackOffers=[]}:{enable
     current.current='';
     setOffer(null);
    }
-  }catch{/* Keep normal provider dashboard available during connectivity issues. */}finally{polling.current=false}
+  }catch{setPollError('BUZZ connection interrupted.')}finally{polling.current=false}
  },[enabled,play]);
  useEffect(()=>{
   if(!enabled){setOffer(null);return}
@@ -74,6 +76,7 @@ export function WaveBuzzIncoming({enabled,onResponded,fallbackOffers=[]}:{enable
  }
  if(!enabled)return null;
  return <>
+  {!offer&&pollError&&<div className="jt-wave-connection-warning" role="status"><span>{pollError}</span><button type="button" onClick={()=>void poll()}>Retry</button></div>}
   {offer&&remaining>0&&<div className="jt-wave-live-backdrop" role="presentation">
    <section className="jt-wave-live-sheet" role="dialog" aria-modal="true" aria-label="Incoming JiTap Wave Buzz">
     <div className="jt-wave-live-header"><strong><BellRing size={18}/> Incoming JiTap BUZZ</strong><span>{offer.standard?'Live request':`Wave ${offer.wave}`}</span></div>
