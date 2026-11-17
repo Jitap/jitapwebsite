@@ -18,3 +18,10 @@
 .jt-wave-live-sheet .jt-wave-accept,.jt-wave-live-sheet .jt-wave-decline{display:block;width:100%;margin-top:10px}
 @media(min-width:720px){.jt-wave-live-backdrop{align-items:center}}
 @media(prefers-reduced-motion:reduce){.jt-wave-live-sheet .jt-wave-ring{animation:none!important}}
+
+/* Compact sound permission and live connection status. */
+.jt-buzz-sound-row{display:flex;align-items:center;flex-wrap:wrap;gap:9px;margin:0 0 8px}
+.jt-buzz-sound-activate{border:1px solid #bbe4ce;border-radius:999px;background:#ebfaf1;color:#087a42;font-size:12px;font-weight:750;padding:7px 11px;min-height:34px;cursor:pointer}
+.jt-buzz-sound-row small{color:#a33c34;font-size:11px}
+.jt-wave-connection-warning{display:flex;align-items:center;justify-content:space-between;gap:8px;border:1px solid #efc9a4;border-radius:10px;background:#fff8eb;color:#784717;padding:8px 10px;margin:7px 0;font-size:12px}
+.jt-wave-connection-warning button{border:1px solid #ddbc97;border-radius:8px;background:white;color:#784717;padding:6px 10px;font-size:12px;font-weight:700}
