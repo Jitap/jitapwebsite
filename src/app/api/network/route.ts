@@ -9,15 +9,15 @@ export const dynamic='force-dynamic';
 const headers={'Cache-Control':'private, no-store'};
 type Json=Record<string,unknown>;
 type Role='customer'|'provider';
-async function identity(req:NextRequest):Promise<{token:string;role:Role;rotated?:{access:string;refresh:string;expires:number}}|null>{
+async function identity(req:NextRequest):Promise<{token:string;role:Role;phone:string;rotated?:{access:string;refresh:string;expires:number}}|null>{
  const provider=await getProviderSession(req);
  if(provider){
   if(req.cookies.get('jt_mode')?.value==='customer')
-   return {token:provider.accessToken,role:'customer',rotated:provider.rotated};
-  return {token:provider.accessToken,role:'provider',rotated:provider.rotated};
+   return {token:provider.accessToken,phone:provider.phone,role:'customer',rotated:provider.rotated};
+  return {token:provider.accessToken,phone:provider.phone,role:'provider',rotated:provider.rotated};
  }
  const customer=await getCustomerIdentity(req);
- return customer.kind==='customer'?{token:customer.identity.accessToken,role:'customer',rotated:customer.identity.rotated}:null;
+ return customer.kind==='customer'?{token:customer.identity.accessToken,phone:customer.identity.phone,role:'customer',rotated:customer.identity.rotated}:null;
 }
 function respond(data:Json,status=200,rotated?:{access:string;refresh:string;expires:number}){
  const response=NextResponse.json(data,{status,headers});
@@ -74,6 +74,7 @@ export async function POST(req:NextRequest){
   if(who.role!=='customer')return error('Customer mode required',403);
   const phone=normalizeKenyanPhone(body.phone);
   if(!phone)return error('Enter a valid Kenyan mobile number',422);
+  if(phone===who.phone)return respond({ok:true,matched:false,selfContact:true},200,who.rotated);
   name='jitap_network_match';payload={p_phone:phone};
  }else if(action==='request'){
   if(who.role!=='customer')return error('Customer mode required',403);
