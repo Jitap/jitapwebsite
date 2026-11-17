@@ -1,11 +1,11 @@
 'use client';
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {BellRing,MapPin,Zap} from 'lucide-react';
-import {playProviderBuzzChime} from '@/lib/provider-buzz-audio';
+import {armProviderBuzzAudio,playProviderBuzzChime} from '@/lib/provider-buzz-audio';
 import './wave-buzz.css';
 
-type LiveOffer={requestId:string;ref:string;category:string;brief:string;location:string;preferredTime:string;distanceKm:number;wave:number;expiresAt:string};
-export function WaveBuzzIncoming({enabled,onResponded}:{enabled:boolean;onResponded?:(requestId:string,matched:boolean)=>Promise<void>|void}){
+type LiveOffer={standard?:boolean;requestId:string;ref:string;category:string;brief:string;location:string;preferredTime:string;distanceKm:number|null;wave:number;expiresAt:string};
+export function WaveBuzzIncoming({enabled,onResponded,fallbackOffers=[]}:{enabled:boolean;onResponded?:(requestId:string,matched:boolean)=>Promise<void>|void;fallbackOffers?:LiveOffer[]}){
  const [offer,setOffer]=useState<LiveOffer|null>(null);
  const [now,setNow]=useState(Date.now());
  const [clockOffset,setClockOffset]=useState(0);
@@ -13,33 +13,43 @@ export function WaveBuzzIncoming({enabled,onResponded}:{enabled:boolean;onRespon
  const [busy,setBusy]=useState(false);
  const current=useRef('');
  const lastPing=useRef(0);
+ const polling=useRef(false);
+ const handled=useRef(new Set<string>());
+ const fallbackRef=useRef(fallbackOffers);
+ fallbackRef.current=fallbackOffers;
+ useEffect(()=>{if(!enabled)return;const unlock=()=>{armProviderBuzzAudio()};document.addEventListener('pointerdown',unlock,true);document.addEventListener('touchend',unlock,true);document.addEventListener('keydown',unlock,true);return()=>{document.removeEventListener('pointerdown',unlock,true);document.removeEventListener('touchend',unlock,true);document.removeEventListener('keydown',unlock,true)}},[enabled]);
  const remaining=offer?Math.max(0,Math.ceil((Date.parse(offer.expiresAt)-(now+clockOffset))/1000)):0;
  const play=playProviderBuzzChime;
  const poll=useCallback(async()=>{
-  if(!enabled||document.visibilityState!=='visible')return;
+  if(!enabled||document.visibilityState!=='visible'||polling.current)return;
+  polling.current=true;
   try{
    const result=await fetch('/api/provider/wave-buzz',{cache:'no-store',credentials:'same-origin'});
    if(!result.ok)return;
    const data=await result.json();
    if(data.serverNow)setClockOffset(Date.parse(data.serverNow)-Date.now());
-   const next=data.offer as LiveOffer|null;
+   const serverTime=Date.parse(data.serverNow)||Date.now();
+   const wave=data.offer as LiveOffer|null;
+   const next=wave&&!handled.current.has(wave.requestId)?wave:fallbackRef.current.find(o=>!handled.current.has(o.requestId)&&Date.parse(o.expiresAt)>serverTime)||null;
    if(next&&next.requestId!==current.current){
+    setError('');
     current.current=next.requestId;
     setOffer(next);
     if('vibrate' in navigator)navigator.vibrate([300,150,300,150,500]);
     play();
-   }else if(!next){
+   }else if(next){setOffer(next)}else if(!next){
     current.current='';
     setOffer(null);
    }
-  }catch{/* Keep normal provider dashboard available during connectivity issues. */}
+  }catch{/* Keep normal provider dashboard available during connectivity issues. */}finally{polling.current=false}
  },[enabled,play]);
  useEffect(()=>{
   if(!enabled){setOffer(null);return}
   void poll();
-  const tick=window.setInterval(()=>{setNow(Date.now());void poll()},3000);
+  const tick=window.setInterval(()=>{setNow(Date.now());void poll()},1500);
   const timer=window.setInterval(()=>setNow(Date.now()),250);
-  return()=>{window.clearInterval(tick);window.clearInterval(timer)};
+  const visible=()=>{if(document.visibilityState==='visible')void poll()};document.addEventListener('visibilitychange',visible);
+  return()=>{window.clearInterval(tick);window.clearInterval(timer);document.removeEventListener('visibilitychange',visible)};
  },[enabled,poll]);
  useEffect(()=>{
   if(!enabled||!offer||remaining===0)return;
@@ -51,13 +61,13 @@ export function WaveBuzzIncoming({enabled,onResponded}:{enabled:boolean;onRespon
   if(!offer||remaining<=0||busy)return;
   setBusy(true);setError('');
   try{
-   const result=await fetch('/api/provider/wave-buzz',{method:'POST',headers:{'Content-Type':'application/json'},
+   const result=await fetch(offer.standard?'/api/provider/workspace':'/api/provider/wave-buzz',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({action:'respond',requestId:offer.requestId,decision})});
    const data=await result.json();
-   if(!result.ok||!['matched','declined'].includes(data.status))throw Error(data.status==='expired'?'Your BUZZ offer expired.':data.error||'Request no longer available');
-   const requestId=offer.requestId;
+   if(!result.ok||!(offer.standard?data.recorded===true:['matched','declined'].includes(data.status)))throw Error(data.status==='expired'?'Your BUZZ offer expired.':data.error||'Request no longer available');
+   const requestId=offer.requestId;handled.current.add(requestId);
    setOffer(null);current.current='';
-   await onResponded?.(requestId,data.status==='matched');
+   await onResponded?.(requestId,offer.standard?decision==='accepted':data.status==='matched');
    if('vibrate' in navigator)navigator.vibrate(0);
   }catch(e){setError(e instanceof Error?e.message:'Unable to respond')}
   finally{setBusy(false)}
@@ -66,18 +76,18 @@ export function WaveBuzzIncoming({enabled,onResponded}:{enabled:boolean;onRespon
  return <>
   {offer&&remaining>0&&<div className="jt-wave-live-backdrop" role="presentation">
    <section className="jt-wave-live-sheet" role="dialog" aria-modal="true" aria-label="Incoming JiTap Wave Buzz">
-    <div className="jt-wave-live-header"><strong><BellRing size={18}/> Incoming JiTap BUZZ</strong><span>Wave {offer.wave}</span></div>
+    <div className="jt-wave-live-header"><strong><BellRing size={18}/> Incoming JiTap BUZZ</strong><span>{offer.standard?'Live request':`Wave ${offer.wave}`}</span></div>
     <div className="jt-wave-sonar running" style={{height:105}}>
      <span className="jt-wave-ring jt-wave-ring-one"/><span className="jt-wave-ring jt-wave-ring-two"/><span className="jt-wave-ring jt-wave-ring-three"/>
      <div className="jt-wave-sonar-icon" style={{width:64,height:64}}><Zap size={30}/></div>
     </div>
     <div className="jt-wave-live-countdown">{remaining}s <small>to respond</small></div>
-    <div className="jt-wave-progress"><span style={{width:(remaining/15*100)+'%'}}/></div>
+    <div className="jt-wave-progress"><span style={{width:(Math.min(100,remaining/(offer.standard?59:15)*100))+'%'}}/></div>
     <h2>{offer.category.replaceAll('-',' ')}</h2>
     <p>{offer.brief}</p>
-    <div className="jt-wave-fact"><MapPin size={17}/> {offer.location} · {offer.distanceKm.toFixed(1)} km away</div>
+    <div className="jt-wave-fact"><MapPin size={17}/> {offer.location}{offer.distanceKm!==null?` · ${offer.distanceKm.toFixed(1)} km away`:''}</div>
     {offer.preferredTime&&<div className="jt-wave-fact">Requested: {offer.preferredTime}</div>}
-    <p className="jt-wave-ref">{offer.ref} · Straight-line GPS distance, not ETA</p>
+    <p className="jt-wave-ref">{offer.ref}{offer.standard?' · Service area match':' · Straight-line GPS distance, not ETA'}</p>
     {error&&<p role="alert" style={{color:'#b42332'}}>{error}</p>}
     <button type="button" className="jt-wave-accept" onClick={()=>void respond('accepted')} disabled={busy}>Accept Job</button>
     <button type="button" className="jt-wave-decline" onClick={()=>void respond('declined')} disabled={busy}>Decline</button>
