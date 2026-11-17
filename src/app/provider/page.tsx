@@ -10,7 +10,7 @@ import {ProviderMediaFields,type MediaKind} from '@/components/ProviderMediaFiel
 import './provider-dashboard.css';
 import {ProviderJobAction} from '@/components/ProviderJobAction';
 import {WaveBuzzIncoming} from '@/components/WaveBuzzIncoming';
-import {armProviderBuzzAudio} from '@/lib/provider-buzz-audio';
+import {armProviderBuzzAudio,playProviderBuzzChime,providerBuzzAudioReady} from '@/lib/provider-buzz-audio';
 import {ProviderActiveJobStack} from '@/components/ProviderActiveJobStack';
 import {ProviderIdentityVerification} from '@/components/ProviderIdentityVerification';
 
@@ -30,6 +30,8 @@ export default function ProviderDashboardPage(){
  const router=useRouter();
  const [dashboard,setDashboard]=useState<Dashboard|null>(null);
  const [offerClock,setOfferClock]=useState(Date.now());
+ const [buzzSoundReady,setBuzzSoundReady]=useState(false);
+ const [buzzSoundError,setBuzzSoundError]=useState('');
  useEffect(()=>{const handle=window.setInterval(()=>setOfferClock(Date.now()),1000);return()=>window.clearInterval(handle)},[]);
  const [reviewMode,setReviewMode]=useState(false);
  const referralClaimInFlight=useRef(false);
@@ -122,7 +124,7 @@ export default function ProviderDashboardPage(){
   try{
    let payload:Record<string,unknown>={action:'availability',online:false};
    if(next){
-    armProviderBuzzAudio();
+    setBuzzSoundReady(await armProviderBuzzAudio());
     const position=await new Promise<GeolocationPosition>((resolve,reject)=>
      navigator.geolocation.getCurrentPosition(resolve,reject,
       {enableHighAccuracy:true,maximumAge:0,timeout:15000}));
@@ -284,6 +286,14 @@ export default function ProviderDashboardPage(){
     {approved&&<div style={{display:'flex',justifyContent:'flex-end',margin:'0 0 10px'}}>
      <Link href="/provider/network" style={{display:'inline-flex',alignItems:'center',gap:8,padding:'9px 13px',borderRadius:12,background:'#e7f8ed',color:'#096e39',border:'1px solid #b9e7c8',fontSize:13,fontWeight:750}}><UsersRound size={18}/> My Network</Link>
     </div>}
+    {approved&&online&&!reviewMode&&<div className="jt-buzz-sound-row">
+      <button type="button" className="jt-buzz-sound-activate" onClick={async()=>{
+       const ready=await armProviderBuzzAudio();
+       setBuzzSoundReady(ready);setBuzzSoundError(ready?'':'Your browser blocked the chime. Enable sound for jitap.app and try again.');
+       if(ready)playProviderBuzzChime();
+      }}>{buzzSoundReady||providerBuzzAudioReady()?'🔔 Test BUZZ chime':'🔔 Enable BUZZ sound'}</button>
+      {buzzSoundError&&<small role="alert">{buzzSoundError}</small>}
+     </div>}
     {approved?<div className="jt-provider-home-greeting">
        <h1>Hello, <span>{firstName}</span></h1><p>{online?'You’re online and available':'You’re currently offline'}</p>
       </div>:<div className="jt-provider-greeting"><div><p>JITAP FOR PROVIDERS</p><h1>Habari, <span>{firstName}!</span></h1>{tab!=='verification'&&<div className="jt-provider-subtext">{!submitted?'Complete onboarding to get started.':'Your provider profile is awaiting JiTap review.'}</div>}</div>
