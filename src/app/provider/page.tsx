@@ -51,6 +51,7 @@ export default function ProviderDashboardPage(){
  const [notes,setNotes]=useState<Record<string,string>>({});
  const [dissolvingIds,setDissolvingIds]=useState<string[]>([]);
  const [dismissedIds,setDismissedIds]=useState<string[]>([]);
+ const answering=useRef(false);
  const refresh=useCallback(async()=>{
   const res=await fetch('/api/provider/workspace',{cache:'no-store'});
   if(res.status===401){router.replace('/login?mode=login');return}
@@ -214,13 +215,13 @@ export default function ProviderDashboardPage(){
    else setSuccess('Demo: question sent to SOC (simulated). No real message was sent.');
    return;
   }
-  const d=choice||decision[o.request_id];if(!d)return;
+  const d=choice||decision[o.request_id];if(!d||answering.current)return;
   if(d==='needs_clarification'&&(!notes[o.request_id]||notes[o.request_id].trim().length<3)){setError('Please write your question before submitting.');return}
-  setBusy(true);setError('');setSuccess('');
+  answering.current=true;setBusy(true);setError('');setSuccess('');
   try{
    const response=await fetch('/api/provider/workspace',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'respond',requestId:o.request_id,decision:d,note:notes[o.request_id]||''})});
    const result=await response.json().catch(()=>({}));
-   if(!response.ok||result.recorded!==true)throw new Error(result.error||'This request is no longer available. Please refresh.');
+   if(!response.ok||result.recorded!==true){await refresh().catch(()=>{});throw new Error(result.error||'Unable to record response. Please retry.');}
    setSuccess(d==='declined'?'Request declined. It has been removed from your live opportunities.':d==='accepted'?'Booking confirmed! The customer can now contact you.':'Your question was sent to JiTap.');
    if(d==='declined'){
     // The card remains in the DOM during the dissolve; the badge reflects
@@ -233,11 +234,11 @@ export default function ProviderDashboardPage(){
     },440);
    }else{
     setDismissedIds(old=>old.includes(o.request_id)?old:[...old,o.request_id]);
-    if(d==='accepted'){router.push('/provider/calendar?job='+encodeURIComponent(o.request_id));return}
     await refresh();
+    if(d==='accepted'){setTab('home');return}
    }
   }catch(e){setError(e instanceof Error?e.message:'Could not send your response. Try again.')}
-  finally{setBusy(false)}
+  finally{answering.current=false;setBusy(false)}
  }
  const approved=dashboard?.reviewStatus==='approved';
  const submitted=!!dashboard?.profile?.submitted_at;
@@ -270,7 +271,7 @@ export default function ProviderDashboardPage(){
       </div></div>
      </header>:<header className="jt-provider-app-header"><span className="jt-provider-workspace-heading">Provider dashboard</span><div className="jt-provider-header-actions"><div className="jt-provider-badge"><ShieldCheck size={17}/> Provider workspace</div><button type="button" onClick={switchCustomer} disabled={busy} className="jt-provider-logout">Switch to Customer</button><button type="button" onClick={logout} className="jt-provider-logout">Log out</button></div></header>}
     {approved&&!reviewMode&&!online&&<p style={{margin:'6px 12px 10px',fontSize:12,color:'#536b62'}}><MapPin size={13} style={{verticalAlign:'middle',marginRight:5}}/>To receive nearby jobs, tap the Online switch and allow precise location. You can go offline at any time.</p>}
-    <WaveBuzzIncoming enabled={!!approved&&!!online&&!reviewMode}/>
+    <WaveBuzzIncoming enabled={!!approved&&!!online&&!reviewMode} onResponded={async(requestId,matched)=>{setDismissedIds(old=>old.includes(requestId)?old:[...old,requestId]);if(matched){setSuccess('Booking confirmed!');setTab('home')}await refresh().catch(()=>{});}}/>
     {approved&&notificationsOpen&&<aside className="jt-provider-notification-panel" id="jt-provider-notification-panel" aria-label="Unread provider notifications">
       <div className="jt-provider-notification-title"><strong>Notifications <span className="jt-provider-notification-total">{unreadCount} unread</span></strong><button type="button" onClick={()=>setNotificationsOpen(false)} aria-label="Close notifications">×</button></div>
       {notificationError&&<p className="jt-provider-notification-error" role="alert">{notificationError}</p>}
@@ -395,7 +396,7 @@ export default function ProviderDashboardPage(){
         </div>
         <div className="jt-buzz-card-actions">
          <button className={'jt-buzz-accept '+(decision[o.request_id]==='accepted'?'selected':'')} disabled={busy} onClick={()=>void answer(o,'accepted')}>Accept</button>
-         <button className={'jt-buzz-decline '+(decision[o.request_id]==='declined'?'selected':'')} onClick={()=>setDecision(v=>({...v,[o.request_id]:'declined'}))}>Decline</button>
+         <button className={'jt-buzz-decline '+(decision[o.request_id]==='declined'?'selected':'')} disabled={busy} onClick={()=>void answer(o,'declined')}>Decline</button>
          <Link className="jt-buzz-view" href={'/provider/request/'+o.request_id}>View <ChevronRight size={17}/></Link>
         </div>
 
