@@ -252,7 +252,6 @@ export default function ProviderDashboardPage(){
  const liveOpportunities=(dashboard?.opportunities||[]).filter(o=>
   approvedTrades.has(canonicalTrade(o.category))&&
   !!dashboard?.profile?.service_areas.includes(o.area)&&
-  (!o.offer_expires_at||Date.parse(o.offer_expires_at)>offerClock)&&
   !dismissedIds.includes(o.request_id)
  );
  const readNotificationIds=new Set([...(dashboard?.readNotificationIds||[]),...locallyReadNotifications]);
@@ -273,7 +272,7 @@ export default function ProviderDashboardPage(){
       </div></div>
      </header>:<header className="jt-provider-app-header"><span className="jt-provider-workspace-heading">Provider dashboard</span><div className="jt-provider-header-actions"><div className="jt-provider-badge"><ShieldCheck size={17}/> Provider workspace</div><button type="button" onClick={switchCustomer} disabled={busy} className="jt-provider-logout">Switch to Customer</button><button type="button" onClick={logout} className="jt-provider-logout">Log out</button></div></header>}
     {approved&&!reviewMode&&!online&&<p style={{margin:'6px 12px 10px',fontSize:12,color:'#536b62'}}><MapPin size={13} style={{verticalAlign:'middle',marginRight:5}}/>To receive nearby jobs, tap the Online switch and allow precise location. You can go offline at any time.</p>}
-    <WaveBuzzIncoming enabled={!!approved&&!!online&&!reviewMode} fallbackOffers={liveOpportunities.filter(o=>o.offer_expires_at).map(o=>({standard:true,requestId:o.request_id,ref:'JT-'+o.request_id.slice(0,8).toUpperCase(),category:o.category,brief:o.technical_summary,location:o.job_location||o.area,preferredTime:o.preferred_time,distanceKm:null,wave:0,expiresAt:o.offer_expires_at!}))} onResponded={async(requestId,matched)=>{setDismissedIds(old=>old.includes(requestId)?old:[...old,requestId]);if(matched){setSuccess('Booking confirmed!');setTab('home')}await refresh().catch(()=>{});}}/>
+    <WaveBuzzIncoming enabled={!!approved&&!!online&&!reviewMode} fallbackOffers={liveOpportunities.filter(o=>o.offer_expires_at).map(o=>({standard:true,requestId:o.request_id,ref:'JT-'+o.request_id.slice(0,8).toUpperCase(),category:o.category,brief:o.technical_summary,location:o.job_location||o.area,preferredTime:o.preferred_time,distanceKm:null,wave:0,expiresAt:new Date(Date.parse(o.offer_expires_at!)+Math.max(0,Math.floor((offerClock-Date.parse(o.offer_expires_at!))/60000)+1)*60000).toISOString()}))} onResponded={async(requestId,matched)=>{setDismissedIds(old=>old.includes(requestId)?old:[...old,requestId]);if(matched){setSuccess('Booking confirmed!');setTab('home')}await refresh().catch(()=>{});}}/>
     {approved&&notificationsOpen&&<aside className="jt-provider-notification-panel" id="jt-provider-notification-panel" aria-label="Unread provider notifications">
       <div className="jt-provider-notification-title"><strong>Notifications <span className="jt-provider-notification-total">{unreadCount} unread</span></strong><button type="button" onClick={()=>setNotificationsOpen(false)} aria-label="Close notifications">×</button></div>
       {notificationError&&<p className="jt-provider-notification-error" role="alert">{notificationError}</p>}
@@ -395,8 +394,8 @@ export default function ProviderDashboardPage(){
         <div className="jt-provider-request-top"><span className="jt-provider-request-tag"><Wrench size={15}/> {SERVICE_OPTIONS.find(x=>x.value===o.category)?.label||o.category}</span><span className={'jt-buzz-urgency '+o.urgency}>Urgency: {o.urgency==='unspecified'?'Not specified':o.urgency==='normal'?'Normal':o.urgency==='high'?'High':'Low'}</span></div>
         <h3>{SERVICE_OPTIONS.find(x=>x.value===o.category)?.label||'Service'} <span className="jt-provider-request-area">· {o.area}</span></h3>
         <div className="jt-buzz-reference">Service ID: JT-{o.request_id.slice(0,8).toUpperCase()}</div>
-        {o.offer_expires_at&&<div role="timer" aria-label="Time remaining to respond" style={{fontSize:13,fontWeight:750,color:'#047b46',margin:'9px 0'}}>
-         BUZZ expires in 0:{String(Math.max(0,Math.ceil((Date.parse(o.offer_expires_at)-offerClock)/1000))).padStart(2,'0')}secs
+        {o.offer_expires_at&&<div role="timer" aria-label="Next BUZZ cycle" style={{fontSize:13,fontWeight:750,color:'#047b46',margin:'9px 0'}}>
+         BUZZ · Next cycle in {String(((Math.ceil((Date.parse(o.offer_expires_at)-offerClock)/1000)-1)%60+60)%60+1).padStart(2,'0')}s
         </div>}
 
         <div className="jt-buzz-schedule">
