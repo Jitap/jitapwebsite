@@ -290,7 +290,21 @@ export async function POST(req:NextRequest){
    const r=await dbRequest(session.accessToken,'rpc/jitap_provider_answer_buzz','POST',{
     p_request_id:parsed.data.requestId,p_decision:parsed.data.decision,p_note:parsed.data.note
    });
-   if(!r.ok)return error('This request has already been accepted or is no longer available.',409);
+   if(!r.ok){
+    // A retry after a successful transaction must not look like a failed booking.
+    const booked=await supabasePrivate<{id:string;provider_user_id:string;status:string}[]>(
+     'jitap_provider_appointments?request_id=eq.'+parsed.data.requestId+'&select=id,provider_user_id,status&limit=1');
+    if(parsed.data.decision==='accepted'&&booked.some(a=>a.provider_user_id===session.userId&&['confirmed','on_my_way','arrived','in_progress','completed'].includes(a.status)))
+     return responseWithSession({recorded:true,confirmedBooking:true},session);
+    if(booked.length)return error('This job is no longer available for acceptance.',409);
+    const message=String(r.data?.message||'');
+    if(r.status>=500)return error('Unable to record your response. Please retry.',503);
+    if(/not approved and online/i.test(message))return error('Go online with an approved provider account to respond.',409);
+    if(/already responded/i.test(message))return error('You have already responded to this request.',409);
+    if(/no longer available/i.test(message))return error('Your offer expired or is no longer available. The customer request may still be active.',409);
+    console.warn('JiTap BUZZ response rejected',r.data?.code||r.status);
+    return error('Unable to record your response. Please retry.',503);
+   }
    if(r.data===true&&parsed.data.decision==='accepted')after(async()=>{
     await dispatchKapsoQueue(3);
    });
