@@ -4,7 +4,7 @@ import {fundiListings} from '@/lib/fundis-public';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
 type CaseRow={id:string;source_kind:'website_request'|'moving_lead';source_id:string;status:string;priority:string;assigned_to:string|null;next_followup_at:string|null;created_at:string;updated_at:string;intervention_status:string;intervention_reason:string|null;intervention_owner:string|null;intervention_opened_at:string|null};
-type Appointment={id:string;request_id:string;status:string;provider_user_id:string;starts_at:string|null;ends_at:string|null;updated_at:string};
+type Appointment={id:string;request_id:string;status:string;provider_user_id:string;starts_at:string|null;ends_at:string|null;updated_at:string;confirmed_at:string};
 type Provider={user_id:string;full_name:string;business_name:string};
 type ProviderAccount={user_id:string;phone:string};
 type KapsoRecord={request_id:string;template_kind:string;status:string;created_at:string;updated_at:string;last_error:string|null};
@@ -59,7 +59,7 @@ export async function GET(req:NextRequest){
    moveIds.length?supabasePrivate<Move[]>('moving_leads?select=id,created_at,current_stage,pickup_address,dropoff_address,moving_date,moving_time,home_size,customer_phone,customer_email&id='+inFilter(moveIds)):Promise.resolve([])
   ]);
   const sources=new Map<string,Intake|Move>([...intakes,...moves].map(x=>[x.id,x]));
-  const appointments=intakeIds.length?await supabasePrivate<Appointment[]>('jitap_provider_appointments?select=id,request_id,status,provider_user_id,starts_at,ends_at,updated_at&request_id='+inFilter(intakeIds)+'&order=updated_at.desc'):[]; 
+  const appointments=intakeIds.length?await supabasePrivate<Appointment[]>('jitap_provider_appointments?select=id,request_id,status,provider_user_id,starts_at,ends_at,updated_at,confirmed_at&request_id='+inFilter(intakeIds)+'&order=updated_at.desc'):[]; 
   const latestByRequest=new Map<string,Appointment>();
   for(const job of appointments){if(!latestByRequest.has(job.request_id))latestByRequest.set(job.request_id,job)}
   const providerIds=[...new Set(appointments.map(a=>a.provider_user_id))];
@@ -72,9 +72,21 @@ export async function GET(req:NextRequest){
   const kapsoRows=intakeIds.length?await supabasePrivate<KapsoRecord[]>('jitap_kapso_messages?select=request_id,template_kind,status,created_at,updated_at,last_error&request_id='+inFilter(intakeIds)+'&order=created_at.desc&limit=500'):[];
   const kapsoByRequest=new Map<string,KapsoRecord[]>();
   for(const delivery of kapsoRows)kapsoByRequest.set(delivery.request_id,[...(kapsoByRequest.get(delivery.request_id)||[]),delivery]);
+  const assignmentRows=cases.length?await supabasePrivate<{case_id:string;state:string;assigned_at:string;responded_at:string|null;assigned_by:string|null}[]>('coordinator_provider_assignments?select=case_id,state,assigned_at,responded_at,assigned_by&case_id='+inFilter(cases.map(c=>c.id))+'&order=assigned_at.asc'):[];
+  const assignmentsByCase=new Map<string,typeof assignmentRows>();
+  for(const a of assignmentRows)assignmentsByCase.set(a.case_id,[...(assignmentsByCase.get(a.case_id)||[]),a]);
   const rows=cases.map(c=>{
    const job=latestByRequest.get(c.source_id);
-   return {...normalizedRecord(c,sources.get(c.source_id)),
+   const source=sources.get(c.source_id);
+   const startedAt=source?.created_at||c.created_at;
+   const assigned=(assignmentsByCase.get(c.id)||[]).find(a=>a.assigned_by&&['proposed','contacted','accepted','needs_clarification','quote_requested','quote_received'].includes(a.state));
+   const acceptedTimes=[...appointments.filter(a=>a.request_id===c.source_id).map(a=>a.confirmed_at),...(assignmentsByCase.get(c.id)||[]).filter(a=>a.state==='accepted'&&a.responded_at).map(a=>a.responded_at!)].filter(Boolean).sort();
+   const acceptedAt=acceptedTimes[0]||null;
+   const assignedAt=assigned?.assigned_at||null;
+   return {...normalizedRecord(c,source),
+    requestStartedAt:startedAt,firstAcceptedAt:acceptedAt,socAssignedAt:assignedAt,
+    timeToAcceptSeconds:acceptedAt?Math.max(0,Math.floor((Date.parse(acceptedAt)-Date.parse(startedAt))/1000)):null,
+    timeToAssignSeconds:assignedAt?Math.max(0,Math.floor((Date.parse(assignedAt)-Date.parse(startedAt))/1000)):null,
     jobStatus:job?.status||null,appointmentId:job?.id||null,
     providerName:job?providerNames.get(job.provider_user_id)||'Assigned provider':null,
     providerPhone:job?providerPhones.get(job.provider_user_id)||null:null,
