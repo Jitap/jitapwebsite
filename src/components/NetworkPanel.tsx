@@ -57,7 +57,8 @@ export function NetworkPanel({mode,reviewer=false,saved=[]}:{mode:'customer'|'pr
   if(result?.matched&&typeof result.providerId==='string'){
    setMatches(old=>old.some(m=>m.providerId===result.providerId)?old:[...old,{providerId:result.providerId as string,matched:true,label:name.trim()||'Contact'}]);
    setMessage('JiTap found an eligible provider in your selected contacts. Send a connection request to continue.');
-  }else if(result)setMessage('No discoverable provider match. You can invite this fundi to JiTap.');
+  }else if(result?.selfContact)setMessage('This is your own JiTap account number. To connect with a fundi, select their separately registered mobile number.');
+  else if(result)setMessage('No discoverable provider match. Check the fundi’s registered number and contact discovery setting.');
  }
  async function pickContacts(){
   const api=(navigator as Navigator&{contacts?:ContactApi}).contacts;
@@ -66,10 +67,19 @@ export function NetworkPanel({mode,reviewer=false,saved=[]}:{mode:'customer'|'pr
   try{
    const chosen=await api.select(['name','tel'],{multiple:true});
    if(chosen.length>10){setError('Select up to 10 contacts at a time.');return}
+   const seen=new Set<string>();
+   let checked=0;
    for(const person of chosen){
-    const tel=person.tel?.[0];
-    if(tel&&!phoneError(tel))await matchOne(tel,person.name?.[0]||'Contact');
+    for(const tel of person.tel||[]){
+     if(phoneError(tel))continue;
+     const key=tel.replace(/[^0-9]/g,'').replace(/^(?:254|0)/,'');
+     if(seen.has(key))continue;
+     if(checked>=20){setError('Up to 20 unique mobile numbers can be checked at a time.');return}
+     seen.add(key);checked++;
+     await matchOne(tel,person.name?.[0]||'Contact');
+    }
    }
+   if(!checked)setError('No valid Kenyan mobile numbers in the selected contacts.');
   }catch(e){
    // A user-cancelled picker should not show an alarming error.
    if(e instanceof Error&&e.name!=='AbortError')setError('Could not open contacts. You can enter a fundi’s number below.');
