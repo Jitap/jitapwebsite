@@ -1,33 +1,29 @@
-/** A browser requires a trusted gesture per document before audio can play. */
+/** Web Audio requires a trusted user gesture on Android Chrome and Safari.
+ * An already-online account must arm sound again after a page reload.
+ */
 let audio:AudioContext|null=null;
-let lastChime=0;
-export function armProviderBuzzAudio(){
- if(typeof window==='undefined')return;
+export function providerBuzzAudioReady(){return audio?.state==='running'}
+export async function armProviderBuzzAudio():Promise<boolean>{
+ if(typeof window==='undefined')return false;
  try{
-  if(!audio||audio.state==='closed'){
-   const Constructor=window.AudioContext||(window as Window&{webkitAudioContext?:typeof AudioContext}).webkitAudioContext;
-   if(!Constructor)return;
-   audio=new Constructor();
-  }
-  if(audio.state!=='running')void audio.resume().catch(()=>{});
- }catch{/* Visual BUZZ remains available. */}
+  if(!audio)audio=new AudioContext();
+  if(audio.state!=='running')await audio.resume();
+  return audio.state==='running';
+ }catch{return false}
 }
-export function playProviderBuzzChime(){
- if(!audio)return false;
- if(audio.state!=='running'){void audio.resume().catch(()=>{});return false}
- if(Date.now()-lastChime<900)return true;
+export function playProviderBuzzChime():boolean{
+ if(!audio||audio.state!=='running')return false;
  try{
-  const t=audio.currentTime;
+  const t=audio.currentTime+.005;
   [784,1047,1319].forEach((hz,i)=>{
-   const oscillator=audio!.createOscillator(),gain=audio!.createGain();
-   oscillator.type='sine';oscillator.frequency.value=hz;
-   gain.gain.setValueAtTime(.0001,t+i*.15);
-   gain.gain.exponentialRampToValueAtTime(.18,t+i*.15+.025);
-   gain.gain.exponentialRampToValueAtTime(.0001,t+i*.15+.29);
-   oscillator.connect(gain).connect(audio!.destination);
-   oscillator.start(t+i*.15);oscillator.stop(t+i*.15+.3);
-   oscillator.onended=()=>{oscillator.disconnect();gain.disconnect()};
+   const osc=audio!.createOscillator(),gain=audio!.createGain();
+   osc.type='sine';osc.frequency.value=hz;
+   gain.gain.setValueAtTime(.0001,t+i*.14);
+   gain.gain.exponentialRampToValueAtTime(.12,t+i*.14+.025);
+   gain.gain.exponentialRampToValueAtTime(.0001,t+i*.14+.27);
+   osc.connect(gain).connect(audio!.destination);
+   osc.start(t+i*.14);osc.stop(t+i*.14+.28);
   });
-  lastChime=Date.now();return true;
+  return true;
  }catch{return false}
 }
