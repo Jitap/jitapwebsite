@@ -5,6 +5,7 @@ import {createHash} from 'node:crypto';
 import {z} from 'zod';
 import {getProviderSession} from '@/lib/provider-session-server';
 import {sameOrigin,setAuthCookies,normalizeKenyanPhone} from '@/lib/jitap-auth';
+import {isNativeApiClient} from '@/lib/jitap-session';
 import {SERVICE_OPTIONS,KENYAN_SERVICE_AREAS} from '@/lib/provider-options';
 import {getProviderMedia} from '@/lib/provider-media-server';
 import {supabasePrivate} from '@/lib/coordinator-server';
@@ -211,7 +212,7 @@ export async function GET(req:NextRequest){
 }
 export async function POST(req:NextRequest){
  if(getReviewSession(req))return error('Review mode: no live provider actions are allowed. Switch modes to review the customer experience.',403);
- if(!sameOrigin(req))return error('Invalid origin',403);
+ if(!isNativeApiClient(req)&&!sameOrigin(req))return error('Invalid origin',403);
  if(Number(req.headers.get('content-length')||0)>6500)return error('Payload too large',413);
  const session=await identity(req);if(!session)return error('Sign in with your provider account.',401);
  let input:unknown;

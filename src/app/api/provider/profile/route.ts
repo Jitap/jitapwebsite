@@ -2,6 +2,7 @@ import {NextRequest,NextResponse} from 'next/server';
 import {z} from 'zod';
 import {getProviderSession} from '@/lib/provider-session-server';
 import {sameOrigin,setAuthCookies} from '@/lib/jitap-auth';
+import {isNativeApiClient} from '@/lib/jitap-session';
 import {SERVICE_OPTIONS} from '@/lib/provider-options';
 
 export const runtime='nodejs';
@@ -30,7 +31,7 @@ export async function GET(req:NextRequest){
  }catch{return out({error:'Unable to load profile preferences'},session,503)}
 }
 export async function POST(req:NextRequest){
- if(!sameOrigin(req))return NextResponse.json({error:'Invalid origin'},{status:403,headers});
+ if(!isNativeApiClient(req)&&!sameOrigin(req))return NextResponse.json({error:'Invalid origin'},{status:403,headers});
  if(Number(req.headers.get('content-length')||0)>12000)return NextResponse.json({error:'Payload too large'},{status:413,headers});
  const session=await getProviderSession(req);if(!session)return NextResponse.json({error:'Sign in as a provider'},{status:401,headers});
  try{

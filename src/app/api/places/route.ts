@@ -1,5 +1,7 @@
 import {NextRequest,NextResponse} from 'next/server';
 import {z} from 'zod';
+import {sameOrigin} from '@/lib/jitap-auth';
+import {isNativeApiClient} from '@/lib/jitap-session';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -11,15 +13,8 @@ const schema=z.discriminatedUnion('action',[
 ]);
 const plusCode=/^[A-Z0-9]{4,8}\+[A-Z0-9]{2,}(?:,|\s|$)/i;
 const isUseful=(name:string)=>!!name&&!plusCode.test(name)&&!/^(mombasa|kenya|coast province)$/i.test(name.trim());
-function sameOrigin(req:NextRequest){
- const origin=req.headers.get('origin');
- if(!origin)return true;
- try{const u=new URL(origin);const host=req.headers.get('x-forwarded-host')||req.headers.get('host')||'';
- return u.origin===req.nextUrl.origin||u.origin==='https://'+host||u.origin==='https://www.jitap.app';
- }catch{return false}
-}
 export async function POST(req:NextRequest){
- if(!sameOrigin(req))return NextResponse.json({error:'Invalid request origin'},{status:403,headers:noStore});
+ if(!isNativeApiClient(req)&&!sameOrigin(req))return NextResponse.json({error:'Invalid request origin'},{status:403,headers:noStore});
  if(!req.headers.get('content-type')?.includes('application/json'))return NextResponse.json({error:'JSON required'},{status:415,headers:noStore});
  const ip=(req.headers.get('x-vercel-forwarded-for')||req.headers.get('x-forwarded-for')||'unknown').split(',')[0].slice(0,85);
  const now=Date.now();const prev=limit.get(ip);const entry=!prev||now-prev.start>60000?{start:now,count:1}:{...prev,count:prev.count+1};

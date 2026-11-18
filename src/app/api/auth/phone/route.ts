@@ -1,9 +1,10 @@
 import {NextResponse,type NextRequest} from 'next/server';
 import {accountQuery,goTrue,isAccountType,normalizeKenyanPhone,sameOrigin,setAuthCookies} from '@/lib/jitap-auth';
+import {isMobileClient,isNativeApiClient} from '@/lib/jitap-session';
 export const runtime='nodejs';
 function error(message:string,status:number){return NextResponse.json({error:message},{status,headers:{'Cache-Control':'no-store'}})}
 export async function POST(req:NextRequest){
- if(!sameOrigin(req))return error('Invalid request origin.',403);
+ if(!isNativeApiClient(req)&&!sameOrigin(req))return error('Invalid request origin.',403);
  const len=Number(req.headers.get('content-length')||0);if(len>3000)return error('Request too large.',413);
  let input:Record<string,unknown>;
  try{input=await req.json()}catch{return error('Invalid request.',400)}
@@ -70,14 +71,22 @@ export async function POST(req:NextRequest){
   }catch{return error('Unable to activate provider onboarding. Please try again.',503)}
   account={...account,account_type:'provider'};
  }
- const result=NextResponse.json({
+ const expiresIn=Number(payload.expires_in)||3600;
+ const refresh=String(payload.refresh_token);
+ const body:Record<string,unknown>={
   authenticated:true,
   accountType:requestedRole,
   primaryAccountType:account.account_type,
   requestedRole,
   redirect:requestedRole==='provider'?'/provider':'/account'
- },{headers:{'Cache-Control':'no-store'}});
- setAuthCookies(result,access,String(payload.refresh_token),Number(payload.expires_in)||3600);
+ };
+ if(isMobileClient(req)){
+  body.accessToken=access;
+  body.refreshToken=refresh;
+  body.expiresIn=expiresIn;
+ }
+ const result=NextResponse.json(body,{headers:{'Cache-Control':'no-store'}});
+ setAuthCookies(result,access,refresh,expiresIn);
  if(requestedRole==='customer'&&account.account_type==='provider')
   result.cookies.set('jt_mode','customer',{
    httpOnly:true,sameSite:'lax',secure:process.env.NODE_ENV==='production',path:'/',maxAge:60*60*24*30

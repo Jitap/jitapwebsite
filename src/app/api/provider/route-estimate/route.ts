@@ -3,6 +3,7 @@ import {z} from 'zod';
 import {getProviderSession} from '@/lib/provider-session-server';
 import {supabasePrivate} from '@/lib/coordinator-server';
 import {sameOrigin} from '@/lib/jitap-auth';
+import {isNativeApiClient} from '@/lib/jitap-session';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
 const input=z.object({appointmentId:z.string().uuid(),origin:z.object({lat:z.number().min(-90).max(90),lng:z.number().min(-180).max(180)})}).strict();
@@ -10,7 +11,7 @@ const reply=(v:unknown,status=200)=>NextResponse.json(v,{status,headers:{'Cache-
 type Appointment={id:string;request_id:string;status:string};
 type Intake={payload:Record<string,unknown>};
 export async function POST(req:NextRequest){
- if(!sameOrigin(req))return reply({error:'Invalid origin'},403);
+ if(!isNativeApiClient(req)&&!sameOrigin(req))return reply({error:'Invalid origin'},403);
  const session=await getProviderSession(req);if(!session)return reply({error:'Sign in required'},401);
  const parsed=input.safeParse(await req.json().catch(()=>null));if(!parsed.success)return reply({error:'Invalid coordinates'},422);
  try{

@@ -3,6 +3,7 @@ import {randomUUID} from 'node:crypto';
 import {validatePhotoToken} from '@/lib/request-photo-token';
 import {supabasePrivate} from '@/lib/coordinator-server';
 import {sameOrigin} from '@/lib/jitap-auth';
+import {isNativeApiClient} from '@/lib/jitap-session';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
 const headers={'Cache-Control':'no-store','X-Robots-Tag':'noindex, nofollow'};
@@ -16,7 +17,8 @@ function validImage(bytes:Buffer,type:string){
  return false;
 }
 export async function POST(req:NextRequest){
- if(!sameOrigin(req))return json({error:'Invalid origin'},403);
+ // Photo auth is x-jitap-photo-token; native may send a non-site Origin.
+ if(!isNativeApiClient(req)&&!sameOrigin(req))return json({error:'Invalid origin'},403);
  if(Number(req.headers.get('content-length')||0)>6*1024*1024)return json({error:'Maximum photo size is 5 MB'},413);
  const id=req.headers.get('x-jitap-request-id')||'';
  const token=req.headers.get('x-jitap-photo-token')||'';

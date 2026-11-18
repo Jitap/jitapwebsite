@@ -3,6 +3,7 @@ import {getReviewSession} from '@/lib/jitap-review-session';
 import {getCustomerIdentity} from '@/lib/customer-session-server';
 import {getProviderSession} from '@/lib/provider-session-server';
 import {normalizeKenyanPhone,sameOrigin,setAuthCookies} from '@/lib/jitap-auth';
+import {isNativeApiClient} from '@/lib/jitap-session';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -60,7 +61,7 @@ export async function GET(req:NextRequest){
  return respond({ok:true,...sanitized,role:who.role},200,who.rotated);
 }
 export async function POST(req:NextRequest){
- if(!sameOrigin(req))return error('Invalid origin',403);
+ if(!isNativeApiClient(req)&&!sameOrigin(req))return error('Invalid origin',403);
  const length=Number(req.headers.get('content-length')||0);
  if(length>2000)return error('Request too large',413);
  if(getReviewSession(req))return error('Design review does not change live network records.',403);

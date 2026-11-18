@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { schemas,requestSchema, type FormKind } from '@/lib/validators';
 import {getCustomerIdentity} from '@/lib/customer-session-server';
 import {setAuthCookies} from '@/lib/jitap-auth';
+import {isNativeApiClient} from '@/lib/jitap-session';
 import {sendRequestReceiptSms,serviceReference} from '@/lib/request-receipt-sms';
 import {after} from 'next/server';
 import {saveServiceBrief} from '@/lib/service-brief-server';
@@ -108,7 +109,7 @@ async function notifyInbox(kind: FormKind, payload: Record<string, unknown>, ref
 export async function POST(req: NextRequest, { params }: { params: Promise<{kind: string}> }) {
   const { kind } = await params;
   if (!kinds.has(kind as FormKind)) return respond({ error: 'Unknown form.' }, 404);
-  if (!allowedOrigin(req)) return respond({ error: 'Invalid request origin.' }, 403);
+  if (!isNativeApiClient(req) && !allowedOrigin(req)) return respond({ error: 'Invalid request origin.' }, 403);
   if (!req.headers.get('content-type')?.toLowerCase().startsWith('application/json'))
     return respond({ error: 'Expected JSON content.' }, 415);
   const advertisedLength = Number(req.headers.get('content-length') || 0);
