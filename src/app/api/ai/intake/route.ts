@@ -3,6 +3,7 @@ import {z} from 'zod';
 import {createHash} from 'node:crypto';
 import {categories,areas,inferService} from '@/lib/data';
 import {safeIntakeQuestions} from '@/lib/fast-intake';
+import {isNativeApiClient} from '@/lib/jitap-session';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -51,7 +52,8 @@ function allowed(req:NextRequest){
 }
 export async function POST(req:NextRequest){
  const started=Date.now();
- if(!allowed(req))return answer({error:'Invalid origin'},403);
+ // Native Expo sends X-JiTap-Client: mobile (same hybrid gate as intake/places).
+ if(!isNativeApiClient(req)&&!allowed(req))return answer({error:'Invalid origin'},403);
  if(!req.headers.get('content-type')?.startsWith('application/json'))return answer({error:'JSON required'},415);
  const ip=(req.headers.get('x-vercel-forwarded-for')||req.headers.get('x-forwarded-for')||'unknown').split(',')[0].slice(0,100);
  const now=Date.now();const prev=buckets.get(ip);const bucket=prev&&now-prev.start<60000?{...prev,count:prev.count+1}:{start:now,count:1};
